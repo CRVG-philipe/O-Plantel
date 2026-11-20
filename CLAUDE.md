@@ -17,8 +17,8 @@ BRA (Brasileirão A), BRB (Série B), ENG, ESP, ITA, GER, FRA, ARG, SAU (Saudita
 ## Estrutura
 - `site/index.html`: o app inteiro (HTML, CSS e JS sem framework). Lê `data.json` com fetch, por isso precisa rodar num servidor local (veja abaixo). Abrir o arquivo direto não funciona.
 - `site/data.json`: `{leagues, clubs, updated}`.
-  - Cada clube: `{k, lg, n, coach, c, c2, ci, p:[...]}`.
-  - Cada jogador: `[número, nome, posição, nascimento, fim_contrato "AAAA-MM", valor_em_€mi, nacionalidade, índice_foto, stats]`.
+  - Cada clube: `{k, lg, n, coach, c, c2, ci, hd, p:[...]}`. `hd` = ID do time no Sofascore se `site/img/teams/<hd>.webp` existe, senão 0.
+  - Cada jogador: `[número, nome, posição, nascimento, fim_contrato "AAAA-MM", valor_em_€mi, nacionalidade, índice_foto, stats, hd]`. `hd` = ID do jogador no Sofascore se `site/img/players/<hd>.webp` existe, senão 0.
   - `stats` = `[jogos, gols, assistências, nota]` (temporada atual, todas as competições de clube) ou `null`.
   - Posições: GOL ZAG LD LE VOL MC MEI MD ME PD PE SA CA.
 - `site/img/p_<LIGA>.webp`: sprite de fotos (32 colunas, células de 48px). `índice_foto` aponta para a célula; -1 = sem foto.
@@ -29,6 +29,7 @@ BRA (Brasileirão A), BRB (Série B), ENG, ESP, ITA, GER, FRA, ARG, SAU (Saudita
   - `val.json`: valores corrigidos, em milhares de €.
   - `stats2.json`: estatísticas.
   - Para gerar: `python dados-brutos/build_all.py` e depois `python dados-brutos/build_final.py` (rodar na raiz do projeto).
+  - Os scripts abrem os arquivos com `encoding='utf-8'`. No Windows isso é obrigatório.
 
 ## Decisões de design
 - Uma coluna centralizada (máx. 720px).
@@ -40,11 +41,9 @@ BRA (Brasileirão A), BRB (Série B), ENG, ESP, ITA, GER, FRA, ARG, SAU (Saudita
 - Os planos ficam salvos no localStorage (chave `plantel:v2`).
 
 ## Pendências (em ordem sugerida)
-1. **Fotos e escudos em alta resolução.** Hoje as fotos são pequenas (48px). Escrever um script Node/Python que baixe as imagens originais do Sofascore e salve em `site/img/players/<id>.webp` e `site/img/teams/<id>.webp`:
-   - foto do jogador: `https://api.sofascore.app/api/v1/player/<id>/image`
-   - escudo: `https://api.sofascore.app/api/v1/team/<id>/image`
-   - Os IDs dos jogadores estão em `dados-brutos/kept.json` (posição = índice global) e em `sofa_all.json`.
-   - Depois, trocar os sprites por `<img loading="lazy">`.
+1. **Fotos e escudos em alta resolução (em andamento).** O código está pronto: `dados-brutos/baixar_imagens.py` baixa para `site/img/players/` e `site/img/teams/` (precisa de `pip install pillow`), o `build_final.py` marca `hd` e o site usa `<img loading="lazy">` quando `hd` existe, ou o sprite quando não existe.
+   - **Bloqueio:** em 20/11/2026 o `api.sofascore.app` respondeu 403 a pedidos simples. Não contornar o bloqueio imitando um navegador; buscar uma fonte permitida.
+   - Quando todas as imagens existirem, apagar os sprites (`p_*.webp`, `crests.webp`) e o código de sprite em `face()`/`crest()`.
 2. Completar as estatísticas de ~960 jogadores (ARG e SAU) que faltam em `stats2.json`.
 3. Script de atualização periódica dos dados (Transfermarkt e Sofascore).
 4. Migrar para um projeto com Vite e publicar na Vercel ou Netlify.

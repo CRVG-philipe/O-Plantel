@@ -1,5 +1,7 @@
 import json,unicodedata,re,datetime as dt,base64
 import os
+_open=open
+def open(f,m='r'): return _open(f,m,encoding='utf-8')  # UTF-8 sempre (no Windows o padrão é outro)
 VAL=json.load(open('dados-brutos/val.json')) if os.path.exists('dados-brutos/val.json') else {}
 t=json.load(open('dados-brutos/tm_all.json'));s=json.load(open('dados-brutos/sofa_all.json'));extra=json.load(open('dados-brutos/tm_extra.json'))
 clubs=t['clubs']+extra

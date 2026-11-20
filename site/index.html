@@ -60,6 +60,7 @@ main.col{padding:18px 16px 80px}
 .face{display:inline-block;border-radius:50%;background-color:var(--sf2);background-repeat:no-repeat;flex:none;overflow:hidden}
 .face.ini{display:inline-grid;place-items:center;font-weight:700;color:var(--mute)}
 .crest{display:inline-block;border-radius:10px;background-color:#fff;background-repeat:no-repeat;flex:none}
+img.face{object-fit:cover;object-position:top}img.crest{object-fit:contain;box-sizing:border-box}
 .stt{background:var(--sf2);border-radius:14px;padding:12px;margin-bottom:16px}
 .sth{display:flex;justify-content:space-between;font-size:12.5px;font-weight:600;color:var(--mute);margin-bottom:8px}
 .stg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
@@ -228,7 +229,7 @@ const FORMS={
 const FIT={GOL:["GOL"],ZAG:["ZAG","VOL"],LD:["LD","MD","ZAG"],LE:["LE","ZAG"],VOL:["VOL","MC","ZAG"],MC:["MC","VOL","MEI","ME","MD"],MEI:["MEI","MC","SA"],PD:["PD","MD","PE","SA"],PE:["PE","ME","PD","SA"],CA:["CA","SA"]};
 const MES=["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
 const REF=new Date(2027,0,1),ALL=[],BYID={},CL={};
-CLUBS.forEach(c=>{CL[c.k]=c;c.nn=norm(c.n);const L=LG[c.lg],ref=L.cal?new Date(2027,0,1):new Date(2027,6,1),lim=L.cal?"2026-12":"2027-06";c.p.forEach((r,i)=>{const [num,n,pos,dob,ctr,v,nat,sp,st]=r,b=new Date(dob);let a=ref.getFullYear()-b.getFullYear();if(new Date(ref.getFullYear(),b.getMonth(),b.getDate())>ref)a--;if(!dob)a=0;const p={id:c.k+"-"+i,num,n,nn:norm(n),pos,ctr,v,nat,a,st,sp,lg:c.lg,club:c.k,end26:!!ctr&&ctr<=lim};ALL.push(p);BYID[p.id]=p})});
+CLUBS.forEach(c=>{CL[c.k]=c;c.nn=norm(c.n);const L=LG[c.lg],ref=L.cal?new Date(2027,0,1):new Date(2027,6,1),lim=L.cal?"2026-12":"2027-06";c.p.forEach((r,i)=>{const [num,n,pos,dob,ctr,v,nat,sp,st,hd]=r,b=new Date(dob);let a=ref.getFullYear()-b.getFullYear();if(new Date(ref.getFullYear(),b.getMonth(),b.getDate())>ref)a--;if(!dob)a=0;const p={id:c.k+"-"+i,num,n,nn:norm(n),pos,ctr,v,nat,a,st,sp,hd,lg:c.lg,club:c.k,end26:!!ctr&&ctr<=lim};ALL.push(p);BYID[p.id]=p})});
 const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const eur=v=>{const a=Math.abs(v),s=v<0?"−":"";return a>=1?s+"€"+(Math.round(a*10)/10).toLocaleString("pt-BR")+" mi":a>0?s+"€"+Math.round(a*1000)+" mil":"€0"};
@@ -239,9 +240,12 @@ const store={get(){try{return JSON.parse(localStorage.getItem("plantel:v2"))||{}
 let DB=store.get();DB.plans=DB.plans||{};
 let P=null,tab="elenco",chip=0,limit=40,F={lg:"",club:"",age:99,sort:"vd",fit:false,free:false};
 
-function face(p,z=40){if(p.sp!=null&&p.sp>=0){const C=32,c=p.sp%C,r=Math.floor(p.sp/C);return `<span class="face" style="width:${z}px;height:${z}px;background-image:url(img/p_${p.lg}.webp);background-size:${C*z}px auto;background-position:-${c*z}px -${r*z}px"></span>`}
+function face(p,z=40){if(p.hd)return `<img class="face" src="img/players/${p.hd}.webp" alt="" loading="lazy" decoding="async" width="${z}" height="${z}" style="width:${z}px;height:${z}px">`;
+  if(p.sp!=null&&p.sp>=0){const C=32,c=p.sp%C,r=Math.floor(p.sp/C);return `<span class="face" style="width:${z}px;height:${z}px;background-image:url(img/p_${p.lg}.webp);background-size:${C*z}px auto;background-position:-${c*z}px -${r*z}px"></span>`}
   const ini=p.n.split(" ").filter(Boolean).map(w=>w[0]).slice(0,2).join("").toUpperCase();return `<span class="face ini" style="width:${z}px;height:${z}px;font-size:${Math.round(z*.36)}px">${esc(ini)}</span>`}
-function crest(k,z=32){const c=CL[k];if(!c)return `<span class="face ini" style="width:${z}px;height:${z}px">+</span>`;return `<span class="crest" role="img" aria-label="${esc(c.n)}" style="width:${z}px;height:${z}px;border-radius:${Math.round(z*.22)}px;background-image:url(img/crests.webp);background-size:${16*z}px auto;background-position:-${c.ci%16*z}px -${Math.floor(c.ci/16)*z}px"></span>`}
+function crest(k,z=32){const c=CL[k];if(!c)return `<span class="face ini" style="width:${z}px;height:${z}px">+</span>`;
+  if(c.hd)return `<img class="crest" src="img/teams/${c.hd}.webp" alt="${esc(c.n)}" loading="lazy" decoding="async" width="${z}" height="${z}" style="width:${z}px;height:${z}px;border-radius:${Math.round(z*.22)}px;padding:${Math.round(z*.08)}px">`;
+  return `<span class="crest" role="img" aria-label="${esc(c.n)}" style="width:${z}px;height:${z}px;border-radius:${Math.round(z*.22)}px;background-image:url(img/crests.webp);background-size:${16*z}px auto;background-position:-${c.ci%16*z}px -${Math.floor(c.ci/16)*z}px"></span>`}
 const badge=(k,cls)=>crest(k,cls==="lg"?48:32);
 const dec=(x,n=2)=>x.toFixed(n).replace(".",",");
 function statLine(p){const s=p.st;if(!s)return "Estatísticas indisponíveis";if(!s[0])return "Sem jogos na temporada";return `${s[0]} J · ${s[1]} G · ${s[2]} A${s[3]?" · nota "+dec(s[3]):""}`}
