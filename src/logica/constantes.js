@@ -28,4 +28,18 @@ export const FIT = { GOL: ["GOL"], ZAG: ["ZAG", "VOL"], LD: ["LD", "MD", "ZAG"],
 
 export const MES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 
-export const FILTROS_PADRAO = { lg: "", club: "", age: 99, sort: "vd", fit: false, free: false };
+// Países da tela de escolha, na ordem do carrossel.
+// cor = fundo da tela nas etapas 1 e 2; bandeira = arquivo em public/img/flags/ (Wikimedia Commons)
+export const PAISES = [
+  { n: "Brasil", sigla: "BRA", cor: "#009c3b", bandeira: "brasil.svg", ligas: ["BRA", "BRB"] },
+  { n: "Inglaterra", sigla: "ENG", cor: "#1d2a6b", bandeira: "inglaterra.svg", ligas: ["ENG"] },
+  { n: "Espanha", sigla: "ESP", cor: "#aa151b", bandeira: "espanha.svg", ligas: ["ESP"] },
+  { n: "Itália", sigla: "ITA", cor: "#0b6b3a", bandeira: "italia.svg", ligas: ["ITA"] },
+  { n: "Alemanha", sigla: "GER", cor: "#222222", bandeira: "alemanha.svg", ligas: ["GER"] },
+  { n: "França", sigla: "FRA", cor: "#1f3d8f", bandeira: "franca.svg", ligas: ["FRA"] },
+  { n: "Argentina", sigla: "ARG", cor: "#3a83c4", bandeira: "argentina.svg", ligas: ["ARG"] },
+  { n: "Arábia Saudita", sigla: "SAU", cor: "#0b6b3a", bandeira: "arabia-saudita.svg", ligas: ["SAU"] },
+  { n: "Estados Unidos", sigla: "USA", cor: "#2b2f6b", bandeira: "estados-unidos.svg", ligas: ["USA"] },
+];
+
+export const FILTROS_PADRAO ={ lg: "", club: "", age: 99, sort: "vd", fit: false, free: false };

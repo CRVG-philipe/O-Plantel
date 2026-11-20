@@ -61,7 +61,13 @@ React 19 + Vite 6, em JavaScript (sem TypeScript).
 - Topo fixo com caixa, nº de jogadores e chegam/saem, mais as abas Elenco · Mercado · Time · Resumo.
 - Nenhum botão dentro das linhas da lista: tudo acontece num painel que sobe de baixo ao tocar.
 - Cores neutras, com a cor do clube como único acento. Fonte Inter. Tema claro e escuro.
-- Escolha de clube: botões de liga, carrossel do clube e grade de escudos.
+- Escolha de clube (`EscolhaClube.jsx`): tela cheia em 3 etapas, com a coluna de até 480px centralizada.
+  - Etapa 1 é o país: bandeira em cartão branco, setas, deslizar o dedo e siglas.
+  - Etapa 2 é a divisão, e só aparece se o país tiver mais de uma liga (hoje, só o Brasil).
+  - Etapa 3 é o clube: escudo num círculo branco, vizinhos dos lados, valor e jogadores.
+  - Fundo = cor do país (`PAISES` em `constantes.js`) ou do clube (`corDeFundo`: `c`, senão `c2`, senão cinza `#222428`, sempre com brilho ≤ 0,6 para o texto branco ser legível). Transição de 300ms, desligada com `prefers-reduced-motion`.
+  - "Voltar" vai para a etapa anterior real (pula a divisão se não houve). Quem troca de clube volta direto à etapa 3, no último clube.
+  - Bandeiras: SVGs do Wikimedia Commons em `public/img/flags/`.
 - Temporada planejada: "2027" nas ligas de calendário anual (BRA, BRB, ARG, USA) e "27/28" nas demais.
 - Os planos ficam salvos no localStorage (chave `plantel:v2`, formato `{plans:{<clube>: plano}, last}`). **Não mudar os nomes dos campos do plano** (`club, budget, st, ins, form, xi, custom`), senão quem já tem planos salvos os perde.
 

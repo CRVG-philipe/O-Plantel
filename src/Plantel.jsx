@@ -1,7 +1,7 @@
 // O app depois que os dados carregaram: guarda o estado e as ações, e escolhe o que mostrar.
 import { useEffect, useMemo, useRef, useState } from "react";
 import { D } from "./logica/dados.js";
-import { FILTROS_PADRAO } from "./logica/constantes.js";
+import { FILTROS_PADRAO, PAISES } from "./logica/constantes.js";
 import { lum } from "./logica/formato.js";
 import { lerPlanos, salvarPlanos } from "./logica/armazenamento.js";
 import { jogador, novoPlano } from "./logica/elenco.js";
@@ -27,6 +27,8 @@ const PAINEIS = { jogador: PainelJogador, compra: PainelCompra, filtros: PainelF
 
 // Clubes de uma liga em ordem alfabética
 const clubesDa = (lg) => D.CLUBS.filter((c) => c.lg === lg).sort((a, b) => a.n.localeCompare(b.n));
+// Posição do país (na lista PAISES) de uma liga
+const paisDa = (lg) => Math.max(0, PAISES.findIndex((p) => p.ligas.includes(lg)));
 
 // Pinta o destaque do site com a cor do clube (ou a 2ª cor, se a 1ª for clara demais)
 function aplicarCor(k) {
@@ -43,9 +45,13 @@ export default function Plantel() {
   const [db, setDb] = useState(lerPlanos);       // tudo que está salvo no navegador
   const [aberto, setAberto] = useState(null);    // clube do plano aberto (null = tela de escolha)
   const [aba, setAba] = useState("elenco");
-  // tela de escolha: começa na liga/clube do último plano aberto
-  const [liga, setLiga] = useState(() => (db.last && D.CL[db.last] ? D.CL[db.last].lg : "BRA"));
-  const [indice, setIndice] = useState(() => (db.last && D.CL[db.last] ? Math.max(0, clubesDa(D.CL[db.last].lg).findIndex((c) => c.k === db.last)) : 0));
+  // tela de escolha (etapa 0 = país, 1 = divisão, 2 = clube).
+  // Quem já tem plano salvo começa na etapa do clube, no último clube aberto.
+  const ultimo = db.last && D.CL[db.last] ? D.CL[db.last] : null;
+  const [etapa, setEtapa] = useState(() => (ultimo ? 2 : 0));
+  const [pais, setPais] = useState(() => (ultimo ? paisDa(ultimo.lg) : 0));
+  const [liga, setLiga] = useState(() => (ultimo ? ultimo.lg : "BRA"));
+  const [indice, setIndice] = useState(() => (ultimo ? Math.max(0, clubesDa(ultimo.lg).findIndex((c) => c.k === ultimo.k)) : 0));
   // mercado
   const [busca, setBusca] = useState("");
   const [chip, setChip] = useState(0);
@@ -96,11 +102,13 @@ export default function Plantel() {
     if (p.budget === null) abrirPainel("orcamento", { primeiro: true });
   }
 
-  // Volta para a tela de escolha, no clube que estava aberto
+  // Volta para a tela de escolha, na etapa do clube, no clube que estava aberto
   function trocarClube() {
     fecharPainel();
     const k = aberto;
     setAberto(null);
+    setEtapa(2);
+    setPais(paisDa(D.CL[k].lg));
     setLiga(D.CL[k].lg);
     setIndice(Math.max(0, clubesDa(D.CL[k].lg).findIndex((c) => c.k === k)));
     window.scrollTo(0, 0);
@@ -121,8 +129,25 @@ export default function Plantel() {
   }
 
   const irPara = (a) => { setAba(a); window.scrollTo(0, 0); };
-  const escolherLiga = (lg) => { setLiga(lg); setIndice(0); };
   const passo = (d) => setIndice((i) => (i + d + clubes.length) % clubes.length);
+  const passoPais = (d) => setPais((i) => (i + d + PAISES.length) % PAISES.length);
+
+  // Escolhe a liga e vai para a etapa do clube (se trocou de liga, começa no 1º clube)
+  function escolherDivisao(lg) {
+    if (lg !== liga) { setLiga(lg); setIndice(0); }
+    setEtapa(2);
+  }
+  // "Continuar" no país: vai para a divisão, ou direto para o clube se só há uma liga
+  function continuarPais() {
+    const P = PAISES[pais];
+    if (P.ligas.length > 1) setEtapa(1);
+    else escolherDivisao(P.ligas[0]);
+  }
+  // "Voltar": sempre para a etapa anterior que de fato existiu (pula a divisão se não houve)
+  function voltar() {
+    if (etapa === 2) setEtapa(PAISES[pais].ligas.length > 1 ? 1 : 0);
+    else if (etapa === 1) setEtapa(0);
+  }
 
   // ---------- efeitos ----------
   // Ao abrir o site: se havia um plano no último clube, abre direto nele
@@ -134,13 +159,14 @@ export default function Plantel() {
   const clubeDaCor = aberto || clubes[indice]?.k;
   useEffect(() => { aplicarCor(clubeDaCor); }, [clubeDaCor]);
 
-  // Teclado: Esc fecha o painel; setas trocam de clube na tela de escolha
+  // Teclado: Esc fecha o painel; na tela de escolha, as setas trocam de país (etapa 1) ou de clube (etapa 3)
   useEffect(() => {
     const tecla = (e) => {
       if (e.key === "Escape") fecharPainel();
-      if (aberto || painel.aberto) return;
-      if (e.key === "ArrowRight") passo(1);
-      if (e.key === "ArrowLeft") passo(-1);
+      if (aberto || painel.aberto || etapa === 1) return;
+      const mover = etapa === 0 ? passoPais : passo;
+      if (e.key === "ArrowRight") mover(1);
+      if (e.key === "ArrowLeft") mover(-1);
     };
     document.addEventListener("keydown", tecla);
     return () => document.removeEventListener("keydown", tecla);
@@ -149,21 +175,25 @@ export default function Plantel() {
   // ---------- tela ----------
   // "app" é o pacote de dados e ações que cada componente recebe
   const app = {
-    db, plano, aba, liga, indice, clubes, busca, chip, limite, filtros,
-    setIndice, setBusca, setChip, setLimite, setFiltros,
+    db, plano, aba, etapa, pais, liga, indice, clubes, busca, chip, limite, filtros,
+    setPais, setIndice, setBusca, setChip, setLimite, setFiltros,
     abrirClube, trocarClube, reiniciarClube, abrirJogador, abrirPainel, fecharPainel,
-    mudar, irPara, escolherLiga, passo, aviso: mostrarAviso,
+    mudar, irPara, passo, passoPais, continuarPais, escolherDivisao, voltar, aviso: mostrarAviso,
   };
   const Aba = ABAS[aba];
   const ConteudoPainel = PAINEIS[painel.tipo];
 
   return (
     <>
-      <Topo app={app} />
-      <main className="col">
-        {plano ? <Aba app={app} /> : <EscolhaClube app={app} />}
-      </main>
-      <Rodape />
+      {plano ? (
+        <>
+          <Topo app={app} />
+          <main className="col"><Aba app={app} /></main>
+          <Rodape />
+        </>
+      ) : (
+        <EscolhaClube app={app} /> /* tela cheia, com topo e rodapé próprios */
+      )}
       <Painel aberto={painel.aberto} onFechar={fecharPainel}>
         {ConteudoPainel && (
           <Congelado key={painel.chave} vivo={painel.aberto}>

@@ -13,6 +13,10 @@ export const lum = (h) => {
   return (0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
 };
 
+// Cor de fundo do clube na tela de escolha (com texto branco por cima):
+// a cor principal; se for clara demais, a segunda; se as duas forem claras, cinza escuro.
+export const corDeFundo = (c) => [c.c, c.c2].find((x) => x && lum(x) <= 0.6) || "#222428";
+
 // Nome curto para o campinho: "Gabriel Barbosa Almeida" vira "G. Almeida"
 export const short = (n) => {
   const w = n.split(" ");
