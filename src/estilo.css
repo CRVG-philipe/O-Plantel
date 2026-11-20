@@ -110,6 +110,7 @@ details.bench[open] summary::after{content:"Ocultar"}
 .btn{border:0;border-radius:12px;min-height:46px;padding:0 16px;font-weight:600;background:var(--sf2)}
 .btn.pri{background:var(--ac);color:var(--acInk)}
 .btn.danger{background:none;color:var(--neg)}
+.btn.perigo{background:var(--neg);color:#fff}
 .btn:disabled{opacity:.4;cursor:not-allowed}
 /* antes do plano: tela inicial e escolha (país, divisão, clube). Medidas do modelo referencia-inicio-paises.html.
    Fundo verde-escuro (início), #1f2a24 (países), cor do país (divisão) ou do clube; linhas de campo a 8%;
@@ -153,6 +154,11 @@ details.bench[open] summary::after{content:"Ocultar"}
 .ini-rotulo{font-size:12px;margin:24px 0 6px;color:rgba(255,255,255,.75)}
 .ini-planos{display:grid;gap:8px}
 .ini-plano{display:flex;align-items:center;gap:10px;border:0;width:100%;text-align:left}
+.ini-plano-linha{display:flex;align-items:center;gap:8px}
+.sem-quebra{white-space:nowrap}
+.ini-plano-linha .ini-plano{flex:1;min-width:0}
+.ini-excluir{color:rgba(255,255,255,.85)}
+.ini-excluir:hover{background:rgba(255,255,255,.26);color:#fff}
 .ini-plano:hover{background:rgba(255,255,255,.18)}
 .ini-badge{width:40px;height:40px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;flex:none}
 .ini-plano-txt{flex:1;min-width:0}
@@ -173,8 +179,11 @@ details.bench[open] summary::after{content:"Ocultar"}
 .esc-divisoes{display:flex;flex-direction:column;gap:10px;padding-top:20px}
 .esc-divisao{display:flex;align-items:center;gap:12px;min-height:76px;border-radius:16px;border:0;background:rgba(255,255,255,.14);color:#fff;padding:0 18px;text-align:left;line-height:1.35}
 .esc-divisao:hover{background:rgba(255,255,255,.2)}
-.esc-divisao span:first-child{flex:1}
-.esc-divisao span:last-child{font-size:22px}
+.esc-divisao>span:nth-child(2){flex:1}
+.esc-divisao>span:last-child{font-size:22px}
+/* logo da liga: círculo branco, como os escudos (logos escuras não somem) */
+.logo-liga{border-radius:50%;background:#fff;display:grid;place-items:center;flex:none}
+.logo-liga img{display:block;width:66%;height:66%;object-fit:contain}
 .esc-divisao b{display:block;font-size:17px;font-weight:600}
 .esc-divisao small{font-size:12.5px;color:rgba(255,255,255,.75)}
 .esc-clubes{display:flex;align-items:center;justify-content:center;gap:12px;padding:18px 0 14px;touch-action:pan-y;user-select:none}

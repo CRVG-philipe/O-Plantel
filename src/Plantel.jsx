@@ -23,9 +23,10 @@ import PainelCriar from "./componentes/paineis/PainelCriar.jsx";
 import PainelClube from "./componentes/paineis/PainelClube.jsx";
 import PainelOrcamento from "./componentes/paineis/PainelOrcamento.jsx";
 import PainelPosicao from "./componentes/paineis/PainelPosicao.jsx";
+import PainelExcluirPlano from "./componentes/paineis/PainelExcluirPlano.jsx";
 
 const ABAS = { elenco: Elenco, mercado: Mercado, time: Time, resumo: Resumo };
-const PAINEIS = { jogador: PainelJogador, compra: PainelCompra, filtros: PainelFiltros, criar: PainelCriar, clube: PainelClube, orcamento: PainelOrcamento, posicao: PainelPosicao };
+const PAINEIS = { jogador: PainelJogador, compra: PainelCompra, filtros: PainelFiltros, criar: PainelCriar, clube: PainelClube, orcamento: PainelOrcamento, posicao: PainelPosicao, excluirPlano: PainelExcluirPlano };
 
 // Clubes de uma liga em ordem alfabética
 const clubesDa = (lg) => D.CLUBS.filter((c) => c.lg === lg).sort((a, b) => a.n.localeCompare(b.n));
@@ -120,6 +121,18 @@ export default function Plantel() {
     window.scrollTo(0, 0);
   }
 
+  // Exclui um plano salvo (só é chamado depois da confirmação no PainelExcluirPlano)
+  function excluirPlano(k) {
+    const plans = { ...db.plans };
+    delete plans[k];
+    const novo = { ...db, plans };
+    if (novo.last === k) delete novo.last; // não aponta mais para um plano que não existe
+    setDb(novo);
+    salvarPlanos(novo);
+    fecharPainel();
+    mostrarAviso("Plano do " + D.CL[k].n + " excluído");
+  }
+
   function reiniciarClube() {
     const p = novoPlano(aberto);
     escalarSozinho(p);
@@ -185,7 +198,7 @@ export default function Plantel() {
   const app = {
     db, plano, aba, tela, pais, liga, indice, clubes, busca, chip, limite, filtros, moeda, cotacao,
     setIndice, setBusca, setChip, setLimite, setFiltros, trocarMoeda,
-    abrirClube, trocarClube, reiniciarClube, abrirJogador, abrirPainel, fecharPainel,
+    abrirClube, trocarClube, reiniciarClube, excluirPlano, abrirJogador, abrirPainel, fecharPainel,
     mudar, irPara, passo, planejarClube, escolherPais, escolherDivisao, voltar, aviso: mostrarAviso,
   };
   const Aba = ABAS[aba];

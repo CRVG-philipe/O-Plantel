@@ -11,8 +11,13 @@ Site para planejar o elenco de um clube na próxima temporada. O usuário pode:
 
 Foi inspirado no reconstruindo.thefenomeno.com, mas **não deve copiá-lo**. O foco aqui é planejamento, com um visual clean e minimalista.
 
-## Ligas (214 clubes, ~6.265 jogadores)
-BRA (Brasileirão A), BRB (Série B), ENG, ESP, ITA, GER, FRA, ARG, SAU (Saudita), USA (MLS).
+## Ligas (26 ligas, 484 clubes, 13.882 jogadores)
+- Originais (214 clubes): BRA (Brasileirão A), BRB (Série B), ENG, ESP, ITA, GER, FRA, ARG, SAU (Saudita), USA (MLS).
+- Novas em 20/11/2026 (270 clubes, 7.617 jogadores):
+  - 1ª divisão: MEX (Liga MX), POR, BEL, SCO, NOR, NED, TUR, DEN, SUI, GRE, AUT.
+  - 2ª divisão: ENG2 (Championship), ESP2 (LaLiga 2), ITA2 (Serie B), GER2 (2. Bundesliga), FRA2 (Ligue 2).
+  - Os jogadores novos ainda não têm foto (`índice_foto` -1, `hd` 0) nem estatísticas (`stats` null). O site mostra as iniciais e "Estatísticas indisponíveis".
+- Cada liga tem `div` (1 ou 2): a divisão dentro do país. A tela de divisão ordena por ele.
 
 ## Comandos (na raiz do projeto)
 - `npm install`: instala as dependências (só na primeira vez ou quando o package.json mudar).
@@ -28,31 +33,41 @@ React 19 + Vite 6, em JavaScript (sem TypeScript).
 - `src/Plantel.jsx`: estado e ações do app (plano aberto, aba, filtros, painel, aviso). Monta um objeto `app` com dados e ações e passa para todos os componentes.
   - Mudanças no plano sempre passam por `app.mudar(fn)`: ele copia o plano, aplica `fn`, chama `completarTime` e salva.
   - Painéis abrem com `app.abrirPainel(tipo, args)`. Os tipos estão em `PAINEIS`.
-- `src/componentes/`: `EscolhaClube`, `Topo` (resumo e abas), `Elenco`, `Mercado`, `Time`, `Resumo`, `Painel` (o painel que sobe de baixo), `Imagens` (`Foto` e `Escudo`) e `Rodape`.
+- `src/componentes/`: `EscolhaClube`, `Topo` (resumo e abas), `Elenco`, `Mercado`, `Time`, `Resumo`, `Painel` (o painel que sobe de baixo), `Imagens` (`Foto`, `Escudo` e `LogoLiga`), `SeletorMoeda` e `Rodape`.
   - `paineis/`: o conteúdo de cada painel (`PainelJogador`, `PainelCompra`, `PainelFiltros`, `PainelCriar`, `PainelClube`, `PainelOrcamento`, `PainelPosicao`) e `comum.jsx`.
   - `Congelado` (em `Painel.jsx`) congela o conteúdo enquanto o painel fecha, para ele sumir sem piscar.
 - `src/logica/`: funções sem tela.
   - `dados.js`: carrega e indexa os dados no objeto `D`.
   - `constantes.js`: posições, formações e compatibilidade.
-  - `dinheiro.js`: `eur` e caixa.
+  - `dinheiro.js`: moeda, `dinheiro()` e caixa.
+  - `cotacao.js`: moeda escolhida e cotação no localStorage.
   - `elenco.js`: plano, elenco, saídas, alertas e texto do resumo.
   - `escalacao.js`: escalar, completar e encaixar.
   - `mercado.js`: busca e filtros.
   - `formato.js`: textos (datas, nomes curtos, iniciais).
   - `armazenamento.js`: ler e salvar no localStorage.
-- `public/data.json`: `{leagues, clubs, updated}`.
+- `public/data.json`: `{leagues, clubs, updated}`. **É gerado pelo `build_final.py`: não editar à mão.**
+  - Cada liga: `{k, n, pais, nat, season, div}`. `nat` = nacionalidade como aparece nos jogadores (para contar estrangeiros). `season` "2026" = ano fechado (planeja "2027"); "26/27" = planeja "27/28".
   - Cada clube: `{k, lg, n, coach, c, c2, hd, p:[...]}`. `hd` = ID do time no Sofascore se `public/img/teams/<hd>.webp` existe, senão 0 (aí o site mostra "+" no lugar do escudo).
   - Cada jogador: `[número, nome, posição, nascimento, fim_contrato "AAAA-MM", valor_em_€mi, nacionalidade, índice_foto, stats, hd]`. `hd` = ID do jogador no Sofascore se `public/img/players/<hd>.webp` existe, senão 0.
   - `stats` = `[jogos, gols, assistências, nota]` (temporada atual, todas as competições de clube) ou `null`.
   - Posições: GOL ZAG LD LE VOL MC MEI MD ME PD PE SA CA.
 - `public/img/p_<LIGA>.webp`: sprite de fotos (32 colunas, células de 48px). `índice_foto` aponta para a célula; -1 = sem foto.
-- `public/img/teams/<id>.webp`: escudos em alta (214, 160×160 px, fundo transparente), nomeados pelo ID do Sofascore. Não há mais sprite de escudos.
+- `public/img/p_<LIGA>.webp` só existe para as 10 ligas originais. Os jogadores novos não estão em nenhum sprite.
+- `public/img/teams/<id>.webp`: escudos em alta (484, 160×160 px, fundo transparente), nomeados pelo ID do Sofascore. Não há mais sprite de escudos.
+- `public/img/leagues/<k>.webp`: logos das 26 ligas (160×160, fundo transparente), mostradas por `LogoLiga` num círculo branco, porque várias são pretas.
+- `public/img/flags/`: bandeiras dos 20 países (SVG do Wikimedia Commons).
 - `vercel.json`: a Vercel roda `npm run build` e publica `dist/`. Cada `git push` na `main` publica uma versão nova.
 - `dados-brutos/`: dados coletados em 20/11/2026 e scripts Python que geram o data.json.
   - `tm_all.json` + `tm_extra.json`: Transfermarkt.
   - `sofa_all.json`: Sofascore.
   - `val.json`: valores corrigidos, em milhares de €.
   - `stats2.json`: estatísticas.
+  - `novas_ligas.json`: as 16 ligas novas já no formato final (ligas com `div`, clubes e jogadores). O `build_final.py` junta essas ligas às originais e aplica duas correções:
+    - nomes repetidos ficam "Bundesliga Austríaca", "Super League Suíça" e "Super League Grega";
+    - a Liga MX passa a ter temporada "26/27" (vai de julho a maio).
+  - `ids_sofascore_novas.json`: `{clube: [ID Sofascore de cada jogador, na mesma ordem do elenco]}` (0 = não encontrado; ~98% têm). É para a próxima fase: fotos HD e estatísticas dos jogadores novos.
+  - `tm_new.json`, `sofa_new.json` e `build_new.py`: dados brutos e o script que gerou as ligas novas. Ficam só como referência: o script usa caminhos `raw/` da coleta original e não precisa rodar.
   - Para gerar: `python dados-brutos/build_all.py` e depois `python dados-brutos/build_final.py` (rodar na raiz do projeto).
   - Os scripts abrem os arquivos com `encoding='utf-8'`. No Windows isso é obrigatório.
 
@@ -63,7 +78,7 @@ React 19 + Vite 6, em JavaScript (sem TypeScript).
 - Cores neutras, com a cor do clube como único acento. Fonte Inter. Tema claro e escuro.
 - Antes do plano (`EscolhaClube.jsx`, estado `tela` no `Plantel.jsx`): telas cheias com fundo colorido, linhas de campo em SVG (branco a 8%) e conteúdo num bloco de até 480px, com o botão principal logo abaixo do conteúdo. Modelo visual: `referencia-inicio-paises.html`, enviado pelo Philipe.
   - Topo de todas: logo e seletor de moeda. Nas etapas, há também "← X de Y".
-  - `inicio`: o site **sempre** abre aqui, mesmo com plano salvo. Fundo `#0f3d2b`, título, números calculados do data.json (clubes, ligas, jogadores com valor > 0), "Seus planos" (o último aberto primeiro; tocar abre o plano) e "Planejar um clube". "Trocar de clube" volta para cá.
+  - `inicio`: o site **sempre** abre aqui, mesmo com plano salvo. Fundo `#0f3d2b`, título, números calculados do data.json (clubes, ligas, jogadores com valor > 0), "Seus planos" (o último aberto primeiro; tocar abre o plano; a lixeira ao lado abre `PainelExcluirPlano`, que só apaga ao tocar em "Excluir plano") e "Planejar um clube". "Trocar de clube" volta para cá.
   - `pais`: grade de cartões (2 colunas; 3 a partir de 600px), fundo `#1f2a24`. Tocar avança.
   - `divisao`: só aparece se o país tiver mais de uma liga (hoje, só o Brasil). Fundo = cor do país (`PAISES` em `constantes.js`).
   - `clube`: escudo num círculo branco, vizinhos, valor e jogadores. Setas, teclado e deslizar o dedo trocam de clube. Fundo = `corDeFundo` (`c`, senão `c2`, senão cinza `#222428`, sempre com brilho ≤ 0,6 para o texto branco ser legível).
@@ -81,9 +96,11 @@ React 19 + Vite 6, em JavaScript (sem TypeScript).
 1. **Fotos em alta resolução (em andamento).** Os escudos já estão prontos (20/11/2026). Faltam as fotos dos jogadores: `dados-brutos/baixar_imagens.py --so-jogadores` baixa para `public/img/players/` (precisa de `pip install pillow`; rodar na raiz do projeto), o `build_final.py` marca `hd` e o `Foto` usa `<img loading="lazy">` quando `hd` existe, ou o sprite quando não existe.
    - **Bloqueio:** em 20/11/2026 o `api.sofascore.app` respondeu 403 a pedidos simples. Não contornar o bloqueio imitando um navegador; buscar uma fonte permitida.
    - Quando todas as fotos existirem, apagar os sprites `p_*.webp` e o código de sprite em `Foto` (`src/componentes/Imagens.jsx`).
-2. Completar as estatísticas de ~960 jogadores (ARG e SAU) que faltam em `stats2.json`.
+2. Completar as estatísticas que faltam:
+   - ~960 jogadores de ARG e SAU, em `stats2.json`;
+   - os 7.617 jogadores das 16 ligas novas, pelos IDs em `ids_sofascore_novas.json`. As fotos deles também faltam: o `baixar_imagens.py` hoje só lê `kept.json` e precisa passar a ler esse arquivo também.
 3. Script de atualização periódica dos dados (Transfermarkt e Sofascore).
-4. ~~Migrar para Vite~~ Feito em 20/11/2026 (React + Vite; a versão antiga sem framework está na tag git `antes-do-react`). Falta conferir o deploy na Vercel.
+4. ~~Migrar para Vite~~ Feito em 20/11/2026 (React + Vite; a versão antiga sem framework está na tag git `antes-do-react`), publicado na Vercel.
 5. Simulação da temporada, link compartilhável do plano e modo "desafio diário" (para depois).
 
 ## Cuidados

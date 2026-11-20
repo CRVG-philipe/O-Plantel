@@ -7,7 +7,19 @@ def tem(pasta): return {int(f[:-5]) for f in os.listdir(pasta) if f.endswith('.w
 HD_P=tem('public/img/players');HD_T=tem('public/img/teams')
 LGN={'ENG':['Premier League','Inglaterra','Inglaterra'],'ESP':['LaLiga','Espanha','Espanha'],'ITA':['Serie A','Itália','Itália'],'GER':['Bundesliga','Alemanha','Alemanha'],'FRA':['Ligue 1','França','França'],'BRA':['Brasileirão Série A','Brasil','Brasil'],'BRB':['Brasileirão Série B','Brasil','Brasil'],'ARG':['Liga Argentina','Argentina','Argentina'],'SAU':['Liga Saudita','Arábia Saudita','Arábia Saudita'],'USA':['MLS','EUA e Canadá','Estados Unidos']}
 order=['BRA','BRB','ENG','ESP','ITA','GER','FRA','ARG','SAU','USA']
-leagues=[{'k':k,'n':LGN[k][0],'pais':LGN[k][1],'nat':LGN[k][2],'season':pre['leagues'][k]['season']} for k in order]
+# div = divisão da liga no país (1 = primeira, 2 = segunda)
+leagues=[{'k':k,'n':LGN[k][0],'pais':LGN[k][1],'nat':LGN[k][2],'season':pre['leagues'][k]['season'],'div':2 if k=='BRB' else 1} for k in order]
+
+# ---- 16 ligas novas (coletadas em 20/11/2026; já vêm no formato final) ----
+NOVAS=ler('dados-brutos/novas_ligas.json')
+# Correções:
+NOME_LIGA={'AUT':'Bundesliga Austríaca','SUI':'Super League Suíça','GRE':'Super League Grega'}  # nomes iguais aos de GER e entre si
+TEMPORADA={'MEX':'26/27'}  # a Liga MX vai de julho a maio (Apertura + Clausura); não é ano fechado
+for l in NOVAS['leagues']:
+    leagues.append({'k':l['k'],'n':NOME_LIGA.get(l['k'],l['n']),'pais':l['pais'],'nat':l['nat'],'season':TEMPORADA.get(l['k'],l['season']),'div':l['div']})
+# Ordem das ligas (filtros do Mercado): por país, 1ª divisão antes da 2ª
+ORDEM=['BRA','BRB','ENG','ENG2','ESP','ESP2','ITA','ITA2','GER','GER2','FRA','FRA2','POR','NED','BEL','TUR','SCO','AUT','SUI','GRE','DEN','NOR','ARG','MEX','USA','SAU']
+leagues.sort(key=lambda l:ORDEM.index(l['k']))
 clubs=[]
 for c in pre['clubs']:
     ps=[]
@@ -21,6 +33,10 @@ for c in pre['clubs']:
         hd=kept[g] if g>=0 and kept[g] in HD_P else 0
         ps.append([p[0],p[1],p[2],p[3],p[4],p[5],p[6],sp,s,hd])
     clubs.append({'k':c['k'],'lg':c['lg'],'n':c['n'],'coach':c['coach'],'c':c['c'],'c2':c['c2'],'hd':c['sid'] if c['sid'] in HD_T else 0,'p':ps})
+# Clubes das ligas novas: jogadores ainda sem foto (-1), sem estatísticas (None) e sem foto HD (0).
+# O ID Sofascore de cada jogador está em dados-brutos/ids_sofascore_novas.json (mesma ordem do elenco).
+for c in NOVAS['clubs']:
+    clubs.append({'k':c['k'],'lg':c['lg'],'n':c['n'],'coach':c['coach'],'c':c['c'],'c2':c['c2'],'hd':c['hd'] if c['hd'] in HD_T else 0,'p':c['p']})
 json.dump({'leagues':leagues,'clubs':clubs,'updated':'20/11/2026'},open('public/data.json','w',encoding='utf-8'),ensure_ascii=False,separators=(',',':'))
 print(os.path.getsize('public/data.json')//1024,'KB', 'stats' if st else 'no stats')
 print('fotos HD:',sum(1 for c in clubs for p in c['p'] if p[9]),'de',sum(len(c['p']) for c in clubs),'| escudos HD:',sum(1 for c in clubs if c['hd']),'de',len(clubs))

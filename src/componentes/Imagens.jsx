@@ -16,6 +16,16 @@ export function Foto({ p, z = 40 }) {
   return <span className="face ini" style={{ width: z, height: z, fontSize: Math.round(z * 0.36) }}>{iniciais(p.n)}</span>;
 }
 
+// Logo da liga (public/img/leagues/<k>.webp), num círculo branco como os escudos:
+// várias logos são escuras (Premier League, Ligue 1, Eredivisie...) e sumiriam no fundo colorido.
+export function LogoLiga({ k, z = 48 }) {
+  return (
+    <span className="logo-liga" style={{ width: z, height: z }}>
+      <img src={`img/leagues/${k}.webp`} alt="" loading="lazy" decoding="async" width={Math.round(z * 0.66)} height={Math.round(z * 0.66)} />
+    </span>
+  );
+}
+
 // Escudo em alta resolução (public/img/teams/<id>.webp, fundo transparente).
 // Sem clube ou sem arquivo de escudo: mostra um "+" no lugar.
 export function Escudo({ k, z = 32 }) {

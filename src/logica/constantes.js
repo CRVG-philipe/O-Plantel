@@ -28,18 +28,31 @@ export const FIT = { GOL: ["GOL"], ZAG: ["ZAG", "VOL"], LD: ["LD", "MD", "ZAG"],
 
 export const MES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 
-// Países da tela de escolha, na ordem do carrossel.
-// cor = fundo da tela nas etapas 1 e 2; bandeira = arquivo em public/img/flags/ (Wikimedia Commons)
+// Países da tela de escolha, na ordem da grade.
+// cor = fundo do cartão da bandeira e da escolha de divisão (escura o bastante para texto branco: brilho ≤ 0,6)
+// bandeira = arquivo em public/img/flags/ (Wikimedia Commons)
+// ligas = chaves das ligas do país (a ordem na tela segue o campo "div" de cada liga)
 export const PAISES = [
   { n: "Brasil", sigla: "BRA", cor: "#009c3b", bandeira: "brasil.svg", ligas: ["BRA", "BRB"] },
-  { n: "Inglaterra", sigla: "ENG", cor: "#1d2a6b", bandeira: "inglaterra.svg", ligas: ["ENG"] },
-  { n: "Espanha", sigla: "ESP", cor: "#aa151b", bandeira: "espanha.svg", ligas: ["ESP"] },
-  { n: "Itália", sigla: "ITA", cor: "#0b6b3a", bandeira: "italia.svg", ligas: ["ITA"] },
-  { n: "Alemanha", sigla: "GER", cor: "#222222", bandeira: "alemanha.svg", ligas: ["GER"] },
-  { n: "França", sigla: "FRA", cor: "#1f3d8f", bandeira: "franca.svg", ligas: ["FRA"] },
+  { n: "Inglaterra", sigla: "ENG", cor: "#1d2a6b", bandeira: "inglaterra.svg", ligas: ["ENG", "ENG2"] },
+  { n: "Espanha", sigla: "ESP", cor: "#aa151b", bandeira: "espanha.svg", ligas: ["ESP", "ESP2"] },
+  { n: "Itália", sigla: "ITA", cor: "#0b6b3a", bandeira: "italia.svg", ligas: ["ITA", "ITA2"] },
+  { n: "Alemanha", sigla: "GER", cor: "#222222", bandeira: "alemanha.svg", ligas: ["GER", "GER2"] },
+  { n: "França", sigla: "FRA", cor: "#1f3d8f", bandeira: "franca.svg", ligas: ["FRA", "FRA2"] },
+  { n: "Portugal", sigla: "POR", cor: "#7a1020", bandeira: "portugal.svg", ligas: ["POR"] },
+  { n: "Holanda", sigla: "NED", cor: "#c4501a", bandeira: "holanda.svg", ligas: ["NED"] },
+  { n: "Bélgica", sigla: "BEL", cor: "#a87b05", bandeira: "belgica.svg", ligas: ["BEL"] },
+  { n: "Turquia", sigla: "TUR", cor: "#c8102e", bandeira: "turquia.svg", ligas: ["TUR"] },
+  { n: "Escócia", sigla: "SCO", cor: "#005eb8", bandeira: "escocia.svg", ligas: ["SCO"] },
+  { n: "Áustria", sigla: "AUT", cor: "#9b1b30", bandeira: "austria.svg", ligas: ["AUT"] },
+  { n: "Suíça", sigla: "SUI", cor: "#d52b1e", bandeira: "suica.svg", ligas: ["SUI"] },
+  { n: "Grécia", sigla: "GRE", cor: "#0d5eaf", bandeira: "grecia.svg", ligas: ["GRE"] },
+  { n: "Dinamarca", sigla: "DEN", cor: "#a6192e", bandeira: "dinamarca.svg", ligas: ["DEN"] },
+  { n: "Noruega", sigla: "NOR", cor: "#00205b", bandeira: "noruega.svg", ligas: ["NOR"] },
   { n: "Argentina", sigla: "ARG", cor: "#3a83c4", bandeira: "argentina.svg", ligas: ["ARG"] },
-  { n: "Arábia Saudita", sigla: "SAU", cor: "#0b6b3a", bandeira: "arabia-saudita.svg", ligas: ["SAU"] },
+  { n: "México", sigla: "MEX", cor: "#006847", bandeira: "mexico.svg", ligas: ["MEX"] },
   { n: "Estados Unidos", sigla: "USA", cor: "#2b2f6b", bandeira: "estados-unidos.svg", ligas: ["USA"] },
+  { n: "Arábia Saudita", sigla: "SAU", cor: "#0b6b3a", bandeira: "arabia-saudita.svg", ligas: ["SAU"] },
 ];
 
 export const FILTROS_PADRAO ={ lg: "", club: "", age: 99, sort: "vd", fit: false, free: false };

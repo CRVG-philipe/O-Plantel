@@ -10,7 +10,7 @@ import { PAISES } from "../logica/constantes.js";
 import { corDeFundo } from "../logica/formato.js";
 import { dinheiro, calcularDinheiro } from "../logica/dinheiro.js";
 import { saidas } from "../logica/elenco.js";
-import { Escudo } from "./Imagens.jsx";
+import { Escudo, LogoLiga } from "./Imagens.jsx";
 import SeletorMoeda from "./SeletorMoeda.jsx";
 import Rodape from "./Rodape.jsx";
 
@@ -108,14 +108,23 @@ function TelaInicio({ app, cor }) {
             {planos.map((p) => {
               const c = D.CL[p.club];
               return (
-                <button key={p.club} className="esc-card ini-plano" onClick={() => app.abrirClube(p.club)}>
-                  <span className="ini-badge"><Escudo k={p.club} z={28} /></span>
-                  <span className="ini-plano-txt">
-                    <b>{c.n} {D.LG[c.lg].plan}</b>
-                    <span>+{p.ins.length} chegam · −{saidas(p).length} saem · caixa {dinheiro(calcularDinheiro(p).caixa)}</span>
-                  </span>
-                  <span aria-hidden="true">›</span>
-                </button>
+                // Cartão (abre o plano) e, ao lado, a lixeira (pede confirmação antes de excluir)
+                <div key={p.club} className="ini-plano-linha">
+                  <button className="esc-card ini-plano" onClick={() => app.abrirClube(p.club)}>
+                    <span className="ini-badge"><Escudo k={p.club} z={28} /></span>
+                    <span className="ini-plano-txt">
+                      <b>{c.n} {D.LG[c.lg].plan}</b>
+                      <span>+{p.ins.length} chegam · −{saidas(p).length} saem · <span className="sem-quebra">caixa {dinheiro(calcularDinheiro(p).caixa)}</span></span>
+                    </span>
+                    <span aria-hidden="true">›</span>
+                  </button>
+                  <button className="esc-round ini-excluir" aria-label={`Excluir plano do ${c.n}`} title="Excluir plano"
+                    onClick={() => app.abrirPainel("excluirPlano", { k: p.club })}>
+                    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3" />
+                    </svg>
+                  </button>
+                </div>
               );
             })}
           </div>
@@ -129,8 +138,10 @@ function TelaInicio({ app, cor }) {
 }
 
 // ---------- Etapa: país (grade de cartões) ----------
+// Ligas do país em ordem de divisão (1ª, 2ª)
+const ligasEmOrdem = (P) => [...P.ligas].sort((a, b) => D.LG[a].div - D.LG[b].div);
 // "Brasileirão Série A · Brasileirão Série B" fica "Série A · Série B" no cartão
-const ligasDoPais = (P) => P.ligas.map((k) => (P.ligas.length > 1 ? D.LG[k].n.replace(/^Brasileirão /, "") : D.LG[k].n)).join(" · ");
+const ligasDoPais = (P) => ligasEmOrdem(P).map((k) => (P.ligas.length > 1 ? D.LG[k].n.replace(/^Brasileirão /, "") : D.LG[k].n)).join(" · ");
 
 function EtapaPais({ app }) {
   return (
@@ -156,8 +167,9 @@ function EtapaDivisao({ app }) {
     <>
       <p className="esc-rotulo">{P.n} · escolha a divisão</p>
       <div className="esc-divisoes">
-        {P.ligas.map((k) => (
+        {ligasEmOrdem(P).map((k) => (
           <button key={k} className="esc-divisao" onClick={() => app.escolherDivisao(k)}>
+            <LogoLiga k={k} />
             <span><b>{D.LG[k].n}</b><small>{D.CLUBS.filter((c) => c.lg === k).length} clubes</small></span>
             <span aria-hidden="true">›</span>
           </button>

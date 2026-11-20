@@ -64,7 +64,7 @@ test("tela inicial: título, números, linhas de campo e cotação no rodapé", 
   const comValor = DATA.clubs.flatMap((c) => c.p).filter((p) => p[5] > 0).length;
   const numeros = [...document.querySelectorAll(".ini-numeros .esc-card")].map((c) => c.textContent);
   expect(numeros).toEqual([`${DATA.clubs.length}clubes em ${DATA.leagues.length} ligas`, `${comValor.toLocaleString("pt-BR")}jogadores com valor`]);
-  expect(numeros[0]).toBe("214clubes em 10 ligas");
+  expect(numeros[0]).toBe("484clubes em 26 ligas");
   expect(screen.queryByText("Seus planos")).toBeNull();          // ninguém tem plano ainda
   expect(fundo()).toBe(rgb("#0f3d2b"));
   expect(document.querySelectorAll("svg.campo rect, svg.campo line, svg.campo circle").length).toBe(5);
@@ -81,15 +81,18 @@ test("escolha em etapas: grade de países, divisão, clube e o botão voltar", a
   render(<App />);
   clique(await screen.findByRole("button", { name: "Planejar um clube" }));
 
-  // País: grade com os 9 países, bandeira, nome e ligas
+  // País: grade com os 20 países, bandeira, nome e ligas
   expect(screen.getByRole("heading", { name: "Escolha o país" })).toBeTruthy();
   expect(passoTxt()).toBe("1 de 3");
   expect(fundo()).toBe(rgb("#1f2a24"));
   const cartoes = [...document.querySelectorAll(".esc-pais")];
-  expect(cartoes.map((c) => c.querySelector(".esc-pais-nome").textContent)).toEqual(["Brasil", "Inglaterra", "Espanha", "Itália", "Alemanha", "França", "Argentina", "Arábia Saudita", "Estados Unidos"]);
+  expect(cartoes.map((c) => c.querySelector(".esc-pais-nome").textContent)).toEqual(["Brasil", "Inglaterra", "Espanha", "Itália", "Alemanha", "França", "Portugal", "Holanda", "Bélgica", "Turquia", "Escócia", "Áustria", "Suíça", "Grécia", "Dinamarca", "Noruega", "Argentina", "México", "Estados Unidos", "Arábia Saudita"]);
   expect(cartaoPais("Brasil").querySelector(".esc-pais-ligas").textContent).toBe("Série A · Série B");
-  expect(cartaoPais("Inglaterra").querySelector(".esc-pais-ligas").textContent).toBe("Premier League");
+  expect(cartaoPais("Inglaterra").querySelector(".esc-pais-ligas").textContent).toBe("Premier League · Championship");
+  expect(cartaoPais("Áustria").querySelector(".esc-pais-ligas").textContent).toBe("Bundesliga Austríaca");
   expect(cartaoPais("Brasil").querySelector("img").getAttribute("src")).toBe("img/flags/brasil.svg");
+  // toda bandeira existe de verdade em public/img/flags/
+  cartoes.forEach((c) => expect(fs.existsSync("public/" + c.querySelector("img").getAttribute("src"))).toBe(true));
   expect(screen.queryByRole("button", { name: "Continuar" })).toBeNull(); // tocar no país já avança
   clique(botao("Voltar"));
   expect(screen.getByRole("button", { name: "Planejar um clube" })).toBeTruthy(); // voltou ao início
@@ -127,20 +130,78 @@ test("escolha em etapas: grade de países, divisão, clube e o botão voltar", a
   expect(passoTxt()).toBe("1 de 3");
 
   // País de uma liga só: pula a divisão na ida e na volta
-  clique(cartaoPais("Inglaterra"));
+  clique(cartaoPais("Portugal"));
   expect(passoTxt()).toBe("2 de 2");
-  expect(titulo()).toBe(clubesDa("ENG")[0].n);
+  expect(titulo()).toBe(clubesDa("POR")[0].n);
+  expect(document.querySelector(".esc-rotulo").textContent).toBe("Liga Portugal");
   clique(botao("Voltar"));
   expect(screen.getByRole("heading", { name: "Escolha o país" })).toBeTruthy();
+});
+
+test("divisões: logo de cada liga, em ordem (1ª antes da 2ª), nos países grandes", async () => {
+  render(<App />);
+  clique(await screen.findByRole("button", { name: "Planejar um clube" }));
+  const esperado = { Brasil: ["BRA", "BRB"], Inglaterra: ["ENG", "ENG2"], Espanha: ["ESP", "ESP2"], Itália: ["ITA", "ITA2"], Alemanha: ["GER", "GER2"], França: ["FRA", "FRA2"] };
+  for (const [pais, ligas] of Object.entries(esperado)) {
+    clique(cartaoPais(pais));
+    expect(passoTxt()).toBe("2 de 3");
+    const cards = [...document.querySelectorAll(".esc-divisao")];
+    expect(cards.map((c) => c.querySelector(".logo-liga img").getAttribute("src"))).toEqual(ligas.map((k) => `img/leagues/${k}.webp`));
+    expect(cards.map((c) => c.querySelector("b").textContent)).toEqual(ligas.map((k) => DATA.leagues.find((l) => l.k === k).n));
+    clique(botao("Voltar"));
+  }
+  // toda liga tem logo em public/img/leagues/ e campo div
+  DATA.leagues.forEach((l) => {
+    expect(fs.existsSync(`public/img/leagues/${l.k}.webp`)).toBe(true);
+    expect([1, 2]).toContain(l.div);
+  });
+  // Inglaterra → Championship → clubes da Championship, "Planejar 27/28"
+  clique(cartaoPais("Inglaterra"));
+  clique(botao(/Championship/));
+  expect(passoTxt()).toBe("3 de 3");
+  expect(titulo()).toBe(clubesDa("ENG2")[0].n);
+  expect(botao("Planejar 27/28")).toBeTruthy();
+});
+
+test("ligas novas: jogadores sem foto e sem estatísticas aparecem sem erro e podem ser contratados", async () => {
+  const c = clubesDa("NED")[0];
+  const novo = c.p.map((r, i) => ({ id: `${c.k}-${i}`, n: r[1], v: r[5], foto: r[7], st: r[8], hd: r[9] })).sort((a, b) => b.v - a.v)[0];
+  expect([novo.foto, novo.st, novo.hd]).toEqual([-1, null, 0]);   // ainda sem foto/estatísticas
+  render(<App />);
+  // Elenco de um clube holandês
+  clique(await screen.findByRole("button", { name: "Planejar um clube" }));
+  clique(cartaoPais("Holanda"));
+  clique(botao(/^Planejar /));
+  clique(noPainel().getByRole("button", { name: "Começar" }));
+  const linha = naPagina().getByText(novo.n).closest("button");
+  expect(linha.querySelector(".face.ini")).toBeTruthy();          // avatar com as iniciais
+  clique(linha);
+  expect(noPainel().getByText("Estatísticas indisponíveis para este jogador.")).toBeTruthy();
+  clique(noPainel().getByRole("button", { name: "Fechar" }));
+  // No Mercado de outro clube: aparece com "Estatísticas indisponíveis" e dá para contratar
+  clique(document.querySelector(".clubBtn"));
+  clique(noPainel().getByRole("button", { name: /Trocar de clube/ }));
+  await irParaBrasil();
+  clique(botao("Planejar 2027"));
+  clique(noPainel().getByRole("button", { name: "Começar" }));
+  clique(screen.getByRole("tab", { name: "Mercado" }));
+  fireEvent.change(screen.getByLabelText("Buscar jogador"), { target: { value: novo.n } });
+  const noMercado = naPagina().getAllByText(novo.n)[0].closest("button");
+  expect(noMercado.textContent).toContain("Estatísticas indisponíveis");
+  expect(noMercado.textContent).toContain(c.n);
+  clique(noMercado);
+  clique(noPainel().getByRole("button", { name: "Contratar" }));
+  expect(aviso()).toBe(novo.n + " contratado");
 });
 
 test("fluxo completo: clube, vender, contratar, filtros, escalação, resumo, reiniciar e voltar ao início", async () => {
   render(<App />);
   await esperarCotacao();
 
-  // 1. Início → Inglaterra → Arsenal
+  // 1. Início → Inglaterra → Premier League → Arsenal
   clique(botao("Planejar um clube"));
   clique(cartaoPais("Inglaterra"));
+  clique(botao(/Premier League/));
   for (let i = 0; i < 30 && titulo() !== "Arsenal"; i++) clique(botao("Próximo clube"));
   expect(titulo()).toBe("Arsenal");
   const arsenal = DATA.clubs.find((c) => c.k === "T42");
@@ -272,8 +333,8 @@ test("plano salvo pela versão antiga (mesma chave plantel:v2): aparece no iníc
   expect(document.querySelector("#planBar")).toBeNull();
   const nomes = [...document.querySelectorAll(".ini-plano b")].map((b) => b.textContent);
   expect(nomes).toEqual([`${c.n} 2027`, `${d.n} 27/28`]);       // o último aberto vem primeiro
-  expect(botao(new RegExp(c.n)).textContent).toContain("+0 chegam · −1 saem · caixa € 42,5 mi");
-  clique(botao(new RegExp(c.n)));
+  expect(botao(new RegExp("^" + c.n)).textContent).toContain("+0 chegam · −1 saem · caixa € 42,5 mi");
+  clique(botao(new RegExp("^" + c.n)));
   expect(document.querySelector(".clubBtn").textContent).toBe(c.n);
   expect(caixa()).toBe("€ 42,5 mi");
   expect(painel()).toBeNull();                                   // orçamento já existe: não pede de novo
@@ -281,6 +342,54 @@ test("plano salvo pela versão antiga (mesma chave plantel:v2): aparece no iníc
   expect(salvo().plans[c.k].st[c.k + "-0"]).toEqual({ s: "vende", fee: 12.5 }); // formato intacto
   clique(screen.getByRole("tab", { name: "Time" }));
   expect(screen.getByLabelText("Formação").value).toBe("3-5-2");
+});
+
+test("excluir plano no início: só apaga depois de confirmar", async () => {
+  const [a, b] = clubesDa("BRA");
+  const planoA = { club: a.k, budget: 30, st: { [a.k + "-0"]: { s: "vende", fee: 5 } }, ins: [], form: "4-3-3", xi: {}, custom: [] };
+  const planoB = { club: b.k, budget: 10, st: {}, ins: [], form: "4-4-2", xi: {}, custom: [] };
+  localStorage.setItem(CHAVE, JSON.stringify({ plans: { [a.k]: planoA, [b.k]: planoB }, last: a.k }));
+  render(<App />);
+  await screen.findByText("Seus planos");
+  const nomes = () => [...document.querySelectorAll(".ini-plano b")].map((x) => x.textContent);
+  expect(nomes()).toEqual([`${a.n} 2027`, `${b.n} 2027`]);
+
+  // Tocar na lixeira só abre a confirmação, com o resumo do plano
+  clique(botao(`Excluir plano do ${a.n}`));
+  expect(noPainel().getByText("Excluir plano?")).toBeTruthy();
+  expect(noPainel().getByText(`${a.n} 2027`)).toBeTruthy();
+  expect(painel().textContent).toContain("+0 chegam · −1 saem · caixa € 35 mi");
+  expect(salvo().plans[a.k]).toBeTruthy();
+
+  // Cancelar, Esc e tocar fora não apagam nada
+  clique(noPainel().getByRole("button", { name: "Cancelar" }));
+  expect(painel()).toBeNull();
+  clique(botao(`Excluir plano do ${a.n}`));
+  fireEvent.keyDown(document, { key: "Escape" });
+  clique(botao(`Excluir plano do ${a.n}`));
+  clique(document.querySelector(".ov"));
+  expect(Object.keys(salvo().plans).sort()).toEqual([a.k, b.k].sort());
+  expect(nomes()).toHaveLength(2);
+
+  // Confirmar apaga só esse plano (e o "último aberto" deixa de apontar para ele)
+  clique(botao(`Excluir plano do ${a.n}`));
+  clique(noPainel().getByRole("button", { name: "Excluir plano" }));
+  expect(aviso()).toBe(`Plano do ${a.n} excluído`);
+  expect(nomes()).toEqual([`${b.n} 2027`]);
+  expect(salvo()).toEqual({ plans: { [b.k]: planoB } });           // o outro plano fica intacto, no mesmo formato
+  // O clube excluído volta a mostrar "Planejar 2027" (sem plano) na escolha
+  await irParaBrasil();
+  expect(titulo()).toBe(a.n);
+  expect(botao("Planejar 2027")).toBeTruthy();
+  clique(botao("Próximo clube"));
+  expect(botao("Continuar meu plano")).toBeTruthy();
+
+  // Excluindo o último plano, a seção "Seus planos" some
+  clique(botao("Voltar")); clique(botao("Voltar")); clique(botao("Voltar"));
+  clique(botao(`Excluir plano do ${b.n}`));
+  clique(noPainel().getByRole("button", { name: "Excluir plano" }));
+  expect(screen.queryByText("Seus planos")).toBeNull();
+  expect(salvo()).toEqual({ plans: {} });
 });
 
 test("moeda: R$ e US$ só na exibição; o que é digitado vira euro ao salvar", async () => {
