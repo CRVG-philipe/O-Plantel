@@ -41,12 +41,12 @@ React 19 + Vite 6, em JavaScript (sem TypeScript).
   - `formato.js`: textos (datas, nomes curtos, iniciais).
   - `armazenamento.js`: ler e salvar no localStorage.
 - `public/data.json`: `{leagues, clubs, updated}`.
-  - Cada clube: `{k, lg, n, coach, c, c2, ci, hd, p:[...]}`. `hd` = ID do time no Sofascore se `public/img/teams/<hd>.webp` existe, senão 0.
+  - Cada clube: `{k, lg, n, coach, c, c2, hd, p:[...]}`. `hd` = ID do time no Sofascore se `public/img/teams/<hd>.webp` existe, senão 0 (aí o site mostra "+" no lugar do escudo).
   - Cada jogador: `[número, nome, posição, nascimento, fim_contrato "AAAA-MM", valor_em_€mi, nacionalidade, índice_foto, stats, hd]`. `hd` = ID do jogador no Sofascore se `public/img/players/<hd>.webp` existe, senão 0.
   - `stats` = `[jogos, gols, assistências, nota]` (temporada atual, todas as competições de clube) ou `null`.
   - Posições: GOL ZAG LD LE VOL MC MEI MD ME PD PE SA CA.
 - `public/img/p_<LIGA>.webp`: sprite de fotos (32 colunas, células de 48px). `índice_foto` aponta para a célula; -1 = sem foto.
-- `public/img/crests.webp`: sprite de escudos (16 colunas, 64px). O índice é o campo `ci` do clube.
+- `public/img/teams/<id>.webp`: escudos em alta (214, 160×160 px, fundo transparente), nomeados pelo ID do Sofascore. Não há mais sprite de escudos.
 - `vercel.json`: a Vercel roda `npm run build` e publica `dist/`. Cada `git push` na `main` publica uma versão nova.
 - `dados-brutos/`: dados coletados em 20/11/2026 e scripts Python que geram o data.json.
   - `tm_all.json` + `tm_extra.json`: Transfermarkt.
@@ -66,9 +66,9 @@ React 19 + Vite 6, em JavaScript (sem TypeScript).
 - Os planos ficam salvos no localStorage (chave `plantel:v2`, formato `{plans:{<clube>: plano}, last}`). **Não mudar os nomes dos campos do plano** (`club, budget, st, ins, form, xi, custom`), senão quem já tem planos salvos os perde.
 
 ## Pendências (em ordem sugerida)
-1. **Fotos e escudos em alta resolução (em andamento).** O código está pronto: `dados-brutos/baixar_imagens.py` baixa para `public/img/players/` e `public/img/teams/` (precisa de `pip install pillow`), o `build_final.py` marca `hd` e o site usa `<img loading="lazy">` quando `hd` existe, ou o sprite quando não existe.
+1. **Fotos em alta resolução (em andamento).** Os escudos já estão prontos (20/11/2026). Faltam as fotos dos jogadores: `dados-brutos/baixar_imagens.py --so-jogadores` baixa para `public/img/players/` (precisa de `pip install pillow`; rodar na raiz do projeto), o `build_final.py` marca `hd` e o `Foto` usa `<img loading="lazy">` quando `hd` existe, ou o sprite quando não existe.
    - **Bloqueio:** em 20/11/2026 o `api.sofascore.app` respondeu 403 a pedidos simples. Não contornar o bloqueio imitando um navegador; buscar uma fonte permitida.
-   - Quando todas as imagens existirem, apagar os sprites (`p_*.webp`, `crests.webp`) e o código de sprite em `Foto`/`Escudo` (`src/componentes/Imagens.jsx`).
+   - Quando todas as fotos existirem, apagar os sprites `p_*.webp` e o código de sprite em `Foto` (`src/componentes/Imagens.jsx`).
 2. Completar as estatísticas de ~960 jogadores (ARG e SAU) que faltam em `stats2.json`.
 3. Script de atualização periódica dos dados (Transfermarkt e Sofascore).
 4. ~~Migrar para Vite~~ Feito em 20/11/2026 (React + Vite; a versão antiga sem framework está na tag git `antes-do-react`). Falta conferir o deploy na Vercel.

@@ -50,10 +50,9 @@ main.col{padding:18px 16px 80px}
 .row.gone .nm{color:var(--mute)}
 .face{display:inline-block;border-radius:50%;background-color:var(--sf2);background-repeat:no-repeat;flex:none;overflow:hidden}
 .face.ini{display:inline-grid;place-items:center;font-weight:700;color:var(--mute)}
-.crest{display:inline-block;border-radius:10px;background-color:#fff;background-repeat:no-repeat;flex:none}
+/* escudos: imagens com fundo transparente */
+.crest{display:inline-block;flex:none;object-fit:contain}
 img.face{object-fit:cover;object-position:top}
-/* escudos em alta: fundo transparente, sem o quadrado branco do sprite */
-img.crest{object-fit:contain;background:none;border-radius:0}
 .stt{background:var(--sf2);border-radius:14px;padding:12px;margin-bottom:16px}
 .sth{display:flex;justify-content:space-between;font-size:12.5px;font-weight:600;color:var(--mute);margin-bottom:8px}
 .stg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
@@ -65,8 +64,7 @@ img.crest{object-fit:contain;background:none;border-radius:0}
 .car{display:grid;grid-template-columns:48px minmax(0,1fr) 48px;align-items:center;gap:8px;margin:8px 0 18px}
 .arr{width:48px;height:48px;border-radius:50%;border:0;background:var(--sf);box-shadow:0 0 0 1px var(--line);font-size:24px;line-height:1;color:var(--ink)}
 .stage{background:var(--sf);border-radius:22px;box-shadow:0 0 0 1px var(--line);padding:26px 18px 20px;text-align:center;touch-action:pan-y;user-select:none}
-.stage .crest{margin:0 auto 14px;box-shadow:0 6px 20px rgba(0,0,0,.08)}
-.stage img.crest{box-shadow:none;filter:drop-shadow(0 6px 14px rgba(0,0,0,.12))}
+.stage .crest{margin:0 auto 14px;filter:drop-shadow(0 6px 14px rgba(0,0,0,.12))}
 .stage h2{font-size:26px}
 .stage .who{color:var(--mute);font-size:14px;margin:4px 0 14px}
 .stage .nums{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-bottom:16px}
