@@ -175,6 +175,33 @@ test("abre direto num plano salvo pela versão antiga do site (mesma chave plant
   expect(screen.getByLabelText("Formação").value).toBe("3-5-2");
 });
 
+test("escudos em alta resolução em todos os lugares (sem sprite)", async () => {
+  const idDe = (k) => DATA.clubs.find((c) => c.k === k).hd;
+  // Confere todos os escudos visíveis agora: <img> do arquivo certo, nenhum sprite
+  const conferir = (onde, minimo) => {
+    const els = [...document.querySelectorAll(onde + " .crest")];
+    expect(els.length).toBeGreaterThanOrEqual(minimo);
+    for (const el of els) {
+      expect(el.tagName).toBe("IMG");
+      const clube = DATA.clubs.find((c) => c.n === el.alt);
+      expect(el.getAttribute("src")).toBe(`img/teams/${idDe(clube.k)}.webp`);
+    }
+    expect(document.querySelector('[style*="crests.webp"]')).toBeNull();
+  };
+  expect(DATA.clubs.every((c) => c.hd > 0)).toBe(true); // os 214 clubes marcados
+
+  render(<App />);
+  await screen.findByRole("button", { name: /Planejar 2027/ });
+  conferir("#stage", 1);                                             // carrossel
+  conferir("#strip", clubesDa("BRA").length);                        // grade
+  clique(screen.getByRole("button", { name: /Planejar 2027/ }));
+  conferir(".ov.on .sheet", 1);                                      // painel do orçamento
+  clique(noPainel().getByRole("button", { name: "Começar" }));
+  conferir(".top", 1);                                               // topo
+  clique(document.querySelector(".clubBtn"));
+  conferir(".ov.on .sheet", 1);                                      // painel do clube
+});
+
 test("Esc e clique fora fecham o painel", async () => {
   render(<App />);
   clique(await screen.findByRole("button", { name: /Planejar 2027/ }));

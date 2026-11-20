@@ -21,7 +21,7 @@ export function Escudo({ k, z = 32 }) {
   if (!c) return <span className="face ini" style={{ width: z, height: z }}>+</span>;
   const raio = Math.round(z * 0.22);
   if (c.hd) {
-    return <img className="crest" src={`img/teams/${c.hd}.webp`} alt={c.n} loading="lazy" decoding="async" width={z} height={z} style={{ width: z, height: z, borderRadius: raio, padding: Math.round(z * 0.08) }} />;
+    return <img className="crest" src={`img/teams/${c.hd}.webp`} alt={c.n} loading="lazy" decoding="async" width={z} height={z} style={{ width: z, height: z }} />;
   }
   // Sprite de escudos: 16 por linha
   return <span className="crest" role="img" aria-label={c.n} style={{ width: z, height: z, borderRadius: raio, backgroundImage: "url(img/crests.webp)", backgroundSize: `${16 * z}px auto`, backgroundPosition: `-${(c.ci % 16) * z}px -${Math.floor(c.ci / 16) * z}px` }} />;
