@@ -25,7 +25,9 @@ export default function Topo({ app }) {
   }, []);
 
   return (
-    <div className="top" ref={ref} style={c && c.hd ? { "--escudo": `url(img/teams/${c.hd}.webp)` } : undefined}>
+    // Endereço completo: dentro de uma variável do CSS, um endereço relativo seria lido a partir
+    // da pasta do arquivo CSS (/assets/) no site publicado, e a imagem não seria achada.
+    <div className="top" ref={ref} style={c && c.hd ? { "--escudo": `url("${new URL(`img/teams/${c.hd}.webp`, document.baseURI).href}")` } : undefined}>
       <div className="col">
         <div className="bar">
           <div className="logo"><i></i>Plantel</div>
