@@ -14,15 +14,40 @@ Foi inspirado no reconstruindo.thefenomeno.com, mas **não deve copiá-lo**. O f
 ## Ligas (214 clubes, ~6.265 jogadores)
 BRA (Brasileirão A), BRB (Série B), ENG, ESP, ITA, GER, FRA, ARG, SAU (Saudita), USA (MLS).
 
+## Comandos (na raiz do projeto)
+- `npm install`: instala as dependências (só na primeira vez ou quando o package.json mudar).
+- `npm run dev`: roda o site em http://localhost:5173 e atualiza ao salvar.
+- `npm test`: testes automáticos (`testes/app.test.jsx`, cliques simulados com vitest + jsdom). Rodar depois de qualquer mudança.
+- `npm run build`: gera a versão final em `dist/` (não vai para o git). `npm run preview` serve o `dist/` para conferir.
+
 ## Estrutura
-- `site/index.html`: o app inteiro (HTML, CSS e JS sem framework). Lê `data.json` com fetch, por isso precisa rodar num servidor local (veja abaixo). Abrir o arquivo direto não funciona.
-- `site/data.json`: `{leagues, clubs, updated}`.
-  - Cada clube: `{k, lg, n, coach, c, c2, ci, hd, p:[...]}`. `hd` = ID do time no Sofascore se `site/img/teams/<hd>.webp` existe, senão 0.
-  - Cada jogador: `[número, nome, posição, nascimento, fim_contrato "AAAA-MM", valor_em_€mi, nacionalidade, índice_foto, stats, hd]`. `hd` = ID do jogador no Sofascore se `site/img/players/<hd>.webp` existe, senão 0.
+React 19 + Vite 6, em JavaScript (sem TypeScript).
+- `index.html`: só a casca (fonte Inter e `<div id="root">`).
+- `src/main.jsx`: liga o React na página e importa `src/estilo.css` (o CSS inteiro, num arquivo só).
+- `src/App.jsx`: carrega o `data.json`. Enquanto carrega ou se der erro, mostra a casca.
+- `src/Plantel.jsx`: estado e ações do app (plano aberto, aba, filtros, painel, aviso). Monta um objeto `app` com dados e ações e passa para todos os componentes.
+  - Mudanças no plano sempre passam por `app.mudar(fn)`: ele copia o plano, aplica `fn`, chama `completarTime` e salva.
+  - Painéis abrem com `app.abrirPainel(tipo, args)`. Os tipos estão em `PAINEIS`.
+- `src/componentes/`: `EscolhaClube`, `Topo` (resumo e abas), `Elenco`, `Mercado`, `Time`, `Resumo`, `Painel` (o painel que sobe de baixo), `Imagens` (`Foto` e `Escudo`) e `Rodape`.
+  - `paineis/`: o conteúdo de cada painel (`PainelJogador`, `PainelCompra`, `PainelFiltros`, `PainelCriar`, `PainelClube`, `PainelOrcamento`, `PainelPosicao`) e `comum.jsx`.
+  - `Congelado` (em `Painel.jsx`) congela o conteúdo enquanto o painel fecha, para ele sumir sem piscar.
+- `src/logica/`: funções sem tela.
+  - `dados.js`: carrega e indexa os dados no objeto `D`.
+  - `constantes.js`: posições, formações e compatibilidade.
+  - `dinheiro.js`: `eur` e caixa.
+  - `elenco.js`: plano, elenco, saídas, alertas e texto do resumo.
+  - `escalacao.js`: escalar, completar e encaixar.
+  - `mercado.js`: busca e filtros.
+  - `formato.js`: textos (datas, nomes curtos, iniciais).
+  - `armazenamento.js`: ler e salvar no localStorage.
+- `public/data.json`: `{leagues, clubs, updated}`.
+  - Cada clube: `{k, lg, n, coach, c, c2, ci, hd, p:[...]}`. `hd` = ID do time no Sofascore se `public/img/teams/<hd>.webp` existe, senão 0.
+  - Cada jogador: `[número, nome, posição, nascimento, fim_contrato "AAAA-MM", valor_em_€mi, nacionalidade, índice_foto, stats, hd]`. `hd` = ID do jogador no Sofascore se `public/img/players/<hd>.webp` existe, senão 0.
   - `stats` = `[jogos, gols, assistências, nota]` (temporada atual, todas as competições de clube) ou `null`.
   - Posições: GOL ZAG LD LE VOL MC MEI MD ME PD PE SA CA.
-- `site/img/p_<LIGA>.webp`: sprite de fotos (32 colunas, células de 48px). `índice_foto` aponta para a célula; -1 = sem foto.
-- `site/img/crests.webp`: sprite de escudos (16 colunas, 64px). O índice é o campo `ci` do clube.
+- `public/img/p_<LIGA>.webp`: sprite de fotos (32 colunas, células de 48px). `índice_foto` aponta para a célula; -1 = sem foto.
+- `public/img/crests.webp`: sprite de escudos (16 colunas, 64px). O índice é o campo `ci` do clube.
+- `vercel.json`: a Vercel roda `npm run build` e publica `dist/`. Cada `git push` na `main` publica uma versão nova.
 - `dados-brutos/`: dados coletados em 20/11/2026 e scripts Python que geram o data.json.
   - `tm_all.json` + `tm_extra.json`: Transfermarkt.
   - `sofa_all.json`: Sofascore.
@@ -38,15 +63,15 @@ BRA (Brasileirão A), BRB (Série B), ENG, ESP, ITA, GER, FRA, ARG, SAU (Saudita
 - Cores neutras, com a cor do clube como único acento. Fonte Inter. Tema claro e escuro.
 - Escolha de clube: botões de liga, carrossel do clube e grade de escudos.
 - Temporada planejada: "2027" nas ligas de calendário anual (BRA, BRB, ARG, USA) e "27/28" nas demais.
-- Os planos ficam salvos no localStorage (chave `plantel:v2`).
+- Os planos ficam salvos no localStorage (chave `plantel:v2`, formato `{plans:{<clube>: plano}, last}`). **Não mudar os nomes dos campos do plano** (`club, budget, st, ins, form, xi, custom`), senão quem já tem planos salvos os perde.
 
 ## Pendências (em ordem sugerida)
-1. **Fotos e escudos em alta resolução (em andamento).** O código está pronto: `dados-brutos/baixar_imagens.py` baixa para `site/img/players/` e `site/img/teams/` (precisa de `pip install pillow`), o `build_final.py` marca `hd` e o site usa `<img loading="lazy">` quando `hd` existe, ou o sprite quando não existe.
+1. **Fotos e escudos em alta resolução (em andamento).** O código está pronto: `dados-brutos/baixar_imagens.py` baixa para `public/img/players/` e `public/img/teams/` (precisa de `pip install pillow`), o `build_final.py` marca `hd` e o site usa `<img loading="lazy">` quando `hd` existe, ou o sprite quando não existe.
    - **Bloqueio:** em 20/11/2026 o `api.sofascore.app` respondeu 403 a pedidos simples. Não contornar o bloqueio imitando um navegador; buscar uma fonte permitida.
-   - Quando todas as imagens existirem, apagar os sprites (`p_*.webp`, `crests.webp`) e o código de sprite em `face()`/`crest()`.
+   - Quando todas as imagens existirem, apagar os sprites (`p_*.webp`, `crests.webp`) e o código de sprite em `Foto`/`Escudo` (`src/componentes/Imagens.jsx`).
 2. Completar as estatísticas de ~960 jogadores (ARG e SAU) que faltam em `stats2.json`.
 3. Script de atualização periódica dos dados (Transfermarkt e Sofascore).
-4. Migrar para um projeto com Vite e publicar na Vercel ou Netlify.
+4. ~~Migrar para Vite~~ Feito em 20/11/2026 (React + Vite; a versão antiga sem framework está na tag git `antes-do-react`). Falta conferir o deploy na Vercel.
 5. Simulação da temporada, link compartilhável do plano e modo "desafio diário" (para depois).
 
 ## Cuidados
