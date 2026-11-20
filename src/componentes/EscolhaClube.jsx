@@ -4,10 +4,10 @@
 //   divisao → só se o país tiver mais de uma liga (hoje, só o Brasil)
 //   clube   → escudo grande, vizinhos, valor e jogadores, "Planejar 2027"/"Planejar 27/28"
 // Todas têm fundo colorido com linhas de campo sutis; o conteúdo fica num bloco de até 480px.
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { D } from "../logica/dados.js";
-import { PAISES } from "../logica/constantes.js";
-import { corDeFundo } from "../logica/formato.js";
+import { CONTINENTES, PAISES } from "../logica/constantes.js";
+import { corDeFundo, norm } from "../logica/formato.js";
 import { dinheiro, calcularDinheiro } from "../logica/dinheiro.js";
 import { saidas } from "../logica/elenco.js";
 import { Escudo, LogoLiga } from "./Imagens.jsx";
@@ -143,19 +143,38 @@ const ligasEmOrdem = (P) => [...P.ligas].sort((a, b) => D.LG[a].div - D.LG[b].di
 // "Brasileirão Série A · Brasileirão Série B" fica "Série A · Série B" no cartão
 const ligasDoPais = (P) => ligasEmOrdem(P).map((k) => (P.ligas.length > 1 ? D.LG[k].n.replace(/^Brasileirão /, "") : D.LG[k].n)).join(" · ");
 
+// Grade de países agrupada por continente, com busca por país ou liga no topo
 function EtapaPais({ app }) {
+  const [busca, setBusca] = useState("");
+  const q = norm(busca.trim());
+  const visiveis = PAISES.map((P, i) => ({ P, i }))
+    .filter(({ P }) => !q || norm(P.n).includes(q) || P.ligas.some((k) => norm(D.LG[k].n).includes(q)));
   return (
     <>
       <h1 className="esc-titulo">Escolha o país</h1>
-      <div className="esc-paises">
-        {PAISES.map((P, i) => (
-          <button key={P.sigla} className="esc-pais" onClick={() => app.escolherPais(i)}>
-            <span className="esc-flag" style={{ backgroundColor: P.cor }}><img src={`img/flags/${P.bandeira}`} alt="" /></span>
-            <span className="esc-pais-nome">{P.n}</span>
-            <span className="esc-pais-ligas">{ligasDoPais(P)}</span>
-          </button>
-        ))}
-      </div>
+      <label className="esc-busca">
+        <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+        <input type="search" placeholder="Buscar país ou liga" aria-label="Buscar país" value={busca} onChange={(e) => setBusca(e.target.value)} />
+      </label>
+      {CONTINENTES.map((ct) => {
+        const doContinente = visiveis.filter(({ P }) => P.continente === ct);
+        if (!doContinente.length) return null;
+        return (
+          <section key={ct} className="esc-grupo" aria-label={ct}>
+            <h2 className="esc-continente">{ct}</h2>
+            <div className="esc-paises">
+              {doContinente.map(({ P, i }) => (
+                <button key={P.sigla} className="esc-pais" onClick={() => app.escolherPais(i)}>
+                  <span className="esc-flag" style={{ backgroundColor: P.cor }}><img src={`img/flags/${P.bandeira}`} alt="" loading="lazy" /></span>
+                  <span className="esc-pais-nome">{P.n}</span>
+                  <span className="esc-pais-ligas">{ligasDoPais(P)}</span>
+                </button>
+              ))}
+            </div>
+          </section>
+        );
+      })}
+      {!visiveis.length && <p className="esc-rotulo">Nenhum país ou liga encontrado.</p>}
     </>
   );
 }

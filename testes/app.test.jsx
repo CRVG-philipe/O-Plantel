@@ -65,7 +65,7 @@ test("tela inicial: título, números, linhas de campo e cotação no rodapé", 
   const comValor = DATA.clubs.flatMap((c) => c.p).filter((p) => p[5] > 0).length;
   const numeros = [...document.querySelectorAll(".ini-numeros .esc-card")].map((c) => c.textContent);
   expect(numeros).toEqual([`${DATA.clubs.length}clubes em ${DATA.leagues.length} ligas`, `${comValor.toLocaleString("pt-BR")}jogadores com valor`]);
-  expect(numeros[0]).toBe("484clubes em 26 ligas");
+  expect(numeros[0]).toBe("798clubes em 46 ligas");
   expect(screen.queryByText("Seus planos")).toBeNull();          // ninguém tem plano ainda
   expect(fundo()).toBe(rgb("#0f3d2b"));
   expect(document.querySelectorAll("svg.campo rect, svg.campo line, svg.campo circle").length).toBe(5);
@@ -87,8 +87,11 @@ test("escolha em etapas: grade de países, divisão, clube e o botão voltar", a
   expect(passoTxt()).toBe("1 de 3");
   expect(fundo()).toBe(rgb("#1f2a24"));
   const cartoes = [...document.querySelectorAll(".esc-pais")];
-  expect(cartoes.map((c) => c.querySelector(".esc-pais-nome").textContent)).toEqual(["Brasil", "Inglaterra", "Espanha", "Itália", "Alemanha", "França", "Portugal", "Holanda", "Bélgica", "Turquia", "Escócia", "Áustria", "Suíça", "Grécia", "Dinamarca", "Noruega", "Argentina", "México", "Estados Unidos", "Arábia Saudita"]);
-  expect(cartaoPais("Brasil").querySelector(".esc-pais-ligas").textContent).toBe("Série A · Série B");
+  expect(cartoes.map((c) => c.querySelector(".esc-pais-nome").textContent)).toEqual(["Brasil", "Argentina", "Colômbia", "Uruguai", "Chile", "Paraguai", "Equador", "Peru", "México", "Estados Unidos", "Inglaterra", "Espanha", "Itália", "Alemanha", "França", "Portugal", "Holanda", "Bélgica", "Turquia", "Escócia", "Áustria", "Suíça", "Grécia", "Dinamarca", "Noruega", "Suécia", "Polônia", "Tchéquia", "Croácia", "Sérvia", "Ucrânia", "Romênia", "Rússia", "Arábia Saudita", "Japão", "Coreia do Sul", "China", "Catar", "Emirados Árabes"]);
+  // agrupados por continente, com título pequeno em cada grupo
+  expect([...document.querySelectorAll(".esc-continente")].map((h) => h.textContent)).toEqual(["América do Sul", "América do Norte", "Europa", "Ásia e Oriente Médio"]);
+  expect([...document.querySelectorAll(".esc-grupo")].map((g) => g.querySelectorAll(".esc-pais").length)).toEqual([8, 2, 23, 6]);
+  expect(cartaoPais("Brasil").querySelector(".esc-pais-ligas").textContent).toBe("Série A · Série B · Série C");
   expect(cartaoPais("Inglaterra").querySelector(".esc-pais-ligas").textContent).toBe("Premier League · Championship");
   expect(cartaoPais("Áustria").querySelector(".esc-pais-ligas").textContent).toBe("Bundesliga Austríaca");
   expect(cartaoPais("Brasil").querySelector("img").getAttribute("src")).toBe("img/flags/brasil.svg");
@@ -142,7 +145,7 @@ test("escolha em etapas: grade de países, divisão, clube e o botão voltar", a
 test("divisões: logo de cada liga, em ordem (1ª antes da 2ª), nos países grandes", async () => {
   render(<App />);
   clique(await screen.findByRole("button", { name: "Planejar um clube" }));
-  const esperado = { Brasil: ["BRA", "BRB"], Inglaterra: ["ENG", "ENG2"], Espanha: ["ESP", "ESP2"], Itália: ["ITA", "ITA2"], Alemanha: ["GER", "GER2"], França: ["FRA", "FRA2"] };
+  const esperado = { Brasil: ["BRA", "BRB", "BRC"], Inglaterra: ["ENG", "ENG2"], Espanha: ["ESP", "ESP2"], Itália: ["ITA", "ITA2"], Alemanha: ["GER", "GER2"], França: ["FRA", "FRA2"] };
   for (const [pais, ligas] of Object.entries(esperado)) {
     clique(cartaoPais(pais));
     expect(passoTxt()).toBe("2 de 3");
@@ -154,7 +157,7 @@ test("divisões: logo de cada liga, em ordem (1ª antes da 2ª), nos países gra
   // toda liga tem logo em public/img/leagues/ e campo div
   DATA.leagues.forEach((l) => {
     expect(fs.existsSync(`public/img/leagues/${l.k}.webp`)).toBe(true);
-    expect([1, 2]).toContain(l.div);
+    expect([1, 2, 3]).toContain(l.div); // 3 = Série C
   });
   // Inglaterra → Championship → clubes da Championship, "Planejar 27/28"
   clique(cartaoPais("Inglaterra"));
@@ -549,6 +552,53 @@ test("tema: o botão alterna entre claro e escuro e guarda a escolha", async () 
   clique(botao("Continuar meu plano"));
   expect(botao("Mudar para tema claro")).toBeTruthy();
   expect(salvo().plans).toBeTruthy(); // o tema não mexe nos planos
+});
+
+test("busca de país: filtra por país ou liga e esconde continentes vazios", async () => {
+  render(<App />);
+  clique(await screen.findByRole("button", { name: "Planejar um clube" }));
+  const busca = screen.getByLabelText("Buscar país");
+  const nomes = () => [...document.querySelectorAll(".esc-pais-nome")].map((n) => n.textContent);
+  fireEvent.change(busca, { target: { value: "japao" } });                 // sem acento também acha
+  expect(nomes()).toEqual(["Japão"]);
+  expect([...document.querySelectorAll(".esc-continente")].map((h) => h.textContent)).toEqual(["Ásia e Oriente Médio"]);
+  fireEvent.change(busca, { target: { value: "Premier Liga" } });          // pelo nome da liga
+  expect(nomes()).toEqual(["Ucrânia", "Rússia"]);
+  fireEvent.change(busca, { target: { value: "zzz" } });
+  expect(screen.getByText("Nenhum país ou liga encontrado.")).toBeTruthy();
+  fireEvent.change(busca, { target: { value: "" } });
+  expect(nomes()).toHaveLength(39);
+  // Brasil com 3 divisões; a Série C abre a etapa do clube ("3 de 3")
+  clique(cartaoPais("Brasil"));
+  expect([...document.querySelectorAll(".esc-divisao b")].map((b) => b.textContent)).toEqual(["Brasileirão Série A", "Brasileirão Série B", "Brasileirão Série C"]);
+  clique(botao(/Brasileirão Série C/));
+  expect(passoTxt()).toBe("3 de 3");
+  expect(titulo()).toBe(clubesDa("BRC")[0].n);
+});
+
+test("jogador sem valor: aparece '—' e a compra custa no mínimo € 0,1 mi", async () => {
+  // Um jogador da Série C sem valor no Transfermarkt
+  const c = clubesDa("BRC").find((x) => x.p.some((r) => !r[5]));
+  const i = c.p.findIndex((r) => !r[5]);
+  const semValor = { id: `${c.k}-${i}`, n: c.p[i][1] };
+  render(<App />);
+  await irParaBrasil();                                                     // planeja um clube da Série A
+  clique(botao("Planejar 2027"));
+  clique(noPainel().getByRole("button", { name: "Começar" }));
+  clique(screen.getByRole("tab", { name: "Mercado" }));
+  fireEvent.change(screen.getByLabelText("Buscar jogador"), { target: { value: semValor.n } });
+  const linha = [...document.querySelectorAll("#mList .row")].find((l) => l.querySelector(".nm").textContent === semValor.n);
+  expect(linha.querySelector(".vl .v").textContent).toBe("—");              // e não "€ 0"
+  expect(linha.querySelector(".vl .s").textContent).toBe("cabe no caixa");
+  clique(linha);
+  expect(painel().querySelector(".facts").textContent).toContain("—valor");
+  expect(noPainel().getByText(/a compra custa no mínimo € 100 mil/)).toBeTruthy();
+  const campo = noPainel().getByLabelText(/Valor da compra/);
+  expect(campo.value).toBe("0.1");                                          // preço sugerido = mínimo
+  fireEvent.change(campo, { target: { value: "0" } });                     // tentar comprar de graça...
+  clique(noPainel().getByRole("button", { name: "Contratar" }));
+  expect(salvo().plans[clubesDa("BRA")[0].k].ins).toEqual([{ id: semValor.id, type: "compra", fee: 0.1 }]); // ...cobra o mínimo
+  expect(caixa()).toBe("€ 19,9 mi");
 });
 
 test("Esc e clique fora fecham o painel", async () => {

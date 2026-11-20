@@ -10,15 +10,30 @@ order=['BRA','BRB','ENG','ESP','ITA','GER','FRA','ARG','SAU','USA']
 # div = divisão da liga no país (1 = primeira, 2 = segunda)
 leagues=[{'k':k,'n':LGN[k][0],'pais':LGN[k][1],'nat':LGN[k][2],'season':pre['leagues'][k]['season'],'div':2 if k=='BRB' else 1} for k in order]
 
-# ---- 16 ligas novas (coletadas em 20/11/2026; já vêm no formato final) ----
-NOVAS=ler('dados-brutos/novas_ligas.json')
+# ---- Ligas novas (já vêm no formato final) ----
+#   rodada 1 (20/11/2026): 16 ligas, dados-brutos/novas_ligas.json
+#   rodada 2 (20/11/2026): 20 ligas, dados-brutos/novas_ligas_2.json
+NOVAS_ARQS=['dados-brutos/novas_ligas.json','dados-brutos/novas_ligas_2.json']
+NOVAS={'leagues':[],'clubs':[]}
+for arq in NOVAS_ARQS:
+    x=ler(arq);NOVAS['leagues']+=x['leagues'];NOVAS['clubs']+=x['clubs']
 # Correções:
-NOME_LIGA={'AUT':'Bundesliga Austríaca','SUI':'Super League Suíça','GRE':'Super League Grega'}  # nomes iguais aos de GER e entre si
-TEMPORADA={'MEX':'26/27'}  # a Liga MX vai de julho a maio (Apertura + Clausura); não é ano fechado
+# nomes iguais a outras ligas (ficaria ambíguo no filtro do Mercado)
+NOME_LIGA={'AUT':'Bundesliga Austríaca','SUI':'Super League Suíça','GRE':'Super League Grega',
+           'UAE':'Pro League dos Emirados','SRB':'Superliga Sérvia','UKR':'Premier Liga Ucraniana','RUS':'Premier Liga Russa'}
+# ligas que vão de julho/agosto a maio (não são ano fechado)
+TEMPORADA={'MEX':'26/27',  # Liga MX: Apertura + Clausura
+           'JPN':'26/27'}  # J1 League: mudou para o calendário europeu a partir de 2026/27
+# "nat" precisa ser escrito igual à nacionalidade dos jogadores (para contar estrangeiros)
+NAT={'PER':'Perú','POL':'Polónia','CZE':'República Checa','ROU':'Roménia','QAT':'Qatar'}
 for l in NOVAS['leagues']:
-    leagues.append({'k':l['k'],'n':NOME_LIGA.get(l['k'],l['n']),'pais':l['pais'],'nat':l['nat'],'season':TEMPORADA.get(l['k'],l['season']),'div':l['div']})
-# Ordem das ligas (filtros do Mercado): por país, 1ª divisão antes da 2ª
-ORDEM=['BRA','BRB','ENG','ENG2','ESP','ESP2','ITA','ITA2','GER','GER2','FRA','FRA2','POR','NED','BEL','TUR','SCO','AUT','SUI','GRE','DEN','NOR','ARG','MEX','USA','SAU']
+    leagues.append({'k':l['k'],'n':NOME_LIGA.get(l['k'],l['n']),'pais':l['pais'],'nat':NAT.get(l['k'],l['nat']),'season':TEMPORADA.get(l['k'],l['season']),'div':l['div']})
+# Ordem das ligas (filtros do Mercado): por continente e país, 1ª divisão antes da 2ª
+ORDEM=['BRA','BRB','BRC','ARG','COL','URU','CHI','PAR','ECU','PER',
+       'MEX','USA',
+       'ENG','ENG2','ESP','ESP2','ITA','ITA2','GER','GER2','FRA','FRA2','POR','NED','BEL','TUR','SCO','AUT','SUI','GRE','DEN','NOR',
+       'SWE','POL','CZE','CRO','SRB','UKR','ROU','RUS',
+       'SAU','JPN','KOR','CHN','QAT','UAE']
 leagues.sort(key=lambda l:ORDEM.index(l['k']))
 clubs=[]
 for c in pre['clubs']:
@@ -34,7 +49,7 @@ for c in pre['clubs']:
         ps.append([p[0],p[1],p[2],p[3],p[4],p[5],p[6],sp,s,hd])
     clubs.append({'k':c['k'],'lg':c['lg'],'n':c['n'],'coach':c['coach'],'c':c['c'],'c2':c['c2'],'hd':c['sid'] if c['sid'] in HD_T else 0,'p':ps})
 # Clubes das ligas novas: jogadores ainda sem foto (-1), sem estatísticas (None) e sem foto HD (0).
-# O ID Sofascore de cada jogador está em dados-brutos/ids_sofascore_novas.json (mesma ordem do elenco).
+# O ID Sofascore de cada jogador está em dados-brutos/ids_sofascore_novas.json e ids_sofascore_novas_2.json (mesma ordem do elenco).
 for c in NOVAS['clubs']:
     clubs.append({'k':c['k'],'lg':c['lg'],'n':c['n'],'coach':c['coach'],'c':c['c'],'c2':c['c2'],'hd':c['hd'] if c['hd'] in HD_T else 0,'p':c['p']})
 json.dump({'leagues':leagues,'clubs':clubs,'updated':'20/11/2026'},open('public/data.json','w',encoding='utf-8'),ensure_ascii=False,separators=(',',':'))

@@ -2,7 +2,7 @@
 import { D } from "./dados.js";
 import { CHIPS } from "./constantes.js";
 import { norm } from "./formato.js";
-import { calcularDinheiro } from "./dinheiro.js";
+import { calcularDinheiro, precoDeCompra } from "./dinheiro.js";
 
 // Quantos filtros estão ligados (o número que aparece no botão "Filtros")
 export function contarFiltros(F) {
@@ -19,7 +19,7 @@ export function buscarJogadores(plano, busca, chip, F) {
     (!F.lg || p.lg === F.lg) &&
     (!F.club || p.club === F.club) &&
     p.a <= F.age &&
-    (!F.fit || p.v <= caixa) &&
+    (!F.fit || precoDeCompra(p) <= caixa) &&
     (!F.free || p.end26) &&
     (!q || p.nn.includes(q) || D.CL[p.club].nn.includes(q))
   );

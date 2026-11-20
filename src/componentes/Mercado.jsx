@@ -3,7 +3,7 @@ import { useEffect, useRef } from "react";
 import { D } from "../logica/dados.js";
 import { CHIPS, corDoSetor } from "../logica/constantes.js";
 import { ctrTxt } from "../logica/formato.js";
-import { dinheiro, calcularDinheiro } from "../logica/dinheiro.js";
+import { dinheiro, calcularDinheiro, precoDeCompra, valorJogador } from "../logica/dinheiro.js";
 import { buscarJogadores, contarFiltros } from "../logica/mercado.js";
 import { Avatar, Bandeira, MiniStats, Nota, Pos } from "./Jogador.jsx";
 
@@ -56,7 +56,7 @@ export default function Mercado({ app }) {
           <>
             <div className="card">
               {lista.slice(0, limite).map((p) => {
-                const cabe = p.v <= caixa;
+                const preco = precoDeCompra(p), cabe = preco <= caixa;
                 return (
                   <button className={"row" + (cabe ? "" : " too")} key={p.id} onClick={() => app.abrirJogador(p.id)}>
                     <Avatar p={p} z={46} clube={p.club} />
@@ -70,8 +70,8 @@ export default function Mercado({ app }) {
                     </div>
                     <Nota st={p.st} className="so-largo" />
                     <div className="rt vl">
-                      <div className="v num">{dinheiro(p.v)}</div>
-                      <div className={"s" + (cabe ? "" : " falta")}>{cabe ? "cabe no caixa" : "faltam " + dinheiro(p.v - caixa)}</div>
+                      <div className="v num">{valorJogador(p.v)}</div>
+                      <div className={"s" + (cabe ? "" : " falta")}>{cabe ? "cabe no caixa" : "faltam " + dinheiro(preco - caixa)}</div>
                     </div>
                     <span className="add" aria-hidden="true">+</span>
                   </button>

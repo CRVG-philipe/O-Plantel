@@ -11,13 +11,21 @@ Site para planejar o elenco de um clube na próxima temporada. O usuário pode:
 
 Foi inspirado no reconstruindo.thefenomeno.com, mas **não deve copiá-lo**. O foco aqui é planejamento, com um visual clean e minimalista.
 
-## Ligas (26 ligas, 484 clubes, 13.882 jogadores)
+## Ligas (46 ligas em 39 países, 798 clubes, 23.613 jogadores)
 - Originais (214 clubes): BRA (Brasileirão A), BRB (Série B), ENG, ESP, ITA, GER, FRA, ARG, SAU (Saudita), USA (MLS).
-- Novas em 20/11/2026 (270 clubes, 7.617 jogadores):
+- Rodada 1, 20/11/2026 (270 clubes, 7.617 jogadores):
   - 1ª divisão: MEX (Liga MX), POR, BEL, SCO, NOR, NED, TUR, DEN, SUI, GRE, AUT.
   - 2ª divisão: ENG2 (Championship), ESP2 (LaLiga 2), ITA2 (Serie B), GER2 (2. Bundesliga), FRA2 (Ligue 2).
-  - Os jogadores novos ainda não têm foto (`índice_foto` -1, `hd` 0) nem estatísticas (`stats` null). O site mostra as iniciais e "Estatísticas indisponíveis".
-- Cada liga tem `div` (1 ou 2): a divisão dentro do país. A tela de divisão ordena por ele.
+- Rodada 2, 20/11/2026 (314 clubes, 9.731 jogadores):
+  - BRC (Série C, `div` 3).
+  - América do Sul: COL, URU, CHI, PAR, ECU, PER.
+  - Europa: SWE, POL, CZE, CRO, SRB, UKR, ROU, RUS.
+  - Ásia e Oriente Médio: JPN, KOR, CHN, QAT, UAE.
+- Os jogadores das duas rodadas ainda não têm foto (`índice_foto` -1, `hd` 0) nem estatísticas (`stats` null). O site mostra as iniciais e "Estatísticas indisponíveis".
+- Muitos têm valor 0 (sem valor no Transfermarkt): 876 dos 905 da Série C e dezenas por liga asiática.
+  - `valorJogador()` mostra "—" no lugar de "€ 0".
+  - `precoDeCompra()` cobra no mínimo `PRECO_MINIMO` (€ 0,1 mi) numa compra. Vale também para "cabe no caixa" e para o filtro "só quem cabe".
+- Cada liga tem `div` (1, 2 ou 3): a divisão dentro do país. A tela de divisão ordena por ele.
 
 ## Comandos (na raiz do projeto)
 - `npm install`: instala as dependências (só na primeira vez ou quando o package.json mudar).
@@ -63,6 +71,8 @@ React 19 + Vite 6, em JavaScript (sem TypeScript).
   - `sofa_all.json`: Sofascore.
   - `val.json`: valores corrigidos, em milhares de €.
   - `stats2.json`: estatísticas.
+  - `novas_ligas_2.json`, `ids_sofascore_novas_2.json` (95% têm ID), `tm_new2.json`, `sofa_new2.json` e `build_new2.py`: a mesma coisa para a rodada 2.
+    - O `build_final.py` corrige: nomes repetidos ("Pro League dos Emirados", "Superliga Sérvia", "Premier Liga Ucraniana" e "Premier Liga Russa"); a temporada da J1 League, que passa a "26/27"; e o `nat` de PER, POL, CZE, ROU e QAT, que precisa ser escrito igual aos jogadores ("Perú", "Polónia", "República Checa", "Roménia", "Qatar").
   - `novas_ligas.json`: as 16 ligas novas já no formato final (ligas com `div`, clubes e jogadores). O `build_final.py` junta essas ligas às originais e aplica duas correções:
     - nomes repetidos ficam "Bundesliga Austríaca", "Super League Suíça" e "Super League Grega";
     - a Liga MX passa a ter temporada "26/27" (vai de julho a maio).
@@ -88,8 +98,8 @@ React 19 + Vite 6, em JavaScript (sem TypeScript).
 - Antes do plano (`EscolhaClube.jsx`, estado `tela` no `Plantel.jsx`): telas cheias com fundo colorido, linhas de campo em SVG (branco a 8%) e conteúdo num bloco de até 480px, com o botão principal logo abaixo do conteúdo. Modelo visual: `referencia-inicio-paises.html`, enviado pelo Philipe.
   - Topo de todas: logo e seletor de moeda. Nas etapas, há também "← X de Y".
   - `inicio`: o site **sempre** abre aqui, mesmo com plano salvo. Fundo `#0f3d2b`, título, números calculados do data.json (clubes, ligas, jogadores com valor > 0), "Seus planos" (o último aberto primeiro; tocar abre o plano; a lixeira ao lado abre `PainelExcluirPlano`, que só apaga ao tocar em "Excluir plano") e "Planejar um clube". "Trocar de clube" volta para cá.
-  - `pais`: grade de cartões (2 colunas; 3 a partir de 600px), fundo `#1f2a24`. Tocar avança.
-  - `divisao`: só aparece se o país tiver mais de uma liga (hoje, só o Brasil). Fundo = cor do país (`PAISES` em `constantes.js`).
+  - `pais`: grade de cartões (2 colunas; 3 a partir de 600px), fundo `#1f2a24`, agrupada por continente (`CONTINENTES` e o campo `continente` de `PAISES`), com busca por país ou liga no topo. Tocar avança.
+  - `divisao`: só aparece se o país tiver mais de uma liga (Brasil com 3; Inglaterra, Espanha, Itália, Alemanha e França com 2). Fundo = cor do país (`PAISES` em `constantes.js`).
   - `clube`: escudo num círculo branco, vizinhos, valor e jogadores. Setas, teclado e deslizar o dedo trocam de clube. Fundo = `corDeFundo` (`c`, senão `c2`, senão cinza `#222428`, sempre com brilho ≤ 0,6 para o texto branco ser legível).
   - "Voltar" vai para a tela anterior real (pula a divisão se não houve). Transições de 300ms, desligadas com `prefers-reduced-motion`.
   - Bandeiras: SVGs do Wikimedia Commons em `public/img/flags/`.
@@ -107,7 +117,7 @@ React 19 + Vite 6, em JavaScript (sem TypeScript).
    - Quando todas as fotos existirem, apagar os sprites `p_*.webp` e o código de sprite em `Foto` (`src/componentes/Imagens.jsx`).
 2. Completar as estatísticas que faltam:
    - ~960 jogadores de ARG e SAU, em `stats2.json`;
-   - os 7.617 jogadores das 16 ligas novas, pelos IDs em `ids_sofascore_novas.json`. As fotos deles também faltam: o `baixar_imagens.py` hoje só lê `kept.json` e precisa passar a ler esse arquivo também.
+   - os 17.348 jogadores das 36 ligas novas, pelos IDs em `ids_sofascore_novas.json` e `ids_sofascore_novas_2.json`. As fotos deles também faltam: o `baixar_imagens.py` hoje só lê `kept.json` e precisa passar a ler esses arquivos também.
 3. Script de atualização periódica dos dados (Transfermarkt e Sofascore).
 4. ~~Migrar para Vite~~ Feito em 20/11/2026 (React + Vite; a versão antiga sem framework está na tag git `antes-do-react`), publicado na Vercel.
 5. Simulação da temporada, link compartilhável do plano e modo "desafio diário" (para depois).

@@ -33,31 +33,54 @@ export const FIT = { GOL: ["GOL"], ZAG: ["ZAG", "VOL"], LD: ["LD", "MD", "ZAG"],
 
 export const MES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 
-// Países da tela de escolha, na ordem da grade.
+// Continentes, na ordem em que aparecem na tela de países
+export const CONTINENTES = ["América do Sul", "América do Norte", "Europa", "Ásia e Oriente Médio"];
+
+// Países da tela de escolha, na ordem da grade (dentro de cada continente).
 // cor = fundo do cartão da bandeira e da escolha de divisão (escura o bastante para texto branco: brilho ≤ 0,6)
 // bandeira = arquivo em public/img/flags/ (Wikimedia Commons)
 // ligas = chaves das ligas do país (a ordem na tela segue o campo "div" de cada liga)
+const AS = "América do Sul", AN = "América do Norte", EU = "Europa", AO = "Ásia e Oriente Médio";
 export const PAISES = [
-  { n: "Brasil", sigla: "BRA", cor: "#009c3b", bandeira: "brasil.svg", ligas: ["BRA", "BRB"] },
-  { n: "Inglaterra", sigla: "ENG", cor: "#1d2a6b", bandeira: "inglaterra.svg", ligas: ["ENG", "ENG2"] },
-  { n: "Espanha", sigla: "ESP", cor: "#aa151b", bandeira: "espanha.svg", ligas: ["ESP", "ESP2"] },
-  { n: "Itália", sigla: "ITA", cor: "#0b6b3a", bandeira: "italia.svg", ligas: ["ITA", "ITA2"] },
-  { n: "Alemanha", sigla: "GER", cor: "#222222", bandeira: "alemanha.svg", ligas: ["GER", "GER2"] },
-  { n: "França", sigla: "FRA", cor: "#1f3d8f", bandeira: "franca.svg", ligas: ["FRA", "FRA2"] },
-  { n: "Portugal", sigla: "POR", cor: "#7a1020", bandeira: "portugal.svg", ligas: ["POR"] },
-  { n: "Holanda", sigla: "NED", cor: "#c4501a", bandeira: "holanda.svg", ligas: ["NED"] },
-  { n: "Bélgica", sigla: "BEL", cor: "#a87b05", bandeira: "belgica.svg", ligas: ["BEL"] },
-  { n: "Turquia", sigla: "TUR", cor: "#c8102e", bandeira: "turquia.svg", ligas: ["TUR"] },
-  { n: "Escócia", sigla: "SCO", cor: "#005eb8", bandeira: "escocia.svg", ligas: ["SCO"] },
-  { n: "Áustria", sigla: "AUT", cor: "#9b1b30", bandeira: "austria.svg", ligas: ["AUT"] },
-  { n: "Suíça", sigla: "SUI", cor: "#d52b1e", bandeira: "suica.svg", ligas: ["SUI"] },
-  { n: "Grécia", sigla: "GRE", cor: "#0d5eaf", bandeira: "grecia.svg", ligas: ["GRE"] },
-  { n: "Dinamarca", sigla: "DEN", cor: "#a6192e", bandeira: "dinamarca.svg", ligas: ["DEN"] },
-  { n: "Noruega", sigla: "NOR", cor: "#00205b", bandeira: "noruega.svg", ligas: ["NOR"] },
-  { n: "Argentina", sigla: "ARG", cor: "#3a83c4", bandeira: "argentina.svg", ligas: ["ARG"] },
-  { n: "México", sigla: "MEX", cor: "#006847", bandeira: "mexico.svg", ligas: ["MEX"] },
-  { n: "Estados Unidos", sigla: "USA", cor: "#2b2f6b", bandeira: "estados-unidos.svg", ligas: ["USA"] },
-  { n: "Arábia Saudita", sigla: "SAU", cor: "#0b6b3a", bandeira: "arabia-saudita.svg", ligas: ["SAU"] },
+  { n: "Brasil", sigla: "BRA", continente: AS, cor: "#009c3b", bandeira: "brasil.svg", ligas: ["BRA", "BRB", "BRC"] },
+  { n: "Argentina", sigla: "ARG", continente: AS, cor: "#3a83c4", bandeira: "argentina.svg", ligas: ["ARG"] },
+  { n: "Colômbia", sigla: "COL", continente: AS, cor: "#a07a00", bandeira: "colombia.svg", ligas: ["COL"] },
+  { n: "Uruguai", sigla: "URU", continente: AS, cor: "#2b6cb0", bandeira: "uruguai.svg", ligas: ["URU"] },
+  { n: "Chile", sigla: "CHI", continente: AS, cor: "#0039a6", bandeira: "chile.svg", ligas: ["CHI"] },
+  { n: "Paraguai", sigla: "PAR", continente: AS, cor: "#9c1c26", bandeira: "paraguai.svg", ligas: ["PAR"] },
+  { n: "Equador", sigla: "ECU", continente: AS, cor: "#034ea2", bandeira: "equador.svg", ligas: ["ECU"] },
+  { n: "Peru", sigla: "PER", continente: AS, cor: "#b5121b", bandeira: "peru.svg", ligas: ["PER"] },
+  { n: "México", sigla: "MEX", continente: AN, cor: "#006847", bandeira: "mexico.svg", ligas: ["MEX"] },
+  { n: "Estados Unidos", sigla: "USA", continente: AN, cor: "#2b2f6b", bandeira: "estados-unidos.svg", ligas: ["USA"] },
+  { n: "Inglaterra", sigla: "ENG", continente: EU, cor: "#1d2a6b", bandeira: "inglaterra.svg", ligas: ["ENG", "ENG2"] },
+  { n: "Espanha", sigla: "ESP", continente: EU, cor: "#aa151b", bandeira: "espanha.svg", ligas: ["ESP", "ESP2"] },
+  { n: "Itália", sigla: "ITA", continente: EU, cor: "#0b6b3a", bandeira: "italia.svg", ligas: ["ITA", "ITA2"] },
+  { n: "Alemanha", sigla: "GER", continente: EU, cor: "#222222", bandeira: "alemanha.svg", ligas: ["GER", "GER2"] },
+  { n: "França", sigla: "FRA", continente: EU, cor: "#1f3d8f", bandeira: "franca.svg", ligas: ["FRA", "FRA2"] },
+  { n: "Portugal", sigla: "POR", continente: EU, cor: "#7a1020", bandeira: "portugal.svg", ligas: ["POR"] },
+  { n: "Holanda", sigla: "NED", continente: EU, cor: "#c4501a", bandeira: "holanda.svg", ligas: ["NED"] },
+  { n: "Bélgica", sigla: "BEL", continente: EU, cor: "#a87b05", bandeira: "belgica.svg", ligas: ["BEL"] },
+  { n: "Turquia", sigla: "TUR", continente: EU, cor: "#c8102e", bandeira: "turquia.svg", ligas: ["TUR"] },
+  { n: "Escócia", sigla: "SCO", continente: EU, cor: "#005eb8", bandeira: "escocia.svg", ligas: ["SCO"] },
+  { n: "Áustria", sigla: "AUT", continente: EU, cor: "#9b1b30", bandeira: "austria.svg", ligas: ["AUT"] },
+  { n: "Suíça", sigla: "SUI", continente: EU, cor: "#d52b1e", bandeira: "suica.svg", ligas: ["SUI"] },
+  { n: "Grécia", sigla: "GRE", continente: EU, cor: "#0d5eaf", bandeira: "grecia.svg", ligas: ["GRE"] },
+  { n: "Dinamarca", sigla: "DEN", continente: EU, cor: "#a6192e", bandeira: "dinamarca.svg", ligas: ["DEN"] },
+  { n: "Noruega", sigla: "NOR", continente: EU, cor: "#00205b", bandeira: "noruega.svg", ligas: ["NOR"] },
+  { n: "Suécia", sigla: "SWE", continente: EU, cor: "#006aa7", bandeira: "suecia.svg", ligas: ["SWE"] },
+  { n: "Polônia", sigla: "POL", continente: EU, cor: "#c8143c", bandeira: "polonia.svg", ligas: ["POL"] },
+  { n: "Tchéquia", sigla: "CZE", continente: EU, cor: "#11457e", bandeira: "tchequia.svg", ligas: ["CZE"] },
+  { n: "Croácia", sigla: "CRO", continente: EU, cor: "#0b3d91", bandeira: "croacia.svg", ligas: ["CRO"] },
+  { n: "Sérvia", sigla: "SRB", continente: EU, cor: "#0c4076", bandeira: "servia.svg", ligas: ["SRB"] },
+  { n: "Ucrânia", sigla: "UKR", continente: EU, cor: "#0057b7", bandeira: "ucrania.svg", ligas: ["UKR"] },
+  { n: "Romênia", sigla: "ROU", continente: EU, cor: "#002b7f", bandeira: "romenia.svg", ligas: ["ROU"] },
+  { n: "Rússia", sigla: "RUS", continente: EU, cor: "#1c3578", bandeira: "russia.svg", ligas: ["RUS"] },
+  { n: "Arábia Saudita", sigla: "SAU", continente: AO, cor: "#0b6b3a", bandeira: "arabia-saudita.svg", ligas: ["SAU"] },
+  { n: "Japão", sigla: "JPN", continente: AO, cor: "#bc002d", bandeira: "japao.svg", ligas: ["JPN"] },
+  { n: "Coreia do Sul", sigla: "KOR", continente: AO, cor: "#003478", bandeira: "coreia-do-sul.svg", ligas: ["KOR"] },
+  { n: "China", sigla: "CHN", continente: AO, cor: "#c8200e", bandeira: "china.svg", ligas: ["CHN"] },
+  { n: "Catar", sigla: "QAT", continente: AO, cor: "#8a1538", bandeira: "catar.svg", ligas: ["QAT"] },
+  { n: "Emirados Árabes", sigla: "UAE", continente: AO, cor: "#00732f", bandeira: "emirados.svg", ligas: ["UAE"] },
 ];
 
 export const FILTROS_PADRAO ={ lg: "", club: "", age: 99, sort: "vd", fit: false, free: false };

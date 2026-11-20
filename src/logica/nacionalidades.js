@@ -27,6 +27,11 @@ const CODIGO = {
   "Sérvia": "rs", "Síria": "sy", "Tailândia": "th", "Tanzânia": "tz", "Togo": "tg", "Trinidad e Tobago": "tt",
   "Tunísia": "tn", "Turquia": "tr", "Ucrânia": "ua", "Uganda": "ug", "Uruguai": "uy", "Uzbequistão": "uz",
   "Venezuela": "ve", "Zimbabué": "zw", "Zâmbia": "zm", "África do Sul": "za", "Áustria": "at",
+  // acrescentadas com as ligas da rodada 2
+  "Eritreia": "er", "Sudão do Sul": "ss", "Paquistão": "pk", "São Tomé and Príncipe": "st", "Botsuana": "bw",
+  "Quirguistão": "kg", "Gibraltar": "gi", "Maurícias": "mu", "Tajiquistão": "tj", "Turquemenistão": "tm",
+  "Coreia do Norte": "kp", "Hong Kong": "hk", "Taipé Chinesa": "tw", "Sudão": "sd", "Bahrain": "bh",
+  "Etiópia": "et", "Iémen": "ye", "Omã": "om",
 };
 
 export const codigoDoPais = (nat) => CODIGO[nat] || null;

@@ -33,6 +33,14 @@ export const dinheiro = (vEur) => {
   return `${s} 0`;
 };
 
+// Valor de UM jogador: muitos (Série C, ligas asiáticas) não têm valor no Transfermarkt (0).
+// Para eles mostramos "—" em vez de "€ 0". Totais (caixa, valor do elenco) continuam com dinheiro().
+export const valorJogador = (v) => (v > 0 ? dinheiro(v) : "—");
+
+// Preço para contratar: o valor do jogador, mas nunca menos que € 0,1 mi (jogadores sem valor)
+export const PRECO_MINIMO = 0.1;
+export const precoDeCompra = (p) => Math.max(p.v || 0, PRECO_MINIMO);
+
 // Campos de digitação (orçamento, venda, compra):
 // paraCampo mostra um valor em euro na moeda escolhida (em euro, até 3 casas: 0,025 = 25 mil);
 // lerCampo devolve em euro o que foi digitado. Se a pessoa não mexeu no campo, devolve o valor
