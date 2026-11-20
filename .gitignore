@@ -6,5 +6,6 @@ __pycache__/
 .claude/settings.local.json
 .vscode/
 node_modules/
+dist/
 .DS_Store
 Thumbs.db

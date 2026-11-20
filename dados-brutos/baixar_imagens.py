@@ -15,7 +15,7 @@ O que o script faz, passo a passo:
 2. Para cada ID, pula se a imagem já foi baixada antes. Assim dá para parar
    (Ctrl+C) e rodar de novo depois: ele continua de onde parou.
 3. Pede a imagem ao Sofascore, converte para .webp (bem menor que .png) e salva em
-   site/img/players/<id>.webp ou site/img/teams/<id>.webp.
+   public/img/players/<id>.webp ou public/img/teams/<id>.webp.
 4. Espera um tempo aleatório entre cada pedido, e um tempo maior a cada 100,
    para não sobrecarregar o servidor.
 5. Se o Sofascore responder 403 ou 429 ("pedidos demais"), espera cada vez mais.
@@ -39,8 +39,8 @@ except ImportError:
     sys.exit("Falta o Pillow. Instale com:  python -m pip install pillow")
 
 BASE = "https://api.sofascore.app/api/v1"
-PASTA_JOGADORES = "site/img/players"
-PASTA_TIMES = "site/img/teams"
+PASTA_JOGADORES = "public/img/players"
+PASTA_TIMES = "public/img/teams"
 ARQ_SEM_FOTO = "dados-brutos/imagens_sem_foto.json"  # IDs que deram 404 (não têm imagem)
 TAMANHO_MAX = 256  # px; as originais costumam ser menores, mas limitamos por segurança
 # Identificação honesta: diz o que é este programa, sem fingir ser um navegador.
