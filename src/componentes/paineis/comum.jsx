@@ -2,6 +2,7 @@
 import { D } from "../../logica/dados.js";
 import { ctrTxt, dec } from "../../logica/formato.js";
 import { dinheiro } from "../../logica/dinheiro.js";
+import { classeNota } from "../Jogador.jsx";
 
 // Quatro quadradinhos: idade, país, fim do contrato, valor
 export function Fatos({ p }) {
@@ -27,7 +28,7 @@ export function Estatisticas({ p }) {
     );
   }
   const [j, g, a, r] = s;
-  const itens = [[j, "Jogos"], [g, "Gols"], [a, "Assistências"], [dec(g / j), "Gols por jogo"], [dec(a / j), "Assist. por jogo"], [r ? dec(r) : "–", "Nota média"]];
+  const itens = [[j, "Jogos"], [g, "Gols"], [a, "Assistências"], [dec(g / j), "Gols por jogo"], [dec(a / j), "Assist. por jogo"], [r ? <span className={`nota ${classeNota(r)}`}>{dec(r)}</span> : "–", "Nota média"]];
   return (
     <div className="stt">
       <div className="sth">Temporada atual · todas as competições<span>Sofascore · {D.DATA.updated}</span></div>

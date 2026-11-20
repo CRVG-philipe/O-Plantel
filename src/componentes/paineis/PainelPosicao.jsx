@@ -4,7 +4,7 @@ import { FORMS, FIT, POSN } from "../../logica/constantes.js";
 import { dinheiro } from "../../logica/dinheiro.js";
 import { elencoAtual } from "../../logica/elenco.js";
 import { Cabecalho } from "../Painel.jsx";
-import { Foto } from "../Imagens.jsx";
+import { Avatar } from "../Jogador.jsx";
 
 export default function PainelPosicao({ app, i }) {
   const { plano } = app;
@@ -35,7 +35,7 @@ export default function PainelPosicao({ app, i }) {
           const titularEmOutra = Object.values(plano.xi).includes(p.id);
           return (
             <button className="row" key={p.id} style={{ minHeight: 52 }} onClick={() => escolher(p.id)}>
-              <Foto p={p} z={38} />
+              <Avatar p={p} z={38} />
               <div className="mid">
                 <div className="nm">{p.n}{p.id === atual && <> <span className="pill in">atual</span></>}</div>
                 <div className="sub">

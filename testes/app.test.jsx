@@ -16,6 +16,7 @@ let apiCotacaoFora = false; // true = simula a API de cotação fora do ar
 // ---------- preparação do "navegador de mentira" ----------
 beforeEach(() => {
   localStorage.clear();
+  delete document.documentElement.dataset.theme;
   apiCotacaoFora = false;
   globalThis.fetch = vi.fn(async (url) => {
     if (String(url).includes("frankfurter")) {
@@ -270,7 +271,7 @@ test("fluxo completo: clube, vender, contratar, filtros, escalação, resumo, re
   clique(noPainel().getByRole("button", { name: "Criar e contratar" }));
   expect(aviso()).toBe("Joãozinho Teste contratado");
   expect(caixa()).toBe(dinheiro(90 - alvo.v - 2));
-  expect(document.querySelector("#bud").className).toBe(90 - alvo.v - 2 < 0 ? "neg" : "");
+  expect(document.querySelector("#bud").classList.contains("neg")).toBe(90 - alvo.v - 2 < 0); // vermelho se negativo
 
   // 7. Time: formação, trocar goleiro, escalar sozinho
   clique(screen.getByRole("tab", { name: "Time" }));
@@ -485,6 +486,69 @@ test("escudos em alta resolução em todos os lugares (sem sprite)", async () =>
   conferir(".ov.on .sheet", 1);                                      // painel do clube
   clique(noPainel().getByRole("button", { name: /Trocar de clube/ }));
   conferir(".ini-planos", 1);                                        // "Seus planos" no início
+});
+
+test("visual do Mercado e das abas: bandeira, setor, nota, caixa, atalho / e indicador", async () => {
+  render(<App />);
+  await irParaBrasil();
+  clique(botao("Planejar 2027"));
+  clique(noPainel().getByRole("button", { name: "€ 20 mi" }));
+  clique(noPainel().getByRole("button", { name: "Começar" }));
+  // Indicador das abas acompanha a aba escolhida
+  expect(document.querySelector("#tabs").style.getPropertyValue("--i")).toBe("0");
+  clique(screen.getByRole("tab", { name: "Mercado" }));
+  expect(document.querySelector("#tabs").style.getPropertyValue("--i")).toBe("1");
+  // Cards do topo: média de idade e chegam/saem coloridos
+  expect(document.querySelectorAll("#sum .stat").length).toBe(3);
+  expect(document.querySelector("#sum .media").textContent).toMatch(/^ · média \d+,\d anos$/);
+  // Atalho "/" põe o cursor na busca
+  fireEvent.keyDown(document, { key: "/" });
+  expect(document.activeElement).toBe(screen.getByLabelText("Buscar jogador"));
+  // Lista: o mais caro não cabe nos € 20 mi; um barato cabe
+  const linhas = [...document.querySelectorAll("#mList .row")];
+  const primeira = linhas[0];
+  expect(primeira.classList.contains("too")).toBe(true);
+  expect(primeira.querySelector(".vl .s").textContent).toMatch(/^faltam € /);
+  const p = DATA.clubs.flatMap((c) => c.p.map((r) => ({ n: r[1], v: r[5], pos: r[2], nat: r[6], st: r[8], club: c.k }))).filter((x) => x.club !== clubesDa("BRA")[0].k).sort((a, b) => b.v - a.v)[0];
+  expect(primeira.querySelector(".nm").textContent).toBe(p.n);
+  expect(primeira.querySelector(".fl").getAttribute("alt")).toBe(p.nat);                  // bandeira do país
+  expect(primeira.querySelector(".pos").textContent).toBe(p.pos);                         // selo da posição
+  expect(primeira.querySelector(".mc img").getAttribute("src")).toMatch(/^img\/teams\//); // mini escudo
+  if (p.st && p.st[3]) expect(primeira.querySelector(".nota").className).toMatch(/n[5-8]/);
+  fireEvent.change(screen.getByLabelText("Buscar jogador"), { target: { value: "" } });
+  clique(botao("Filtros"));
+  fireEvent.change(noPainel().getByLabelText("Ordenar por"), { target: { value: "va" } });
+  clique(noPainel().getByRole("button", { name: "Aplicar" }));
+  expect(document.querySelector(".ordem b").textContent).toBe("Valor ↑");
+  const barata = document.querySelector("#mList .row");
+  expect(barata.classList.contains("too")).toBe(false);
+  expect(barata.querySelector(".vl .s").textContent).toBe("cabe no caixa");
+  // Toda bandeira usada nos dados existe em public/img/flags/paises/
+  const codigos = new Set([...document.querySelectorAll(".fl")].map((i) => i.getAttribute("src")));
+  codigos.forEach((src) => expect(fs.existsSync("public/" + src)).toBe(true));
+});
+
+test("tema: o botão alterna entre claro e escuro e guarda a escolha", async () => {
+  render(<App />);
+  await irParaBrasil();
+  clique(botao("Planejar 2027"));
+  clique(noPainel().getByRole("button", { name: "Começar" }));
+  // Sem escolha salva, segue o sistema (no teste, o sistema está no claro)
+  expect(document.documentElement.dataset.theme).toBeUndefined();
+  clique(botao("Mudar para tema escuro"));
+  expect(document.documentElement.dataset.theme).toBe("dark");
+  expect(localStorage.getItem("plantel:tema")).toBe("dark");
+  clique(botao("Mudar para tema claro"));
+  expect(document.documentElement.dataset.theme).toBe("light");
+  expect(localStorage.getItem("plantel:tema")).toBe("light");
+  clique(botao("Mudar para tema escuro"));
+  // A escolha continua ao abrir o site de novo (o botão já mostra a opção contrária)
+  cleanup();
+  render(<App />);
+  await irParaBrasil();
+  clique(botao("Continuar meu plano"));
+  expect(botao("Mudar para tema claro")).toBeTruthy();
+  expect(salvo().plans).toBeTruthy(); // o tema não mexe nos planos
 });
 
 test("Esc e clique fora fecham o painel", async () => {

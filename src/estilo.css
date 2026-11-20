@@ -3,7 +3,15 @@
    PICTURE: o próprio elenco e o campinho da escalação; nada decorativo
    COLOUR and TYPE: branco, cinzas e a cor do clube como único acento; só Inter
    LAYOUT: uma coluna centralizada; resumo e abas fixos no topo; painéis deslizam de baixo */
-:root{color-scheme:light dark;--bg:light-dark(#f7f7f8,#0f1012);--sf:light-dark(#fff,#18191c);--sf2:light-dark(#f2f2f4,#222428);--ink:light-dark(#151619,#ececee);--mute:light-dark(#71737a,#9a9ca3);--line:light-dark(#ebebee,#2a2c31);--ac:#151619;--acInk:#fff;--pos:#1a7f4b;--neg:#c93a2e;--warn:#a8630a}
+:root{color-scheme:light dark;--bg:light-dark(#f7f7f8,#0f1012);--sf:light-dark(#fff,#18191c);--sf2:light-dark(#f2f2f4,#222428);--ink:light-dark(#151619,#ececee);--mute:light-dark(#71737a,#9a9ca3);--line:light-dark(#ebebee,#2a2c31);--ac:#151619;--acInk:#fff;--pos:#1a7f4b;--neg:#c93a2e;--warn:#a8630a;
+  --mute2:light-dark(#9a9ca3,#5d616b);
+  /* cores por setor: goleiro, defesa, meio, ataque */
+  --gol:#f2b544;--def:#4f9dff;--mei:#3ecf8e;--ata:#ff6b6b;
+  /* cor do clube (campo c), definida pelo Plantel.jsx. --clubVis é a versão sempre visível:
+     no tema claro usa --ac (que troca uma cor clara demais pela 2ª cor) e no escuro --clubEscuro
+     (que troca uma cor escura demais pela 2ª cor ou por cinza claro) */
+  --club:#151619;--clubInk:#fff;--clubEscuro:#ececee;--clubEscuroInk:#151619;
+  --clubVis:light-dark(var(--ac),var(--clubEscuro));--clubVisInk:light-dark(var(--acInk),var(--clubEscuroInk))}
 :root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
 *{box-sizing:border-box;min-width:0}
 body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 Inter,system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased;overflow-x:clip}
@@ -15,22 +23,42 @@ button{cursor:pointer;-webkit-tap-highlight-color:transparent}
 .mute{color:var(--mute)}
 .col{max-width:720px;margin:0 auto;padding:0 16px}
 /* topo */
-.top{position:sticky;top:0;z-index:30;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+/* brilho suave na cor do clube + escudo do clube como marca-d'água (--escudo vem do Topo.jsx) */
+.top{position:sticky;top:0;z-index:30;overflow:hidden;border-bottom:1px solid var(--line);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  background:radial-gradient(900px 260px at 50% -80px,color-mix(in srgb,var(--club) 14%,transparent),transparent 70%),color-mix(in srgb,var(--bg) 88%,transparent)}
+.top::after{content:"";position:absolute;right:max(16px,calc(50% - 400px));top:-30px;width:220px;height:220px;opacity:.05;background:var(--escudo,none) center/contain no-repeat;filter:grayscale(1);pointer-events:none}
+.top .col{position:relative;z-index:1}
 .bar{display:flex;align-items:center;gap:12px;height:56px}
 .logo{font-weight:700;font-size:17px;letter-spacing:-.02em;display:flex;align-items:center;gap:8px}
-.logo i{width:18px;height:18px;border-radius:5px;border:2.5px solid var(--ink)}
+.logo i{width:18px;height:18px;border-radius:5px;border:2.5px solid var(--ink);position:relative}
+.top .logo i::after{content:"";position:absolute;inset:2px;border-radius:2px;background:var(--clubVis)}
+/* botão sol/lua (tema claro/escuro) */
+.tema{width:36px;height:36px;border-radius:50%;border:0;background:var(--sf2);color:var(--mute);display:grid;place-items:center;flex:none;padding:0;transition:color .2s}
+.tema:hover{color:var(--ink)}
 .clubBtn{margin-left:auto;display:flex;align-items:center;gap:8px;border:0;background:var(--sf2);border-radius:999px;padding:4px 12px 4px 4px;font-weight:600;font-size:14px;min-height:40px}
 .clubBtn::after{content:"";width:6px;height:6px;border-right:1.5px solid var(--mute);border-bottom:1.5px solid var(--mute);transform:rotate(45deg) translateY(-2px);margin-left:2px}
 .badge{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:10.5px;letter-spacing:.02em;flex:none}
 .badge.lg{width:48px;height:48px;font-size:14px}
-.sum{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:4px 0 10px}
-.sum button{border:0;background:var(--sf);border-radius:12px;padding:8px 12px;text-align:left;box-shadow:0 0 0 1px var(--line)}
-.sum b{display:block;font-size:17px;font-weight:700;letter-spacing:-.01em}
-.sum span{font-size:12px;color:var(--mute)}
-.sum .neg b{color:var(--neg)}
-.tabs{display:grid;grid-template-columns:repeat(4,1fr);background:var(--sf2);border-radius:11px;padding:3px;margin-bottom:10px}
-.tabs button{border:0;background:none;border-radius:9px;min-height:36px;font-size:14px;font-weight:600;color:var(--mute)}
-.tabs button[aria-selected=true]{background:var(--sf);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.1)}
+/* cards de resumo: ícone no canto, números tabulares, barra do caixa */
+.sum{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;padding:4px 0 14px}
+.stat{position:relative;border:0;border-radius:14px;padding:12px 14px;text-align:left;box-shadow:0 0 0 1px var(--line);
+  background:linear-gradient(180deg,color-mix(in srgb,var(--sf2) 55%,var(--sf)),var(--sf))}
+.stat .ic{position:absolute;right:12px;top:12px;width:28px;height:28px;border-radius:8px;display:grid;place-items:center;background:color-mix(in srgb,var(--ink) 5%,transparent);color:var(--mute);font-size:13px;font-weight:600}
+.stat b{display:block;font-size:20px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums;padding-right:34px;white-space:nowrap}
+.stat .l{display:block;font-size:12px;color:var(--mute);margin-top:2px}
+.stat .l u{text-underline-offset:2px}
+.stat .up{color:var(--pos)}.stat .dn{color:var(--neg)}
+.stat.neg b{color:var(--neg)}
+.barra{display:block;height:4px;border-radius:4px;background:var(--line);margin-top:10px;overflow:hidden}
+.barra span{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,var(--mei),#9be15d)}
+.stat.neg .barra span{background:var(--neg)}
+/* abas: indicador que desliza até a aba escolhida (--i = 0 a 3), com risco na cor do clube */
+.tabs{position:relative;display:grid;grid-template-columns:repeat(4,1fr);background:var(--sf2);border-radius:12px;padding:4px;margin-bottom:12px}
+.tabs button{position:relative;z-index:1;border:0;background:none;border-radius:9px;min-height:36px;font-size:14px;font-weight:600;color:var(--mute);transition:color .2s}
+.tabs button[aria-selected=true]{color:var(--ink)}
+.tabs .ind{position:absolute;top:4px;bottom:4px;left:calc(4px + (100% - 8px) / 4 * var(--i,0));width:calc((100% - 8px) / 4);background:var(--sf);border-radius:9px;
+  box-shadow:0 1px 3px rgba(0,0,0,.12);transition:left .25s cubic-bezier(.3,.7,.2,1)}
+.tabs .ind::after{content:"";position:absolute;left:30%;right:30%;bottom:-1px;height:2px;border-radius:2px;background:var(--clubVis)}
 main.col{padding:18px 16px 80px}
 .panel{display:none}.panel.on{display:block}
 /* listas */
@@ -64,17 +92,55 @@ img.face{object-fit:cover;object-position:top}
 .pill.out{background:light-dark(#fdecea,#3a1c19);color:var(--neg)}
 .pill.in{background:light-dark(#e6f4ec,#173123);color:var(--pos)}
 .pill.loan{background:var(--sf2);color:var(--mute)}
-.add{width:32px;height:32px;border-radius:50%;background:var(--ac);color:var(--acInk);display:grid;place-items:center;font-size:20px;line-height:1;flex:none}
+/* linha do jogador: anel na cor do setor, mini escudo, bandeira, selos de posição e nota */
+.row{transition:background-color .15s}
+.av{position:relative;flex:none;display:inline-flex}
+.av .face{box-shadow:0 0 0 2px var(--sf),0 0 0 3.5px var(--pc)}
+.av .mc{position:absolute;right:-4px;bottom:-3px;width:20px;height:20px;border-radius:50%;background:#fff;display:grid;place-items:center;box-shadow:0 0 0 2px var(--sf),0 1px 3px rgba(0,0,0,.35)}
+.fl{display:inline-block;width:16px;height:12px;border-radius:2px;margin-left:7px;vertical-align:-1px;box-shadow:0 0 0 1px rgba(0,0,0,.12);object-fit:cover}
+.pos{display:inline-block;font-size:10.5px;font-weight:800;letter-spacing:.3px;padding:1px 6px;border-radius:5px;margin-right:7px;line-height:1.5;
+  color:light-dark(color-mix(in srgb,var(--pc) 65%,#000),var(--pc));background:color-mix(in srgb,var(--pc) 16%,transparent)}
+.row .sub.meta .pt,.pt{display:inline-block;width:3px;height:3px;border-radius:50%;background:var(--mute2);margin:0 7px;vertical-align:middle}
+.ministats{display:flex;gap:14px;margin-top:3px}
+.ministats span{font-size:12px;color:var(--mute2)}
+.ministats b{color:var(--ink);font-weight:650;font-variant-numeric:tabular-nums;margin-right:3px}
+.nota{display:inline-block;font-size:12px;font-weight:800;min-width:34px;text-align:center;padding:4px 4px;border-radius:7px;color:#fff;font-variant-numeric:tabular-nums;flex:none}
+.n8{background:#2a7fff}.n7{background:#14a564}.n6{background:#d39a12}.n5{background:#e05a3a}
+.ministats .nota{font-size:11px;min-width:0;padding:0 6px;color:#fff}
+.so-celular{display:none!important}
+.row .vl{min-width:max-content}
+.vl .s{display:block;font-size:11px;color:var(--mute2);margin-top:1px;white-space:nowrap}
+.ministats span{flex:none}
+.vl .s.falta{color:var(--neg)}
+.row.too .vl .v{color:var(--mute)}
+.row.too .add{opacity:.45}
+.add{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:var(--sf2);color:var(--ink);display:grid;place-items:center;font-size:18px;line-height:1;flex:none;transition:transform .15s,background-color .15s}
+.row:hover .add{transform:scale(1.08)}
+.add:hover,.row:hover .add:hover{background:var(--clubVis);color:var(--clubVisInk);border-color:var(--clubVis)}
+.sec h2 .ponto,.chips .ponto{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;vertical-align:1px}
+.legenda{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;color:var(--mute2);font-size:12px;padding:6px 0 10px}
+.legenda i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px}
+.kv-nome{display:flex;align-items:center;min-width:0}
 .hint{font-size:13px;color:var(--mute);margin:-4px 4px 14px}
 /* mercado */
+/* busca fixa com vidro fosco (a partir de 561px; no celular rola junto, para sobrar espaço para a lista) */
+@media (min-width:561px){.busca-fixa{position:sticky;top:var(--topo-h,0px);z-index:20;margin:-12px -16px 0;padding:12px 16px 2px;
+  background:color-mix(in srgb,var(--bg) 80%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}}
 .search{display:flex;gap:8px;margin-bottom:10px}
-.search input{flex:1;min-height:44px;border:0;border-radius:12px;background:var(--sf);box-shadow:0 0 0 1px var(--line);padding:0 14px;font-size:16px}
+.inp{flex:1;display:flex;align-items:center;gap:10px;min-height:44px;border-radius:12px;background:var(--sf);box-shadow:0 0 0 1px var(--line);padding:0 12px 0 14px;color:var(--mute2);transition:box-shadow .2s}
+.inp:hover{box-shadow:0 0 0 1px color-mix(in srgb,var(--line) 60%,var(--mute))}
+.inp:focus-within{box-shadow:0 0 0 2px var(--clubVis)}
+.inp input{flex:1;border:0;background:none;outline:0;min-height:42px;font-size:16px;color:var(--ink);padding:0}
+.inp kbd{font:11px Inter,system-ui,sans-serif;border:1px solid var(--line);border-radius:6px;padding:1px 6px;color:var(--mute2);display:none}
+@media (hover:hover) and (pointer:fine){.inp kbd{display:inline-block}}
 .fbtn{border:0;border-radius:12px;background:var(--sf);box-shadow:0 0 0 1px var(--line);padding:0 14px;font-weight:600;min-height:44px;white-space:nowrap}
-.fbtn b{background:var(--ac);color:var(--acInk);border-radius:999px;font-size:11px;padding:1px 6px;margin-left:4px}
+.fbtn b{background:var(--clubVis);color:var(--clubVisInk);border-radius:999px;font-size:11px;padding:1px 6px;margin-left:6px}
+.ordem{display:flex;justify-content:space-between;color:var(--mute2);font-size:12px;padding:0 4px 8px}
+.ordem b{color:var(--mute);font-weight:600}
 .chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:12px;scrollbar-width:none}
 .chips button{border:0;background:var(--sf);box-shadow:0 0 0 1px var(--line);border-radius:999px;min-height:36px;padding:0 14px;font-size:13.5px;font-weight:600;white-space:nowrap;flex:none}
 .chips button[aria-pressed=true]{background:var(--ink);color:var(--bg);box-shadow:none}
-.more{border:0;background:none;color:var(--ac);font-weight:600;width:100%;padding:14px;min-height:44px}
+.more{border:0;background:none;color:var(--clubVis);font-weight:600;width:100%;padding:14px;min-height:44px}
 .empty{padding:28px 16px;text-align:center;color:var(--mute);font-size:14px}
 /* time */
 .xhead{display:flex;align-items:center;gap:10px;margin-bottom:12px}
@@ -84,13 +150,13 @@ img.face{object-fit:cover;object-position:top}
 .pitch{position:relative;aspect-ratio:68/92;width:100%;max-width:520px;margin:0 auto 18px;border-radius:18px;background:light-dark(#eef2ee,#16201a);overflow:hidden}
 .pitch svg{position:absolute;inset:0;width:100%;height:100%;color:light-dark(#9fb3a4,#3c5546)}
 .slot{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:3px;border:0;background:none;padding:0;width:84px}
-.slot .dot{overflow:hidden;width:40px;height:40px;border-radius:50%;background:var(--ac);color:var(--acInk);display:grid;place-items:center;font-size:13px;font-weight:700;box-shadow:0 2px 6px rgba(0,0,0,.15)}
+.slot .dot{overflow:hidden;width:40px;height:40px;border-radius:50%;background:var(--ac);color:var(--acInk);display:grid;place-items:center;font-size:13px;font-weight:700;box-shadow:0 0 0 2px var(--sf),0 0 0 3.5px var(--pc,transparent),0 2px 6px rgba(0,0,0,.15)}
 .slot.empty .dot{background:var(--sf);color:var(--mute);border:1.5px dashed var(--mute);box-shadow:none}
 .slot .lb{font-size:11.5px;font-weight:600;background:var(--sf);border-radius:6px;padding:1px 6px;max-width:84px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .slot .lb.w{color:var(--warn)}
 details.bench summary{cursor:pointer;list-style:none;font-size:13px;font-weight:600;color:var(--mute);margin:0 4px 8px;min-height:32px;display:flex;align-items:center}
 details.bench summary::-webkit-details-marker{display:none}
-details.bench summary::after{content:"Mostrar";margin-left:auto;color:var(--ac)}
+details.bench summary::after{content:"Mostrar";margin-left:auto;color:var(--clubVis)}
 details.bench[open] summary::after{content:"Ocultar"}
 /* resumo */
 .kv{display:flex;justify-content:space-between;padding:11px 14px;font-size:14.5px}
@@ -102,7 +168,7 @@ details.bench[open] summary::after{content:"Ocultar"}
 .alert.ok i{background:var(--pos)}
 .dr{display:grid;grid-template-columns:110px minmax(0,1fr) 44px;gap:12px;align-items:center;padding:9px 14px;font-size:14px}
 .trk{height:8px;border-radius:4px;background:var(--sf2);position:relative}
-.trk i{position:absolute;inset:0 auto 0 0;border-radius:4px;background:var(--ac)}
+.trk i{position:absolute;inset:0 auto 0 0;border-radius:4px;background:var(--cor,var(--ac))}
 .trk i.low{background:var(--warn)}
 .trk s{position:absolute;top:-3px;bottom:-3px;width:2px;border-radius:1px;background:var(--mute);opacity:.5}
 .acts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
@@ -128,12 +194,28 @@ details.bench[open] summary::after{content:"Ocultar"}
 .top .moeda{background:var(--sf2)}
 .top .moeda button{color:var(--mute)}
 .top .moeda button[aria-pressed=true]{background:var(--sf);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.1)}
-@media (max-width:430px){.top .clubNome{display:none}.top .clubBtn{padding-right:10px}
-  /* resumo do topo no celular: mais espaço para o caixa ("−US$ 1.234,5 mi") e nada quebra de linha */
-  .sum{grid-template-columns:1.5fr 1fr 1fr;gap:6px}.sum button{padding:8px 10px}
-  .sum b{font-size:15.5px;white-space:nowrap}.sum span{font-size:11.5px;white-space:nowrap}}
-@media (max-width:370px){.sum{grid-template-columns:1.55fr 1fr 1fr}.sum button{padding:8px 7px}.sum b{font-size:14px}.sum span{font-size:10.5px}}
-@media (max-width:340px){.sum b,.sum span{white-space:normal}} /* celulares bem estreitos: quebra a linha em vez de cortar */
+@media (max-width:430px){.top .clubNome{display:none}.top .clubBtn{padding-right:10px}}
+/* celular (como no modelo): 2 cards em cima e "chegam · saem" numa faixa compacta embaixo;
+   a nota sai da coluna própria e vai para a linha de estatísticas */
+@media (max-width:560px){
+  .sum{grid-template-columns:1fr 1fr;gap:8px;padding-bottom:10px}
+  .stat{padding:10px 12px}
+  .stat b{font-size:17px;padding-right:28px}
+  .stat .ic{width:24px;height:24px;right:9px;top:9px;font-size:12px}
+  .stat .ic svg{width:13px;height:13px}
+  .stat .l{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .stat .media{display:none}
+  .stat-mov{grid-column:span 2;display:flex;align-items:center;gap:10px;padding:7px 12px}
+  .stat-mov .ic{position:static;width:22px;height:22px}
+  .stat-mov b{font-size:15px;padding-right:0}
+  .stat-mov .l{margin-top:0}
+  .so-largo{display:none!important}
+  .so-celular{display:inline-block!important}
+  .ministats{gap:2px 10px;flex-wrap:wrap;white-space:normal;overflow:visible}
+  .row .add{display:none} /* a linha inteira já é tocável; o "+" era só um enfeite */
+  .row{gap:12px;padding:11px 12px}
+}
+@media (max-width:340px){.stat b{white-space:normal}} /* celulares bem estreitos: quebra a linha em vez de cortar */
 .esc-passo{display:flex;align-items:center;gap:10px;margin-top:22px;font-size:12px;color:rgba(255,255,255,.75)}
 .esc-round{width:44px;height:44px;border-radius:50%;border:0;background:rgba(255,255,255,.18);color:#fff;font-size:22px;line-height:1;display:grid;place-items:center;flex:none;padding:0}
 .esc-round:hover{background:rgba(255,255,255,.26)}
@@ -227,4 +309,4 @@ footer{font-size:12.5px;color:var(--mute);padding:0 0 40px}
 textarea.copy{width:100%;min-height:180px;border:0;border-radius:12px;background:var(--sf2);padding:12px;font:13px/1.45 ui-monospace,monospace;color:var(--ink);margin-top:10px}
 @media (min-width:700px){.ov{align-items:center}.sheet{border-radius:20px;padding-bottom:20px}.grab{display:none}}
 @media (max-width:420px){.facts{grid-template-columns:repeat(2,minmax(0,1fr))}.slot{width:76px}.slot .dot{width:36px;height:36px;font-size:12px}.slot .dot .face{width:36px!important;height:36px!important}.slot .lb{font-size:10.5px;max-width:76px}.tabs button{font-size:13px}}
-@media (prefers-reduced-motion:reduce){.ov,.sheet,.toast{transition:none}}
+@media (prefers-reduced-motion:reduce){.ov,.sheet,.toast,.tabs .ind,.tabs button,.add,.row,.inp{transition:none}.row:hover .add{transform:none}}

@@ -8,6 +8,7 @@ import { jogador, novoPlano } from "./logica/elenco.js";
 import { escalarSozinho, completarTime } from "./logica/escalacao.js";
 import { usarMoeda } from "./logica/dinheiro.js";
 import { buscarCotacao, lerCotacaoSalva, lerMoeda, salvarMoeda } from "./logica/cotacao.js";
+import { salvarTema, temaAtual } from "./logica/tema.js";
 import Topo from "./componentes/Topo.jsx";
 import EscolhaClube from "./componentes/EscolhaClube.jsx";
 import Elenco from "./componentes/Elenco.jsx";
@@ -36,8 +37,15 @@ const paisDa = (lg) => Math.max(0, PAISES.findIndex((p) => p.ligas.includes(lg))
 // Pinta o destaque do site com a cor do clube (ou a 2ª cor, se a 1ª for clara demais)
 function aplicarCor(k) {
   const r = document.documentElement.style;
-  if (!k) { r.removeProperty("--ac"); r.removeProperty("--acInk"); return; }
+  if (!k) { ["--ac", "--acInk", "--club", "--clubInk"].forEach((v) => r.removeProperty(v)); return; }
   const c = D.CL[k];
+  // --club = cor do clube como vem nos dados (campo c), usada no brilho do topo, no risco das abas etc.
+  r.setProperty("--club", c.c);
+  r.setProperty("--clubInk", lum(c.c) > 0.6 ? "#151619" : "#fff");
+  // Versão para o tema escuro: a cor precisa aparecer sobre fundo quase preto
+  const escuro = [c.c, c.c2].find((x) => x && lum(x) >= 0.25) || "#ececee";
+  r.setProperty("--clubEscuro", escuro);
+  r.setProperty("--clubEscuroInk", lum(escuro) > 0.6 ? "#151619" : "#fff");
   const a = lum(c.c) > 0.8 ? (lum(c.c2) > 0.8 ? "#222428" : c.c2) : c.c;
   r.setProperty("--ac", a);
   r.setProperty("--acInk", lum(a) > 0.6 ? "#151619" : "#fff");
@@ -171,6 +179,14 @@ export default function Plantel() {
 
   function trocarMoeda(m) { setMoeda(m); salvarMoeda(m); }
 
+  // Tema claro/escuro: começa no salvo (ou no do sistema); o botão alterna e guarda a escolha
+  const [tema, setTema] = useState(temaAtual);
+  function alternarTema() {
+    const novo = tema === "dark" ? "light" : "dark";
+    setTema(novo);
+    salvarTema(novo);
+  }
+
   // ---------- efeitos ----------
   // Ao abrir o site: busca a cotação do dia (se falhar, segue com a salva ou a de reserva)
   useEffect(() => {
@@ -197,7 +213,7 @@ export default function Plantel() {
   // "app" é o pacote de dados e ações que cada componente recebe
   const app = {
     db, plano, aba, tela, pais, liga, indice, clubes, busca, chip, limite, filtros, moeda, cotacao,
-    setIndice, setBusca, setChip, setLimite, setFiltros, trocarMoeda,
+    setIndice, setBusca, setChip, setLimite, setFiltros, trocarMoeda, tema, alternarTema,
     abrirClube, trocarClube, reiniciarClube, excluirPlano, abrirJogador, abrirPainel, fecharPainel,
     mudar, irPara, passo, planejarClube, escolherPais, escolherDivisao, voltar, aviso: mostrarAviso,
   };

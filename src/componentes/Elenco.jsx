@@ -1,10 +1,11 @@
 // Aba Elenco: o elenco do clube por setor, com quem chega no topo de cada seção.
+// Mesmo visual do Mercado: anel e selo na cor do setor, bandeira e selo da nota.
 import { D } from "../logica/dados.js";
-import { SECT, ORDER } from "../logica/constantes.js";
+import { SECT, ORDER, corDoSetor } from "../logica/constantes.js";
 import { ctrTxt } from "../logica/formato.js";
 import { dinheiro } from "../logica/dinheiro.js";
 import { elencoOriginal, jogador, situacao } from "../logica/elenco.js";
-import { Foto } from "./Imagens.jsx";
+import { Avatar, Bandeira, Nota, Pos } from "./Jogador.jsx";
 
 export default function Elenco({ app }) {
   const { plano } = app;
@@ -20,7 +21,7 @@ export default function Elenco({ app }) {
         const total = o.filter((p) => st(p.id) === "fica").length + chegam.length;
         return (
           <div className="sec" key={titulo}>
-            <h2><span>{titulo}</span><span>{total}</span></h2>
+            <h2><span><i className="ponto" style={{ background: corDoSetor(ps[0]) }}></i>{titulo}</span><span>{total}</span></h2>
             <div className="card">
               {chegam.map((m) => <LinhaChegada key={m.id} app={app} m={m} />)}
               {o.map((p) => <LinhaPropria key={p.id} app={app} p={p} />)}
@@ -40,29 +41,31 @@ function LinhaPropria({ app, p }) {
     : st.s === "libera" ? <span className="pill loan">Liberado</span> : null;
   return (
     <button className={"row" + (st.s !== "fica" ? " gone" : "")} onClick={() => app.abrirJogador(p.id)}>
-      <Foto p={p} z={42} />
+      <Avatar p={p} z={42} />
       <div className="mid">
-        <div className="nm">{p.n}</div>
-        <div className="sub">
-          {p.num ? "#" + p.num + " · " : ""}{p.pos} · {p.a} anos
-          {p.end26 && <> · <span className="w">contrato até {ctrTxt(p.ctr)}</span></>}
+        <div className="nm">{p.n}<Bandeira nat={p.nat} /></div>
+        <div className="sub meta">
+          <Pos pos={p.pos} />{p.num ? "#" + p.num + " · " : ""}{p.a} anos
+          {p.end26 && <><span className="pt"></span><span className="w">contrato até {ctrTxt(p.ctr)}</span></>}
         </div>
       </div>
+      <Nota st={p.st} className="so-largo" />
       <div className="rt"><div className="v num">{dinheiro(p.v)}</div>{pill}</div>
     </button>
   );
 }
 
-// Jogador contratado
+// Jogador contratado (com o mini escudo do clube de onde veio)
 function LinhaChegada({ app, m }) {
   const p = jogador(app.plano, m.id);
   return (
     <button className="row" onClick={() => app.abrirJogador(p.id)}>
-      <Foto p={p} z={42} />
+      <Avatar p={p} z={42} clube={p.club !== "NOVO" ? p.club : null} />
       <div className="mid">
-        <div className="nm">{p.n}</div>
-        <div className="sub">{p.pos} · {p.a} anos · {p.club === "NOVO" ? "criado por você" : "veio do " + D.CL[p.club].n}</div>
+        <div className="nm">{p.n}<Bandeira nat={p.nat} /></div>
+        <div className="sub meta"><Pos pos={p.pos} />{p.a} anos<span className="pt"></span>{p.club === "NOVO" ? "criado por você" : "veio do " + D.CL[p.club].n}</div>
       </div>
+      <Nota st={p.st} className="so-largo" />
       <div className="rt">
         <div className="v num">{dinheiro(p.v)}</div>
         <span className="pill in">Chega · {m.type === "emprestimo" ? "empréstimo" : m.fee ? dinheiro(m.fee) : "grátis"}</span>

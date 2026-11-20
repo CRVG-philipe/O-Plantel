@@ -4,6 +4,11 @@
 export const POSN = { GOL: "Goleiro", ZAG: "Zagueiro", LE: "Lateral esquerdo", LD: "Lateral direito", VOL: "Volante", MC: "Meia central", MEI: "Meia ofensivo", MD: "Meia direita", ME: "Meia esquerda", PE: "Ponta esquerda", PD: "Ponta direita", SA: "Segundo atacante", CA: "Centroavante" };
 export const ORDER = Object.keys(POSN);
 
+// Setor de cada posição, para as cores: gol (amarelo), def (azul), mei (verde), ata (vermelho).
+// As cores ficam no CSS: var(--gol), var(--def), var(--mei), var(--ata).
+export const SETOR = { GOL: "gol", ZAG: "def", LD: "def", LE: "def", VOL: "mei", MC: "mei", MEI: "mei", MD: "mei", ME: "mei", PE: "ata", PD: "ata", SA: "ata", CA: "ata" };
+export const corDoSetor = (pos) => `var(--${SETOR[pos] || "mei"})`;
+
 // Seções da aba Elenco
 export const SECT = [["Goleiros", ["GOL"]], ["Zagueiros", ["ZAG"]], ["Laterais", ["LD", "LE"]], ["Meio-campo", ["VOL", "MC", "MEI", "MD", "ME"]], ["Ataque", ["PE", "PD", "SA", "CA"]]];
 

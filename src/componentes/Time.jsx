@@ -1,5 +1,6 @@
 // Aba Time: formação, campinho com os titulares e lista de reservas.
-import { FORMS, FIT, ORDER, POSN } from "../logica/constantes.js";
+import { FORMS, FIT, ORDER, POSN, corDoSetor } from "../logica/constantes.js";
+import { Avatar, Bandeira, Nota, Pos } from "./Jogador.jsx";
 import { short } from "../logica/formato.js";
 import { dinheiro } from "../logica/dinheiro.js";
 import { elencoAtual, jogador } from "../logica/elenco.js";
@@ -39,7 +40,7 @@ export default function Time({ app }) {
           const p = plano.xi[i] && jogador(plano, plano.xi[i]);
           const foraDePosicao = p && !FIT[r].slice(0, 1).includes(p.pos);
           return (
-            <button key={i} className={"slot" + (p ? "" : " empty")} style={{ left: x + "%", top: y + "%" }} aria-label={`${POSN[r]}: ${p ? p.n : "vazio"}`}
+            <button key={i} className={"slot" + (p ? "" : " empty")} style={{ left: x + "%", top: y + "%", "--pc": corDoSetor(r) }} aria-label={`${POSN[r]}: ${p ? p.n : "vazio"}`}
               onClick={() => app.abrirPainel("posicao", { i })}>
               <span className="dot">{p ? <Foto p={p} z={40} /> : "+"}</span>
               <span className={"lb" + (foraDePosicao ? " w" : "")}>{p ? short(p.n) : r}</span>
@@ -53,9 +54,10 @@ export default function Time({ app }) {
         <div className="card">
           {reservas.length ? reservas.map((p) => (
             <div className="row" key={p.id} style={{ minHeight: 48 }}>
-              <Foto p={p} z={34} />
-              <div className="mid"><div className="nm">{p.n}</div></div>
-              <div className="rt sub">{p.pos}</div>
+              <Avatar p={p} z={34} />
+              <div className="mid"><div className="nm">{p.n}<Bandeira nat={p.nat} /></div></div>
+              <Nota st={p.st} className="so-largo" />
+              <div className="rt"><Pos pos={p.pos} /></div>
             </div>
           )) : <div className="empty">Sem reservas.</div>}
         </div>

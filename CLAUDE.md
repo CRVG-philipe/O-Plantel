@@ -76,6 +76,15 @@ React 19 + Vite 6, em JavaScript (sem TypeScript).
 - Topo fixo com caixa, nº de jogadores e chegam/saem, mais as abas Elenco · Mercado · Time · Resumo.
 - Nenhum botão dentro das linhas da lista: tudo acontece num painel que sobe de baixo ao tocar.
 - Cores neutras, com a cor do clube como único acento. Fonte Inter. Tema claro e escuro.
+- Tema: segue o sistema até a pessoa tocar no botão sol/lua (`BotaoTema`, no topo do plano). A escolha fica em `plantel:tema` (`src/logica/tema.js`), que marca `<html data-theme>`. O `main.jsx` aplica o tema antes de desenhar, para não piscar. As telas antes do plano têm cores próprias e não mudam com o tema.
+- Visual das abas do plano (modelo `referencia-mercado.html`, adaptado aos dois temas):
+  - **Topo:** brilho na cor do clube e escudo como marca-d'água. Cards com ícone, barra do caixa e idade média; no celular, 2 cards e uma faixa. Abas com indicador deslizante (`--i`).
+  - **Cores por setor:** `--gol` amarelo, `--def` azul, `--mei` verde, `--ata` vermelho (`SETOR`/`corDoSetor` em `constantes.js`).
+  - **Peças em `componentes/Jogador.jsx`:** `Avatar` (anel do setor + mini escudo), `Bandeira`, `Pos`, `Nota` (≥8 azul, ≥7 verde, ≥6 amarelo, <6 laranja) e `MiniStats`.
+  - **Bandeiras dos jogadores:** `public/img/flags/paises/<iso>.svg` (pacote flag-icons, MIT). O mapa nacionalidade → código está em `src/logica/nacionalidades.js`. Usamos imagem porque emoji de bandeira não aparece no Windows.
+  - **Mercado:** busca fixa abaixo do topo a partir de 561px (`--topo-h`, medido pelo `Topo`), atalho "/", "cabe no caixa" / "faltam € X" (linha `.too` apagada) e legenda dos setores.
+  - **Cor do clube no CSS:** `--club` (campo `c`, para o brilho) e `--clubVis`/`--clubVisInk`, sempre legíveis: no claro usa `--ac`; no escuro, `--clubEscuro` troca cor escura demais pela 2ª cor ou cinza.
+  - **Cuidado:** a classe `.no` já existe (`.row .no`); não reutilizar esse nome.
 - Antes do plano (`EscolhaClube.jsx`, estado `tela` no `Plantel.jsx`): telas cheias com fundo colorido, linhas de campo em SVG (branco a 8%) e conteúdo num bloco de até 480px, com o botão principal logo abaixo do conteúdo. Modelo visual: `referencia-inicio-paises.html`, enviado pelo Philipe.
   - Topo de todas: logo e seletor de moeda. Nas etapas, há também "← X de Y".
   - `inicio`: o site **sempre** abre aqui, mesmo com plano salvo. Fundo `#0f3d2b`, título, números calculados do data.json (clubes, ligas, jogadores com valor > 0), "Seus planos" (o último aberto primeiro; tocar abre o plano; a lixeira ao lado abre `PainelExcluirPlano`, que só apaga ao tocar em "Excluir plano") e "Planejar um clube". "Trocar de clube" volta para cá.
