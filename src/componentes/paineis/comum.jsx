@@ -1,7 +1,7 @@
 // Pedaços usados por mais de um painel.
 import { D } from "../../logica/dados.js";
 import { ctrTxt, dec } from "../../logica/formato.js";
-import { eur } from "../../logica/dinheiro.js";
+import { dinheiro } from "../../logica/dinheiro.js";
 
 // Quatro quadradinhos: idade, país, fim do contrato, valor
 export function Fatos({ p }) {
@@ -10,7 +10,7 @@ export function Fatos({ p }) {
       <div><b>{p.a}</b><span>anos ({D.LG[p.lg]?.plan || "2027"})</span></div>
       <div><b style={{ fontSize: "12.5px", lineHeight: 1.5 }}>{p.nat || "–"}</b><span>país</span></div>
       <div><b>{ctrTxt(p.ctr)}</b><span>fim do contrato</span></div>
-      <div><b>{eur(p.v)}</b><span>valor</span></div>
+      <div><b>{dinheiro(p.v)}</b><span>valor</span></div>
     </div>
   );
 }

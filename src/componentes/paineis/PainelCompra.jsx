@@ -5,6 +5,7 @@ import { POSN } from "../../logica/constantes.js";
 import { ctrTxt } from "../../logica/formato.js";
 import { jogador } from "../../logica/elenco.js";
 import { encaixarNoTime } from "../../logica/escalacao.js";
+import { lerCampo, paraCampo, simbolo } from "../../logica/dinheiro.js";
 import { Cabecalho, noComputador } from "../Painel.jsx";
 import { Foto } from "../Imagens.jsx";
 import { Fatos, Estatisticas, Opcao } from "./comum.jsx";
@@ -13,7 +14,9 @@ export default function PainelCompra({ app, id }) {
   const p = jogador(app.plano, id);
   const ja = app.plano.ins.find((m) => m.id === id); // já foi contratado?
   const [tipo, setTipo] = useState(ja ? ja.type : p.end26 ? "livre" : "compra");
-  const [valor, setValor] = useState(ja ? ja.fee : p.v);
+  // Valor: { eur: valor de partida em euro, texto: o que está no campo, na moeda escolhida }
+  const comecar = (eur) => ({ eur, texto: paraCampo(eur) });
+  const [valor, setValor] = useState(() => comecar(ja ? ja.fee : p.v));
 
   const opcoes = [
     ["compra", "Comprar", "Paga a transferência."],
@@ -21,7 +24,7 @@ export default function PainelCompra({ app, id }) {
     ["livre", "Sem custo", p.end26 ? "O contrato dele acaba em " + ctrTxt(p.ctr) + "." : "Ex.: fim de contrato ou rescisão."],
   ];
 
-  const escolherTipo = (k) => { setTipo(k); setValor(k === "compra" ? p.v : 0); };
+  const escolherTipo = (k) => { setTipo(k); setValor(comecar(k === "compra" ? p.v : 0)); };
 
   const desfazer = () => {
     app.mudar((P) => {
@@ -32,7 +35,7 @@ export default function PainelCompra({ app, id }) {
   };
 
   const confirmar = () => {
-    const rec = { id, type: tipo, fee: tipo === "livre" ? 0 : Math.max(0, +valor || 0) };
+    const rec = { id, type: tipo, fee: tipo === "livre" ? 0 : lerCampo(valor.texto, valor.eur) };
     app.mudar((P) => {
       const existente = P.ins.find((m) => m.id === id);
       if (existente) Object.assign(existente, rec);
@@ -49,8 +52,8 @@ export default function PainelCompra({ app, id }) {
       {p.club !== "NOVO" && <Estatisticas p={p} />}
       {opcoes.map(([k, t, d]) => <Opcao key={k} marcado={tipo === k} titulo={t} detalhe={d} onClick={() => escolherTipo(k)} />)}
       {tipo !== "livre" && (
-        <label className="field">{tipo === "compra" ? "Valor da compra" : "Taxa do empréstimo"} (€ milhões)
-          <input id="fee" className="num" type="number" min="0" step="0.1" inputMode="decimal" value={valor} onChange={(e) => setValor(e.target.value)} autoFocus={noComputador()} />
+        <label className="field">{tipo === "compra" ? "Valor da compra" : "Taxa do empréstimo"} ({simbolo()} milhões)
+          <input id="fee" className="num" type="number" min="0" step="0.1" inputMode="decimal" value={valor.texto} onChange={(e) => setValor({ ...valor, texto: e.target.value })} autoFocus={noComputador()} />
         </label>
       )}
       <div className="acts" style={{ marginTop: 8 }}>

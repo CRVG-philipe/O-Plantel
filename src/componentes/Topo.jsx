@@ -1,8 +1,9 @@
 // Barra fixa do topo: logo, botão do clube, resumo (caixa, jogadores, chegam/saem) e abas.
 import { D } from "../logica/dados.js";
-import { eur, calcularDinheiro } from "../logica/dinheiro.js";
+import { dinheiro, calcularDinheiro } from "../logica/dinheiro.js";
 import { elencoAtual, saidas } from "../logica/elenco.js";
 import { Escudo } from "./Imagens.jsx";
+import SeletorMoeda from "./SeletorMoeda.jsx";
 
 const ABAS = [["elenco", "Elenco"], ["mercado", "Mercado"], ["time", "Time"], ["resumo", "Resumo"]];
 
@@ -13,11 +14,12 @@ export default function Topo({ app }) {
       <div className="col">
         <div className="bar">
           <div className="logo"><i></i>Plantel</div>
-          <span id="clubSlot" style={{ marginLeft: "auto" }}>
+          <span style={{ marginLeft: "auto" }}><SeletorMoeda app={app} /></span>
+          <span id="clubSlot">
             {plano && (
               <button className="clubBtn" id="chg" aria-label="Trocar clube" onClick={() => app.abrirPainel("clube")}>
                 <Escudo k={plano.club} />
-                <span style={{ maxWidth: "40vw", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{D.CL[plano.club].n}</span>
+                <span className="clubNome" style={{ maxWidth: "40vw", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{D.CL[plano.club].n}</span>
               </button>
             )}
           </span>
@@ -35,7 +37,7 @@ function ResumoEAbas({ app }) {
     <div id="planBar">
       <div className="sum" id="sum">
         <button id="bud" className={m.caixa < 0 ? "neg" : ""} onClick={() => app.abrirPainel("orcamento", { primeiro: false })}>
-          <b className="num">{eur(m.caixa)}</b><span>Caixa · editar</span>
+          <b className="num">{dinheiro(m.caixa)}</b><span>Caixa · editar</span>
         </button>
         <button onClick={() => app.irPara("elenco")}>
           <b className="num">{elencoAtual(plano).length}</b><span>Jogadores</span>

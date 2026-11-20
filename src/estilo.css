@@ -111,35 +111,65 @@ details.bench[open] summary::after{content:"Ocultar"}
 .btn.pri{background:var(--ac);color:var(--acInk)}
 .btn.danger{background:none;color:var(--neg)}
 .btn:disabled{opacity:.4;cursor:not-allowed}
-/* escolha de clube: tela cheia em 3 etapas (país, divisão, clube).
-   Fundo = cor do país ou do clube; texto branco; cartões brancos a 14%; botões redondos a 18%. */
-.esc{min-height:100vh;color:#fff;transition:background-color .3s}
-.esc-tela{max-width:480px;margin:0 auto;min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;padding:0 16px}
-.esc-top{display:flex;align-items:center;justify-content:space-between;padding:16px 0 4px}
+/* antes do plano: tela inicial e escolha (país, divisão, clube). Medidas do modelo referencia-inicio-paises.html.
+   Fundo verde-escuro (início), #1f2a24 (países), cor do país (divisão) ou do clube; linhas de campo a 8%;
+   cartões brancos a 12–14%; botões redondos a 18%; texto secundário a 75%. Conteúdo num bloco de até 480px. */
+.esc{position:relative;min-height:100vh;color:#fff;transition:background-color .3s}
+.campo{position:fixed;inset:0;width:100%;height:100%;pointer-events:none}
+.esc-wrap{position:relative;max-width:480px;margin:0 auto;padding:18px 18px calc(28px + env(safe-area-inset-bottom));min-height:100vh;display:flex;flex-direction:column}
+.esc-top{display:flex;justify-content:space-between;align-items:center}
+.esc-logo{font-size:16px;font-weight:600;display:flex;align-items:center;gap:8px}
+.esc-logo i{width:16px;height:16px;border:2.5px solid #fff;border-radius:4px;display:inline-block}
+/* seletor de moeda: nas telas coloridas (translúcido) e no topo do plano (cores do tema) */
+.moeda{display:flex;background:rgba(255,255,255,.14);border-radius:99px;padding:3px;flex:none}
+.moeda button{border:0;background:none;border-radius:99px;padding:5px 11px;font-size:13px;font-weight:500}
+.moeda button[aria-pressed=true]{background:#fff;color:#0f3d2b}
+.top .moeda{background:var(--sf2)}
+.top .moeda button{color:var(--mute)}
+.top .moeda button[aria-pressed=true]{background:var(--sf);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.1)}
+@media (max-width:430px){.top .clubNome{display:none}.top .clubBtn{padding-right:10px}
+  /* resumo do topo no celular: mais espaço para o caixa ("−US$ 1.234,5 mi") e nada quebra de linha */
+  .sum{grid-template-columns:1.5fr 1fr 1fr;gap:6px}.sum button{padding:8px 10px}
+  .sum b{font-size:15.5px;white-space:nowrap}.sum span{font-size:11.5px;white-space:nowrap}}
+@media (max-width:370px){.sum{grid-template-columns:1.55fr 1fr 1fr}.sum button{padding:8px 7px}.sum b{font-size:14px}.sum span{font-size:10.5px}}
+@media (max-width:340px){.sum b,.sum span{white-space:normal}} /* celulares bem estreitos: quebra a linha em vez de cortar */
+.esc-passo{display:flex;align-items:center;gap:10px;margin-top:22px;font-size:12px;color:rgba(255,255,255,.75)}
 .esc-round{width:44px;height:44px;border-radius:50%;border:0;background:rgba(255,255,255,.18);color:#fff;font-size:22px;line-height:1;display:grid;place-items:center;flex:none;padding:0}
 .esc-round:hover{background:rgba(255,255,255,.26)}
-.esc-voltar{width:36px;height:36px;font-size:17px}
-.esc-logo{font-weight:700;font-size:17px;letter-spacing:-.02em;display:flex;align-items:center;gap:8px}
-.esc-logo i{width:18px;height:18px;border-radius:5px;border:2.5px solid #fff}
-.esc-passo{font-size:12.5px;color:rgba(255,255,255,.75);min-width:36px;text-align:right}
-.esc-dots{display:flex;gap:6px;justify-content:center;padding-top:8px;min-height:14px}
-.esc-dots span{width:6px;height:6px;border-radius:3px;background:rgba(255,255,255,.4);transition:width .3s,background-color .3s}
-.esc-dots span.on{width:18px;background:#fff}
-.esc-corpo{flex:1;display:flex;flex-direction:column}
-.esc-rotulo{text-align:center;font-size:13.5px;color:rgba(255,255,255,.75);margin:22px 0 0}
-.esc-car,.esc-clubes{display:flex;align-items:center;justify-content:center;touch-action:pan-y;user-select:none}
-.esc-car{gap:14px;padding:18px 0}
-.esc-bandeira{width:clamp(150px,46vw,210px);aspect-ratio:15/11;border-radius:16px;background:#fff;background-clip:padding-box;border:6px solid rgba(255,255,255,.35);display:grid;place-items:center;padding:12px}
-.esc-bandeira img{display:block;max-width:100%;max-height:100%;box-shadow:0 0 0 1px rgba(0,0,0,.1)}
-.esc-nome{font-size:clamp(26px,7vw,32px);font-weight:700;text-align:center}
-.esc-sub{text-align:center;font-size:13.5px;color:rgba(255,255,255,.75);margin:4px 0 0}
-.esc-siglas{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;padding-top:20px}
-.esc-siglas button{border:0;border-radius:999px;background:rgba(255,255,255,.18);color:#fff;font-size:12px;font-weight:600;padding:0 11px;min-height:32px}
-.esc-siglas button[aria-pressed=true]{background:#fff;color:#151619}
-.esc-rodape{margin-top:auto;padding:24px 0 calc(16px + env(safe-area-inset-bottom))}
-.esc-acoes{display:flex;gap:8px;align-items:center}
+.esc-voltar{width:36px;height:36px;font-size:16px}
+.esc-corpo{display:flex;flex-direction:column}
+.esc-card{background:rgba(255,255,255,.12);border-radius:14px;padding:12px;color:#fff}
+.esc-acao{margin-top:24px}
 .esc-cta{width:100%;height:52px;border-radius:14px;border:0;background:#fff;font-size:16px;font-weight:600;transition:color .3s}
-.esc-acoes .esc-cta{flex:1;width:auto}
+.esc footer{color:rgba(255,255,255,.75);margin-top:18px;padding:0;font-size:11px;text-align:center;max-width:none}
+.esc footer .cotacao{margin-bottom:4px}
+.esc :focus-visible{outline-color:#fff}
+/* tela inicial */
+.ini-titulo{font-size:34px;line-height:1.08;font-weight:600;margin:56px 0 0;letter-spacing:-.02em}
+.ini-frase{font-size:15px;margin:12px 0 0;max-width:30ch;color:rgba(255,255,255,.75)}
+.ini-numeros{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:24px}
+.ini-numeros b{display:block;font-size:20px;font-weight:600}
+.ini-numeros span{font-size:12px;color:rgba(255,255,255,.75)}
+.ini-rotulo{font-size:12px;margin:24px 0 6px;color:rgba(255,255,255,.75)}
+.ini-planos{display:grid;gap:8px}
+.ini-plano{display:flex;align-items:center;gap:10px;border:0;width:100%;text-align:left}
+.ini-plano:hover{background:rgba(255,255,255,.18)}
+.ini-badge{width:40px;height:40px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;flex:none}
+.ini-plano-txt{flex:1;min-width:0}
+.ini-plano-txt b{display:block;font-size:15px;font-weight:600}
+.ini-plano-txt span{font-size:12px;color:rgba(255,255,255,.75)}
+/* países */
+.esc-titulo{font-size:26px;font-weight:600;margin:12px 0 16px;letter-spacing:0;line-height:1.5}
+.esc-paises{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media (min-width:600px){.esc-paises{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.esc-pais{border:0;text-align:left;background:rgba(255,255,255,.1);border-radius:16px;padding:10px;color:#fff;transition:transform .15s,background-color .15s}
+.esc-pais:hover{background:rgba(255,255,255,.18);transform:translateY(-2px)}
+.esc-flag{height:64px;border-radius:10px;margin-bottom:10px;display:flex;align-items:center;justify-content:center;padding:8px}
+.esc-flag img{display:block;max-width:100%;max-height:100%;border-radius:3px;box-shadow:0 0 0 1px rgba(0,0,0,.15)}
+.esc-pais-nome{display:block;font-size:15px;font-weight:600}
+.esc-pais-ligas{display:block;font-size:12px;color:rgba(255,255,255,.75)}
+/* divisão e clube */
+.esc-rotulo{text-align:center;font-size:13.5px;color:rgba(255,255,255,.75);margin:22px 0 0}
 .esc-divisoes{display:flex;flex-direction:column;gap:10px;padding-top:20px}
 .esc-divisao{display:flex;align-items:center;gap:12px;min-height:76px;border-radius:16px;border:0;background:rgba(255,255,255,.14);color:#fff;padding:0 18px;text-align:left;line-height:1.35}
 .esc-divisao:hover{background:rgba(255,255,255,.2)}
@@ -147,16 +177,18 @@ details.bench[open] summary::after{content:"Ocultar"}
 .esc-divisao span:last-child{font-size:22px}
 .esc-divisao b{display:block;font-size:17px;font-weight:600}
 .esc-divisao small{font-size:12.5px;color:rgba(255,255,255,.75)}
-.esc-clubes{gap:12px;padding:18px 0 14px}
+.esc-clubes{display:flex;align-items:center;justify-content:center;gap:12px;padding:18px 0 14px;touch-action:pan-y;user-select:none}
 .esc-vizinho{width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,.18);display:grid;place-items:center;flex:none}
 .esc-escudo{width:clamp(132px,40vw,156px);aspect-ratio:1;border-radius:50%;background:#fff;background-clip:padding-box;border:6px solid rgba(255,255,255,.35);display:grid;place-items:center}
+.esc-nome{font-size:clamp(26px,7vw,32px);font-weight:700;text-align:center}
+.esc-sub{text-align:center;font-size:13.5px;color:rgba(255,255,255,.75);margin:4px 0 0}
 .esc-cartoes{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding-top:18px}
 .esc-cartao{background:rgba(255,255,255,.14);border-radius:12px;padding:10px 12px}
 .esc-cartao b{display:block;font-size:17px;font-weight:600}
 .esc-cartao span{font-size:12px;color:rgba(255,255,255,.75)}
-.esc footer{color:rgba(255,255,255,.75);max-width:480px;padding:8px 16px 32px}
-.esc :focus-visible{outline-color:#fff}
-@media (prefers-reduced-motion:reduce){.esc,.esc-dots span,.esc-cta{transition:none}}
+.esc-acoes{display:flex;gap:8px;align-items:center}
+.esc-acoes .esc-cta{flex:1;width:auto}
+@media (prefers-reduced-motion:reduce){.esc,.esc-cta,.esc-pais{transition:none}.esc-pais:hover{transform:none}}
 /* painel inferior */
 .ov{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.35);display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
 .ov.on{opacity:1;pointer-events:auto}

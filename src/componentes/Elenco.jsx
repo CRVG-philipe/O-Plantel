@@ -2,7 +2,7 @@
 import { D } from "../logica/dados.js";
 import { SECT, ORDER } from "../logica/constantes.js";
 import { ctrTxt } from "../logica/formato.js";
-import { eur } from "../logica/dinheiro.js";
+import { dinheiro } from "../logica/dinheiro.js";
 import { elencoOriginal, jogador, situacao } from "../logica/elenco.js";
 import { Foto } from "./Imagens.jsx";
 
@@ -35,7 +35,7 @@ export default function Elenco({ app }) {
 // Jogador do elenco original (com etiqueta se foi vendido/emprestado/liberado)
 function LinhaPropria({ app, p }) {
   const st = situacao(app.plano, p.id);
-  const pill = st.s === "vende" ? <span className="pill out">Vendido {eur(+st.fee || 0)}</span>
+  const pill = st.s === "vende" ? <span className="pill out">Vendido {dinheiro(+st.fee || 0)}</span>
     : st.s === "empresta" ? <span className="pill loan">Emprestado</span>
     : st.s === "libera" ? <span className="pill loan">Liberado</span> : null;
   return (
@@ -48,7 +48,7 @@ function LinhaPropria({ app, p }) {
           {p.end26 && <> · <span className="w">contrato até {ctrTxt(p.ctr)}</span></>}
         </div>
       </div>
-      <div className="rt"><div className="v num">{eur(p.v)}</div>{pill}</div>
+      <div className="rt"><div className="v num">{dinheiro(p.v)}</div>{pill}</div>
     </button>
   );
 }
@@ -64,8 +64,8 @@ function LinhaChegada({ app, m }) {
         <div className="sub">{p.pos} · {p.a} anos · {p.club === "NOVO" ? "criado por você" : "veio do " + D.CL[p.club].n}</div>
       </div>
       <div className="rt">
-        <div className="v num">{eur(p.v)}</div>
-        <span className="pill in">Chega · {m.type === "emprestimo" ? "empréstimo" : m.fee ? eur(m.fee) : "grátis"}</span>
+        <div className="v num">{dinheiro(p.v)}</div>
+        <span className="pill in">Chega · {m.type === "emprestimo" ? "empréstimo" : m.fee ? dinheiro(m.fee) : "grátis"}</span>
       </div>
     </button>
   );

@@ -11,7 +11,7 @@
 import { D } from "./dados.js";
 import { FORMS, NEED } from "./constantes.js";
 import { short } from "./formato.js";
-import { eur, calcularDinheiro } from "./dinheiro.js";
+import { dinheiro, calcularDinheiro } from "./dinheiro.js";
 
 export function novoPlano(k) {
   return { club: k, budget: null, st: {}, ins: [], form: "4-3-3", xi: {}, custom: [] };
@@ -42,7 +42,7 @@ export function saidas(plano) {
 export function alertas(plano) {
   const m = calcularDinheiro(plano), sq = elencoAtual(plano), a = [];
   const L = D.LG[D.CL[plano.club].lg];
-  if (m.caixa < 0) a.push(`O caixa está negativo em ${eur(-m.caixa)}.`);
+  if (m.caixa < 0) a.push(`O caixa está negativo em ${dinheiro(-m.caixa)}.`);
   NEED.forEach(([l, ps, min]) => {
     const n = sq.filter((p) => ps.includes(p.pos)).length;
     if (n < min) a.push(`${l}: ${n} no elenco, o recomendado é ${min}.`);
@@ -60,8 +60,8 @@ export function textoDoPlano(plano) {
   const xi = FORMS[plano.form].map((s, i) => (plano.xi[i] ? short(jogador(plano, plano.xi[i]).n) : "?"));
   const chegam = plano.ins.map((mv) => {
     const p = jogador(plano, mv.id);
-    return "+ " + p.n + " (" + p.pos + ") " + (mv.type === "emprestimo" ? "empréstimo" : mv.fee ? eur(mv.fee) : "grátis");
+    return "+ " + p.n + " (" + p.pos + ") " + (mv.type === "emprestimo" ? "empréstimo" : mv.fee ? dinheiro(mv.fee) : "grátis");
   }).join("\n") || "ninguém";
-  const saem = o.map(({ p, x }) => "− " + p.n + " (" + { vende: "venda " + eur(+x.fee || 0), empresta: "empréstimo", libera: "liberado" }[x.s] + ")").join("\n") || "ninguém";
-  return `${c.n} ${D.LG[c.lg].plan} (planejado no Plantel)\nOrçamento ${eur(plano.budget || 0)} · caixa final ${eur(m.caixa)}\n\nCHEGAM\n${chegam}\n\nSAEM\n${saem}\n\nTIME (${plano.form})\n${xi[0]}; ${xi.slice(1, 5).join(", ")}; ${xi.slice(5).join(", ")}`;
+  const saem = o.map(({ p, x }) => "− " + p.n + " (" + { vende: "venda " + dinheiro(+x.fee || 0), empresta: "empréstimo", libera: "liberado" }[x.s] + ")").join("\n") || "ninguém";
+  return `${c.n} ${D.LG[c.lg].plan} (planejado no Plantel)\nOrçamento ${dinheiro(plano.budget || 0)} · caixa final ${dinheiro(m.caixa)}\n\nCHEGAM\n${chegam}\n\nSAEM\n${saem}\n\nTIME (${plano.form})\n${xi[0]}; ${xi.slice(1, 5).join(", ")}; ${xi.slice(5).join(", ")}`;
 }

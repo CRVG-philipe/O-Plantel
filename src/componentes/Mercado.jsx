@@ -2,7 +2,7 @@
 import { D } from "../logica/dados.js";
 import { CHIPS } from "../logica/constantes.js";
 import { ctrTxt, statLine } from "../logica/formato.js";
-import { eur } from "../logica/dinheiro.js";
+import { dinheiro } from "../logica/dinheiro.js";
 import { buscarJogadores, contarFiltros } from "../logica/mercado.js";
 import { Foto } from "./Imagens.jsx";
 
@@ -39,7 +39,7 @@ export default function Mercado({ app }) {
                     </div>
                     <div className="sub st">{statLine(p)}</div>
                   </div>
-                  <div className="rt"><div className="v num">{eur(p.v)}</div></div>
+                  <div className="rt"><div className="v num">{dinheiro(p.v)}</div></div>
                   <span className="add" aria-hidden="true">+</span>
                 </button>
               ))}

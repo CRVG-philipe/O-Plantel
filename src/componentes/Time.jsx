@@ -1,7 +1,7 @@
 // Aba Time: formação, campinho com os titulares e lista de reservas.
 import { FORMS, FIT, ORDER, POSN } from "../logica/constantes.js";
 import { short } from "../logica/formato.js";
-import { eur } from "../logica/dinheiro.js";
+import { dinheiro } from "../logica/dinheiro.js";
 import { elencoAtual, jogador } from "../logica/elenco.js";
 import { escalarSozinho } from "../logica/escalacao.js";
 import { Foto } from "./Imagens.jsx";
@@ -23,7 +23,7 @@ export default function Time({ app }) {
           {Object.keys(FORMS).map((f) => <option key={f}>{f}</option>)}
         </select>
         <button className="btn" id="auto" style={{ minHeight: 40 }} onClick={escalar}>Escalar sozinho</button>
-        <div className="xv">Valor do time<b className="num">{eur(valorTime)}</b></div>
+        <div className="xv">Valor do time<b className="num">{dinheiro(valorTime)}</b></div>
       </div>
       <div className="pitch">
         <svg viewBox="0 0 68 92" preserveAspectRatio="none" aria-hidden="true">

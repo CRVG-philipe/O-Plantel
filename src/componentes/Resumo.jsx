@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { D } from "../logica/dados.js";
 import { NEED } from "../logica/constantes.js";
-import { eur, calcularDinheiro } from "../logica/dinheiro.js";
+import { dinheiro, calcularDinheiro } from "../logica/dinheiro.js";
 import { alertas, elencoAtual, elencoOriginal, jogador, saidas, textoDoPlano } from "../logica/elenco.js";
 
 const ROTULO_SAIDA = { vende: "venda", empresta: "empréstimo", libera: "liberado" };
@@ -37,10 +37,10 @@ export default function Resumo({ app }) {
       <div className="sec">
         <h2><span>Dinheiro</span></h2>
         <div className="card">
-          <div className="kv"><span>Orçamento inicial</span><span className="num">{eur(plano.budget || 0)}</span></div>
-          <div className="kv"><span>Vendas</span><span className="num" style={{ color: "var(--pos)" }}>+{eur(m.vendas)}</span></div>
-          <div className="kv"><span>Contratações</span><span className="num" style={{ color: "var(--neg)" }}>{m.compras ? "−" + eur(m.compras) : "€0"}</span></div>
-          <div className="kv tot"><span>Caixa final</span><span className="num" style={{ color: m.caixa < 0 ? "var(--neg)" : "inherit" }}>{eur(m.caixa)}</span></div>
+          <div className="kv"><span>Orçamento inicial</span><span className="num">{dinheiro(plano.budget || 0)}</span></div>
+          <div className="kv"><span>Vendas</span><span className="num" style={{ color: "var(--pos)" }}>+{dinheiro(m.vendas)}</span></div>
+          <div className="kv"><span>Contratações</span><span className="num" style={{ color: "var(--neg)" }}>{m.compras ? "−" + dinheiro(m.compras) : "€0"}</span></div>
+          <div className="kv tot"><span>Caixa final</span><span className="num" style={{ color: m.caixa < 0 ? "var(--neg)" : "inherit" }}>{dinheiro(m.caixa)}</span></div>
         </div>
       </div>
 
@@ -48,7 +48,7 @@ export default function Resumo({ app }) {
         <h2><span>Elenco</span></h2>
         <div className="card">
           <div className="kv"><span>Jogadores</span><span className="num">{sq.length}</span></div>
-          <div className="kv"><span>Valor de mercado</span><span className="num">{eur(sq.reduce((s, p) => s + p.v, 0))} <span className="mute">(era {eur(own.reduce((s, p) => s + p.v, 0))})</span></span></div>
+          <div className="kv"><span>Valor de mercado</span><span className="num">{dinheiro(sq.reduce((s, p) => s + p.v, 0))} <span className="mute">(era {dinheiro(own.reduce((s, p) => s + p.v, 0))})</span></span></div>
           <div className="kv"><span>Idade média em 2027</span><span className="num">{(sq.reduce((s, p) => s + p.a, 0) / (sq.length || 1)).toFixed(1)} anos</span></div>
           <div className="kv"><span>Estrangeiros</span><span className="num">{sq.filter((p) => p.nat && p.nat !== L.nat).length}</span></div>
         </div>
@@ -78,7 +78,7 @@ export default function Resumo({ app }) {
             return (
               <div className="kv" key={mv.id}>
                 <span>{p.n} <span className="mute">· {p.pos}</span></span>
-                <span className="num">{mv.type === "emprestimo" ? "empréstimo" : mv.fee ? eur(mv.fee) : "grátis"}</span>
+                <span className="num">{mv.type === "emprestimo" ? "empréstimo" : mv.fee ? dinheiro(mv.fee) : "grátis"}</span>
               </div>
             );
           }) : <div className="empty" style={{ padding: 16 }}>Nenhuma contratação.</div>}
@@ -91,7 +91,7 @@ export default function Resumo({ app }) {
           {o.length ? o.map(({ p, x }) => (
             <div className="kv" key={p.id}>
               <span>{p.n} <span className="mute">· {p.pos}</span></span>
-              <span className="num">{x.s === "vende" ? eur(+x.fee || 0) : ROTULO_SAIDA[x.s]}</span>
+              <span className="num">{x.s === "vende" ? dinheiro(+x.fee || 0) : ROTULO_SAIDA[x.s]}</span>
             </div>
           )) : <div className="empty" style={{ padding: 16 }}>Ninguém saiu.</div>}
         </div>

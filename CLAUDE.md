@@ -61,13 +61,19 @@ React 19 + Vite 6, em JavaScript (sem TypeScript).
 - Topo fixo com caixa, nº de jogadores e chegam/saem, mais as abas Elenco · Mercado · Time · Resumo.
 - Nenhum botão dentro das linhas da lista: tudo acontece num painel que sobe de baixo ao tocar.
 - Cores neutras, com a cor do clube como único acento. Fonte Inter. Tema claro e escuro.
-- Escolha de clube (`EscolhaClube.jsx`): tela cheia em 3 etapas, com a coluna de até 480px centralizada.
-  - Etapa 1 é o país: bandeira em cartão branco, setas, deslizar o dedo e siglas.
-  - Etapa 2 é a divisão, e só aparece se o país tiver mais de uma liga (hoje, só o Brasil).
-  - Etapa 3 é o clube: escudo num círculo branco, vizinhos dos lados, valor e jogadores.
-  - Fundo = cor do país (`PAISES` em `constantes.js`) ou do clube (`corDeFundo`: `c`, senão `c2`, senão cinza `#222428`, sempre com brilho ≤ 0,6 para o texto branco ser legível). Transição de 300ms, desligada com `prefers-reduced-motion`.
-  - "Voltar" vai para a etapa anterior real (pula a divisão se não houve). Quem troca de clube volta direto à etapa 3, no último clube.
+- Antes do plano (`EscolhaClube.jsx`, estado `tela` no `Plantel.jsx`): telas cheias com fundo colorido, linhas de campo em SVG (branco a 8%) e conteúdo num bloco de até 480px, com o botão principal logo abaixo do conteúdo. Modelo visual: `referencia-inicio-paises.html`, enviado pelo Philipe.
+  - Topo de todas: logo e seletor de moeda. Nas etapas, há também "← X de Y".
+  - `inicio`: o site **sempre** abre aqui, mesmo com plano salvo. Fundo `#0f3d2b`, título, números calculados do data.json (clubes, ligas, jogadores com valor > 0), "Seus planos" (o último aberto primeiro; tocar abre o plano) e "Planejar um clube". "Trocar de clube" volta para cá.
+  - `pais`: grade de cartões (2 colunas; 3 a partir de 600px), fundo `#1f2a24`. Tocar avança.
+  - `divisao`: só aparece se o país tiver mais de uma liga (hoje, só o Brasil). Fundo = cor do país (`PAISES` em `constantes.js`).
+  - `clube`: escudo num círculo branco, vizinhos, valor e jogadores. Setas, teclado e deslizar o dedo trocam de clube. Fundo = `corDeFundo` (`c`, senão `c2`, senão cinza `#222428`, sempre com brilho ≤ 0,6 para o texto branco ser legível).
+  - "Voltar" vai para a tela anterior real (pula a divisão se não houve). Transições de 300ms, desligadas com `prefers-reduced-motion`.
   - Bandeiras: SVGs do Wikimedia Commons em `public/img/flags/`.
+- Moeda (€, R$, US$; `dinheiro.js` e `cotacao.js`):
+  - **Tudo é guardado em euro.** A conversão é só na exibição (`dinheiro(v)`, com formato "€ 12 mi", "R$ 70 mi", "US$ 13 mil") e ao ler o que foi digitado (`paraCampo`/`lerCampo`; campo sem mexer mantém o valor original exato).
+  - Escolha salva em `plantel:moeda`.
+  - Cotação da API Frankfurter (`https://api.frankfurter.dev/v1/...`; o endereço `.app` redireciona sem CORS e falha no navegador), salva em `plantel:cotacao`. Se a busca falhar, usa a salva; sem nada salvo, usa `COTACAO_RESERVA`.
+  - O rodapé mostra a cotação usada e a data.
 - Temporada planejada: "2027" nas ligas de calendário anual (BRA, BRB, ARG, USA) e "27/28" nas demais.
 - Os planos ficam salvos no localStorage (chave `plantel:v2`, formato `{plans:{<clube>: plano}, last}`). **Não mudar os nomes dos campos do plano** (`club, budget, st, ins, form, xi, custom`), senão quem já tem planos salvos os perde.
 

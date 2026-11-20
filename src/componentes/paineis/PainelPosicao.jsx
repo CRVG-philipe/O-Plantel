@@ -1,7 +1,7 @@
 // Painel de uma vaga do campinho: escolher quem joga ali.
 import { useState } from "react";
 import { FORMS, FIT, POSN } from "../../logica/constantes.js";
-import { eur } from "../../logica/dinheiro.js";
+import { dinheiro } from "../../logica/dinheiro.js";
 import { elencoAtual } from "../../logica/elenco.js";
 import { Cabecalho } from "../Painel.jsx";
 import { Foto } from "../Imagens.jsx";
@@ -44,7 +44,7 @@ export default function PainelPosicao({ app, i }) {
                   {titularEmOutra && p.id !== atual ? " · titular em outra posição" : ""}
                 </div>
               </div>
-              <div className="rt v num">{eur(p.v)}</div>
+              <div className="rt v num">{dinheiro(p.v)}</div>
             </button>
           );
         })}

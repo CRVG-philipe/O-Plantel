@@ -6,6 +6,8 @@ import { lum } from "./logica/formato.js";
 import { lerPlanos, salvarPlanos } from "./logica/armazenamento.js";
 import { jogador, novoPlano } from "./logica/elenco.js";
 import { escalarSozinho, completarTime } from "./logica/escalacao.js";
+import { usarMoeda } from "./logica/dinheiro.js";
+import { buscarCotacao, lerCotacaoSalva, lerMoeda, salvarMoeda } from "./logica/cotacao.js";
 import Topo from "./componentes/Topo.jsx";
 import EscolhaClube from "./componentes/EscolhaClube.jsx";
 import Elenco from "./componentes/Elenco.jsx";
@@ -45,10 +47,10 @@ export default function Plantel() {
   const [db, setDb] = useState(lerPlanos);       // tudo que está salvo no navegador
   const [aberto, setAberto] = useState(null);    // clube do plano aberto (null = tela de escolha)
   const [aba, setAba] = useState("elenco");
-  // tela de escolha (etapa 0 = país, 1 = divisão, 2 = clube).
-  // Quem já tem plano salvo começa na etapa do clube, no último clube aberto.
+  // Tela antes do plano: "inicio", "pais", "divisao" ou "clube". O site sempre abre no início.
+  // País, liga e clube começam no último clube aberto (para quem volta a ele).
   const ultimo = db.last && D.CL[db.last] ? D.CL[db.last] : null;
-  const [etapa, setEtapa] = useState(() => (ultimo ? 2 : 0));
+  const [tela, setTela] = useState("inicio");
   const [pais, setPais] = useState(() => (ultimo ? paisDa(ultimo.lg) : 0));
   const [liga, setLiga] = useState(() => (ultimo ? ultimo.lg : "BRA"));
   const [indice, setIndice] = useState(() => (ultimo ? Math.max(0, clubesDa(ultimo.lg).findIndex((c) => c.k === ultimo.k)) : 0));
@@ -61,6 +63,10 @@ export default function Plantel() {
   const [painel, setPainel] = useState({ tipo: null, args: {}, chave: 0, aberto: false });
   const [aviso, setAviso] = useState({ texto: "", on: false });
   const timerAviso = useRef();
+  // moeda escolhida e cotação do euro (a salva, ou a de reserva, até a busca do dia chegar)
+  const [moeda, setMoeda] = useState(lerMoeda);
+  const [cotacao, setCotacao] = useState(lerCotacaoSalva);
+  usarMoeda(moeda, cotacao); // vale para todos os valores desenhados nesta tela
 
   const clubes = useMemo(() => clubesDa(liga), [liga]);
   const plano = aberto ? db.plans[aberto] : null;
@@ -102,12 +108,12 @@ export default function Plantel() {
     if (p.budget === null) abrirPainel("orcamento", { primeiro: true });
   }
 
-  // Volta para a tela de escolha, na etapa do clube, no clube que estava aberto
+  // Sai do plano e volta para a tela inicial (país, liga e clube ficam no clube que estava aberto)
   function trocarClube() {
     fecharPainel();
     const k = aberto;
     setAberto(null);
-    setEtapa(2);
+    setTela("inicio");
     setPais(paisDa(D.CL[k].lg));
     setLiga(D.CL[k].lg);
     setIndice(Math.max(0, clubesDa(D.CL[k].lg).findIndex((c) => c.k === k)));
@@ -130,43 +136,45 @@ export default function Plantel() {
 
   const irPara = (a) => { setAba(a); window.scrollTo(0, 0); };
   const passo = (d) => setIndice((i) => (i + d + clubes.length) % clubes.length);
-  const passoPais = (d) => setPais((i) => (i + d + PAISES.length) % PAISES.length);
+  const planejarClube = () => { setTela("pais"); window.scrollTo(0, 0); };
 
   // Escolhe a liga e vai para a etapa do clube (se trocou de liga, começa no 1º clube)
   function escolherDivisao(lg) {
     if (lg !== liga) { setLiga(lg); setIndice(0); }
-    setEtapa(2);
+    setTela("clube");
   }
-  // "Continuar" no país: vai para a divisão, ou direto para o clube se só há uma liga
-  function continuarPais() {
-    const P = PAISES[pais];
-    if (P.ligas.length > 1) setEtapa(1);
-    else escolherDivisao(P.ligas[0]);
+  // Tocar num país: vai para a divisão, ou direto para o clube se o país só tem uma liga
+  function escolherPais(i) {
+    setPais(i);
+    if (PAISES[i].ligas.length > 1) setTela("divisao");
+    else escolherDivisao(PAISES[i].ligas[0]);
   }
-  // "Voltar": sempre para a etapa anterior que de fato existiu (pula a divisão se não houve)
+  // "Voltar": sempre para a tela anterior que de fato existiu (pula a divisão se não houve)
   function voltar() {
-    if (etapa === 2) setEtapa(PAISES[pais].ligas.length > 1 ? 1 : 0);
-    else if (etapa === 1) setEtapa(0);
+    if (tela === "clube") setTela(PAISES[pais].ligas.length > 1 ? "divisao" : "pais");
+    else if (tela === "divisao") setTela("pais");
+    else if (tela === "pais") setTela("inicio");
   }
 
+  function trocarMoeda(m) { setMoeda(m); salvarMoeda(m); }
+
   // ---------- efeitos ----------
-  // Ao abrir o site: se havia um plano no último clube, abre direto nele
+  // Ao abrir o site: busca a cotação do dia (se falhar, segue com a salva ou a de reserva)
   useEffect(() => {
-    if (db.last && D.CL[db.last] && db.plans[db.last]) abrirClube(db.last);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    buscarCotacao().then(setCotacao).catch((e) => console.warn("Cotação indisponível:", e.message));
+  }, []);
 
   // Cor de destaque: do clube aberto ou do clube mostrado no carrossel
   const clubeDaCor = aberto || clubes[indice]?.k;
   useEffect(() => { aplicarCor(clubeDaCor); }, [clubeDaCor]);
 
-  // Teclado: Esc fecha o painel; na tela de escolha, as setas trocam de país (etapa 1) ou de clube (etapa 3)
+  // Teclado: Esc fecha o painel; na etapa do clube, as setas trocam de clube
   useEffect(() => {
     const tecla = (e) => {
       if (e.key === "Escape") fecharPainel();
-      if (aberto || painel.aberto || etapa === 1) return;
-      const mover = etapa === 0 ? passoPais : passo;
-      if (e.key === "ArrowRight") mover(1);
-      if (e.key === "ArrowLeft") mover(-1);
+      if (aberto || painel.aberto || tela !== "clube") return;
+      if (e.key === "ArrowRight") passo(1);
+      if (e.key === "ArrowLeft") passo(-1);
     };
     document.addEventListener("keydown", tecla);
     return () => document.removeEventListener("keydown", tecla);
@@ -175,10 +183,10 @@ export default function Plantel() {
   // ---------- tela ----------
   // "app" é o pacote de dados e ações que cada componente recebe
   const app = {
-    db, plano, aba, etapa, pais, liga, indice, clubes, busca, chip, limite, filtros,
-    setPais, setIndice, setBusca, setChip, setLimite, setFiltros,
+    db, plano, aba, tela, pais, liga, indice, clubes, busca, chip, limite, filtros, moeda, cotacao,
+    setIndice, setBusca, setChip, setLimite, setFiltros, trocarMoeda,
     abrirClube, trocarClube, reiniciarClube, abrirJogador, abrirPainel, fecharPainel,
-    mudar, irPara, passo, passoPais, continuarPais, escolherDivisao, voltar, aviso: mostrarAviso,
+    mudar, irPara, passo, planejarClube, escolherPais, escolherDivisao, voltar, aviso: mostrarAviso,
   };
   const Aba = ABAS[aba];
   const ConteudoPainel = PAINEIS[painel.tipo];
@@ -189,7 +197,7 @@ export default function Plantel() {
         <>
           <Topo app={app} />
           <main className="col"><Aba app={app} /></main>
-          <Rodape />
+          <Rodape cotacao={cotacao} />
         </>
       ) : (
         <EscolhaClube app={app} /> /* tela cheia, com topo e rodapé próprios */

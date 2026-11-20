@@ -4,6 +4,7 @@ import { D } from "../../logica/dados.js";
 import { POSN } from "../../logica/constantes.js";
 import { ctrTxt } from "../../logica/formato.js";
 import { jogador, situacao } from "../../logica/elenco.js";
+import { lerCampo, paraCampo, simbolo } from "../../logica/dinheiro.js";
 import { Cabecalho, noComputador } from "../Painel.jsx";
 import { Foto } from "../Imagens.jsx";
 import { Fatos, Estatisticas, Opcao } from "./comum.jsx";
@@ -12,7 +13,9 @@ export default function PainelJogador({ app, id }) {
   const p = jogador(app.plano, id);
   const atual = situacao(app.plano, id);
   const [s, setS] = useState(atual.s);
-  const [valor, setValor] = useState(atual.s === "vende" ? atual.fee : p.v);
+  // Valor da venda: guardado em euro, mostrado/digitado na moeda escolhida
+  const valorEur = atual.s === "vende" ? atual.fee : p.v;
+  const [valor, setValor] = useState(() => paraCampo(valorEur));
 
   const opcoes = [
     ["fica", "Fica no elenco", p.end26 ? "O contrato acaba em " + ctrTxt(p.ctr) + ": precisa renovar." : ""],
@@ -24,7 +27,7 @@ export default function PainelJogador({ app, id }) {
   const salvar = () => {
     app.mudar((P) => {
       if (s === "fica") delete P.st[id];
-      else P.st[id] = { s, fee: s === "vende" ? Math.max(0, +valor || 0) : 0 };
+      else P.st[id] = { s, fee: s === "vende" ? lerCampo(valor, valorEur) : 0 };
     });
     app.fecharPainel();
   };
@@ -36,7 +39,7 @@ export default function PainelJogador({ app, id }) {
       <Estatisticas p={p} />
       {opcoes.map(([k, t, d]) => <Opcao key={k} marcado={s === k} titulo={t} detalhe={d} onClick={() => setS(k)} />)}
       {s === "vende" && (
-        <label className="field">Valor da venda (€ milhões)
+        <label className="field">Valor da venda ({simbolo()} milhões)
           <input id="fee" className="num" type="number" min="0" step="0.1" inputMode="decimal" value={valor} onChange={(e) => setValor(e.target.value)} autoFocus={noComputador()} />
         </label>
       )}
