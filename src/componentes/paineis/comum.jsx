@@ -16,19 +16,21 @@ export function Fatos({ p }) {
   );
 }
 
-// Estatísticas da temporada atual
+// Estatísticas da temporada atual.
+// [0,0,0,0] = não entrou em campo: mostra "0 jogos", sem nota e sem médias ("—").
 export function Estatisticas({ p }) {
   const s = p.st;
-  if (!s || !s[0]) {
+  if (!s) {
     return (
       <div className="stt">
         <div className="sth">Temporada atual · todas as competições<span>Sofascore</span></div>
-        <div className="mute" style={{ fontSize: 14 }}>{s ? "Ainda não jogou nesta temporada." : "Estatísticas indisponíveis para este jogador."}</div>
+        <div className="mute" style={{ fontSize: 14 }}>Estatísticas indisponíveis para este jogador.</div>
       </div>
     );
   }
   const [j, g, a, r] = s;
-  const itens = [[j, "Jogos"], [g, "Gols"], [a, "Assistências"], [dec(g / j), "Gols por jogo"], [dec(a / j), "Assist. por jogo"], [r ? <span className={`nota ${classeNota(r)}`}>{dec(r)}</span> : "–", "Nota média"]];
+  const media = (x) => (j > 0 ? dec(x / j) : "—");
+  const itens = [[j, "Jogos"], [g, "Gols"], [a, "Assistências"], [media(g), "Gols por jogo"], [media(a), "Assist. por jogo"], [j > 0 && r ? <span className={`nota ${classeNota(r)}`}>{dec(r)}</span> : "—", "Nota média"]];
   return (
     <div className="stt">
       <div className="sth">Temporada atual · todas as competições<span>Sofascore · {D.DATA.updated}</span></div>

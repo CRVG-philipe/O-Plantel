@@ -168,34 +168,39 @@ test("divisões: logo de cada liga, em ordem (1ª antes da 2ª), nos países gra
 });
 
 test("ligas novas: jogadores sem foto e sem estatísticas aparecem sem erro e podem ser contratados", async () => {
-  const c = clubesDa("NED")[0];
+  const c = clubesDa("SWE")[0];
   const novo = c.p.map((r, i) => ({ id: `${c.k}-${i}`, n: r[1], v: r[5], foto: r[7], st: r[8], hd: r[9] })).sort((a, b) => b.v - a.v)[0];
-  expect([novo.foto, novo.st, novo.hd]).toEqual([-1, null, 0]);   // ainda sem foto/estatísticas
+  expect([novo.foto, novo.hd]).toEqual([-1, 0]);                  // ainda sem foto
+  expect(novo.st).toHaveLength(4);                                 // mas com estatísticas (bloco 2)
+  // Um jogador ainda sem estatísticas (nome único no data.json), de uma liga nova
+  const semStats = DATA.clubs.filter((x) => x.lg === "BRC").flatMap((x) => x.p.map((r) => ({ n: r[1], st: r[8], clube: x.n })))
+    .find((j) => j.st === null && DATA.clubs.every((x) => x.p.filter((r) => r[1] === j.n).length <= (x.n === j.clube ? 1 : 0)));
   render(<App />);
-  // Elenco de um clube holandês
+  // Elenco de um clube sueco
   clique(await screen.findByRole("button", { name: "Planejar um clube" }));
-  clique(cartaoPais("Holanda"));
+  clique(cartaoPais("Suécia"));
   clique(botao(/^Planejar /));
   clique(noPainel().getByRole("button", { name: "Começar" }));
   const linha = naPagina().getByText(novo.n).closest("button");
   expect(linha.querySelector(".face.ini")).toBeTruthy();          // avatar com as iniciais
   clique(linha);
-  expect(noPainel().getByText("Estatísticas indisponíveis para este jogador.")).toBeTruthy();
+  expect(painel().querySelector(".stg b").textContent).toBe(String(novo.st[0])); // jogos
   clique(noPainel().getByRole("button", { name: "Fechar" }));
-  // No Mercado de outro clube: aparece com "Estatísticas indisponíveis" e dá para contratar
+  // No Mercado de outro clube: quem não tem estatísticas aparece com "Estatísticas indisponíveis" e dá para contratar
   clique(document.querySelector(".clubBtn"));
   clique(noPainel().getByRole("button", { name: /Trocar de clube/ }));
   await irParaBrasil();
   clique(botao("Planejar 2027"));
   clique(noPainel().getByRole("button", { name: "Começar" }));
   clique(screen.getByRole("tab", { name: "Mercado" }));
-  fireEvent.change(screen.getByLabelText("Buscar jogador"), { target: { value: novo.n } });
-  const noMercado = naPagina().getAllByText(novo.n)[0].closest("button");
+  fireEvent.change(screen.getByLabelText("Buscar jogador"), { target: { value: semStats.n } });
+  const noMercado = [...document.querySelectorAll("#mList .row")].find((l) => l.querySelector(".nm").textContent === semStats.n);
   expect(noMercado.textContent).toContain("Estatísticas indisponíveis");
-  expect(noMercado.textContent).toContain(c.n);
+  expect(noMercado.textContent).toContain(semStats.clube.slice(0, 8));
   clique(noMercado);
+  expect(noPainel().getByText("Estatísticas indisponíveis para este jogador.")).toBeTruthy();
   clique(noPainel().getByRole("button", { name: "Contratar" }));
-  expect(aviso()).toBe(novo.n + " contratado");
+  expect(aviso()).toBe(semStats.n + " contratado");
 });
 
 test("fluxo completo: clube, vender, contratar, filtros, escalação, resumo, reiniciar e voltar ao início", async () => {
@@ -320,7 +325,7 @@ test("fluxo completo: clube, vender, contratar, filtros, escalação, resumo, re
   expect(cartao.querySelector(".crest").getAttribute("src")).toBe(`img/teams/${arsenal.hd}.webp`);
   clique(cartao);
   expect(caixa()).toBe("€ 20 mi");
-});
+}, 20000); // teste longo (muitas telas): 20 s de limite em vez de 5
 
 test("plano salvo pela versão antiga (mesma chave plantel:v2): aparece no início e abre ao tocar", async () => {
   const c = clubesDa("BRA")[3], d = clubesDa("ENG")[2];
@@ -599,6 +604,41 @@ test("jogador sem valor: aparece '—' e a compra custa no mínimo € 0,1 mi", 
   clique(noPainel().getByRole("button", { name: "Contratar" }));
   expect(salvo().plans[clubesDa("BRA")[0].k].ins).toEqual([{ id: semValor.id, type: "compra", fee: 0.1 }]); // ...cobra o mínimo
   expect(caixa()).toBe("€ 19,9 mi");
+});
+
+test("estatísticas do bloco 1: quem jogou mostra a nota; quem não entrou em campo mostra '0 jogos' sem nota", async () => {
+  // Dois jogadores de clubes holandeses: um com jogos e nota, outro com [0,0,0,0]
+  const achar = (ok) => {
+    for (const c of clubesDa("NED")) {
+      const i = c.p.findIndex((r) => r[8] && ok(r[8]) && c.p.filter((x) => x[1] === r[1]).length === 1);
+      if (i >= 0) return { n: c.p[i][1], st: c.p[i][8] };
+    }
+  };
+  const jogou = achar((s) => s[0] > 0 && s[3] > 0);
+  const naoJogou = achar((s) => s[0] === 0);
+  expect(naoJogou.st).toEqual([0, 0, 0, 0]);
+  render(<App />);
+  await irParaBrasil();
+  clique(botao("Planejar 2027"));
+  clique(noPainel().getByRole("button", { name: "Começar" }));
+  clique(screen.getByRole("tab", { name: "Mercado" }));
+  const linhaDe = (nome) => {
+    fireEvent.change(screen.getByLabelText("Buscar jogador"), { target: { value: nome } });
+    return [...document.querySelectorAll("#mList .row")].find((l) => l.querySelector(".nm").textContent === nome);
+  };
+  // Quem jogou: números e selo da nota
+  let linha = linhaDe(jogou.n);
+  expect(linha.querySelector(".ministats b").textContent).toBe(String(jogou.st[0]));
+  expect(linha.querySelector(".nota")).toBeTruthy();
+  // Quem não jogou: "0 jogos", sem nota e não é "sem estatísticas"
+  linha = linhaDe(naoJogou.n);
+  expect(linha.querySelector(".ministats").textContent).toContain("0jogos");
+  expect(linha.querySelector(".nota")).toBeNull();
+  expect(linha.textContent).not.toContain("Estatísticas indisponíveis");
+  clique(linha);
+  const grade = [...painel().querySelectorAll(".stg > div")].map((d) => d.textContent);
+  expect(grade).toEqual(["0Jogos", "0Gols", "0Assistências", "—Gols por jogo", "—Assist. por jogo", "—Nota média"]);
+  expect(painel().querySelector(".stt .nota")).toBeNull();
 });
 
 test("Esc e clique fora fecham o painel", async () => {

@@ -33,11 +33,11 @@ export function Nota({ st, className = "" }) {
   return <span className={`nota ${classeNota(st[3])} ${className}`} title="Nota média (Sofascore)">{dec(st[3])}</span>;
 }
 
-// Jogos, gols e assistências como números destacados (ou o aviso de que não há estatísticas)
+// Jogos, gols e assistências como números destacados (ou o aviso de que não há estatísticas).
+// Quem não entrou em campo ([0,0,0,0]) aparece com "0 jogos" e sem nota (o selo Nota some sozinho).
 export function MiniStats({ p, comNota = false }) {
   const s = p.st;
   if (!s) return <div className="sub st">Estatísticas indisponíveis</div>;
-  if (!s[0]) return <div className="sub st">Sem jogos na temporada</div>;
   return (
     <div className="sub st ministats">
       <span><b>{s[0]}</b>jogos</span><span><b>{s[1]}</b>gols</span><span><b>{s[2]}</b>assist.</span>

@@ -52,6 +52,38 @@ for c in pre['clubs']:
 # O ID Sofascore de cada jogador está em dados-brutos/ids_sofascore_novas.json e ids_sofascore_novas_2.json (mesma ordem do elenco).
 for c in NOVAS['clubs']:
     clubs.append({'k':c['k'],'lg':c['lg'],'n':c['n'],'coach':c['coach'],'c':c['c'],'c2':c['c2'],'hd':c['hd'] if c['hd'] in HD_T else 0,'p':c['p']})
+
+# ---- Estatísticas coletadas depois (por nome do jogador, clube a clube) ----
+#   bloco 1 (21/11/2026): MEX, POR, BEL, SCO, NOR, NED, TUR, DEN, SUI, GRE, AUT, ENG2, ESP2, ITA2, GER2, FRA2
+#   e os jogadores da ARG e da SAU que estavam sem estatísticas.
+#   bloco 2 (21/11/2026): COL, URU, CHI, PAR, ECU, PER, BRC, SWE, POL, CZE, CRO, SRB, UKR, ROU, RUS, JPN, KOR, CHN, QAT, UAE
+#   Formato: {"stats": {"<clube>": {"<nome exato>": [jogos, gols, assist, nota]}}}. [0,0,0,0] = não entrou em campo.
+#   Os dados brutos, por ID Sofascore, estão em stats_sofascore_bloco1.json e stats_sofascore_bloco2.json
+#   ([jogos, gols, assist, nota, nº de competições]).
+#   Nome repetido no mesmo clube (ex.: dois "João Pedro" no Brusque): o nome não diz de quem são os números,
+#   então usa o ID Sofascore de cada um (ids_sofascore_novas*.json) e os dados brutos. Sem ID, fica como está.
+STATS_ARQS=[('dados-brutos/estatisticas_bloco1.json','dados-brutos/stats_sofascore_bloco1.json'),
+            ('dados-brutos/estatisticas_bloco2.json','dados-brutos/stats_sofascore_bloco2.json')]
+IDS={}
+for arq in ['dados-brutos/ids_sofascore_novas.json','dados-brutos/ids_sofascore_novas_2.json']: IDS.update(ler(arq))
+por_k={c['k']:c for c in clubs}
+for arq,arq_bruto in STATS_ARQS:
+    if not os.path.exists(arq): continue
+    bruto=ler(arq_bruto) if os.path.exists(arq_bruto) else {}
+    atualizados=nao_achados=pelo_id=0
+    for k,nomes in ler(arq)['stats'].items():
+        c=por_k.get(k)
+        if not c: nao_achados+=len(nomes); continue
+        for nome,s in nomes.items():
+            iguais=[i for i,p in enumerate(c['p']) if p[1]==nome]
+            if not iguais: nao_achados+=1
+            elif len(iguais)==1: c['p'][iguais[0]][8]=s; atualizados+=1
+            else:
+                for i in iguais:
+                    sid=IDS[k][i] if k in IDS and i<len(IDS[k]) else 0
+                    x=bruto.get(str(sid)) if sid else None
+                    if x: c['p'][i][8]=x[:4] if x[0]>0 else [0,0,0,0]; atualizados+=1; pelo_id+=1
+    print(arq,'| jogadores atualizados:',atualizados,'(nome repetido, resolvido pelo ID:',pelo_id,') | nomes não encontrados:',nao_achados)
 json.dump({'leagues':leagues,'clubs':clubs,'updated':'20/11/2026'},open('public/data.json','w',encoding='utf-8'),ensure_ascii=False,separators=(',',':'))
 print(os.path.getsize('public/data.json')//1024,'KB', 'stats' if st else 'no stats')
 print('fotos HD:',sum(1 for c in clubs for p in c['p'] if p[9]),'de',sum(len(c['p']) for c in clubs),'| escudos HD:',sum(1 for c in clubs if c['hd']),'de',len(clubs))

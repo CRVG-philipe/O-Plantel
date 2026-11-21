@@ -21,7 +21,13 @@ Foi inspirado no reconstruindo.thefenomeno.com, mas **não deve copiá-lo**. O f
   - América do Sul: COL, URU, CHI, PAR, ECU, PER.
   - Europa: SWE, POL, CZE, CRO, SRB, UKR, ROU, RUS.
   - Ásia e Oriente Médio: JPN, KOR, CHN, QAT, UAE.
-- Os jogadores das duas rodadas ainda não têm foto (`índice_foto` -1, `hd` 0) nem estatísticas (`stats` null). O site mostra as iniciais e "Estatísticas indisponíveis".
+- Os jogadores das duas rodadas ainda não têm foto (`índice_foto` -1, `hd` 0). O site mostra as iniciais.
+- Estatísticas:
+  - As duas rodadas e os jogadores de ARG e SAU que faltavam ganharam estatísticas coletadas em 21/11/2026:
+    - bloco 1: rodada 1, mais ARG e SAU (8.438 jogadores);
+    - bloco 2: rodada 2 (9.247 jogadores).
+  - Ainda faltam 699 jogadores (`stats` null), 282 deles da Série C. O site mostra "Estatísticas indisponíveis".
+  - `[0,0,0,0]` = não entrou em campo (não é "sem estatísticas"): mostra "0 jogos", sem a nota e com as médias por jogo "—".
 - Muitos têm valor 0 (sem valor no Transfermarkt): 876 dos 905 da Série C e dezenas por liga asiática.
   - `valorJogador()` mostra "—" no lugar de "€ 0".
   - `precoDeCompra()` cobra no mínimo `PRECO_MINIMO` (€ 0,1 mi) numa compra. Vale também para "cabe no caixa" e para o filtro "só quem cabe".
@@ -77,6 +83,14 @@ React 19 + Vite 6, em JavaScript (sem TypeScript).
     - nomes repetidos ficam "Bundesliga Austríaca", "Super League Suíça" e "Super League Grega";
     - a Liga MX passa a ter temporada "26/27" (vai de julho a maio).
   - `ids_sofascore_novas.json`: `{clube: [ID Sofascore de cada jogador, na mesma ordem do elenco]}` (0 = não encontrado; ~98% têm). É para a próxima fase: fotos HD e estatísticas dos jogadores novos.
+  - Estatísticas por blocos, todas coletadas em 21/11/2026:
+    - bloco 1: MEX, POR, BEL, SCO, NOR, NED, TUR, DEN, SUI, GRE, AUT, ENG2, ESP2, ITA2, GER2 e FRA2, mais os jogadores de ARG e SAU que estavam sem estatísticas;
+    - bloco 2: COL, URU, CHI, PAR, ECU, PER, BRC, SWE, POL, CZE, CRO, SRB, UKR, ROU, RUS, JPN, KOR, CHN, QAT e UAE.
+  - Arquivos de cada bloco:
+    - `estatisticas_blocoN.json`: `{stats: {<clube>: {<nome exato>: [jogos, gols, assist, nota]}}}`. O `build_final.py` grava no campo `stats` de quem tem o mesmo nome no clube e mostra quantos foram atualizados e quantos nomes não foram encontrados. Na 1ª vez: 8.438 e 0 no bloco 1, e 9.247 e 0 no bloco 2;
+    - `stats_sofascore_blocoN.json`: os dados brutos por ID Sofascore, `[jogos, gols, assist, nota, nº de competições]`.
+  - Nome repetido no mesmo clube: o nome não diz de quem são os números, então o script usa o ID de `ids_sofascore_novas*.json` com os dados brutos. Isso aconteceu 4 vezes no bloco 2 (Brusque, Ferroviária, Degerfors e FC Tokyo). O primeiro "João Pedro" do Brusque não tem ID e ficou sem estatísticas.
+  - Para um bloco novo, acrescentar o par de arquivos em `STATS_ARQS`, no `build_final.py`.
   - `tm_new.json`, `sofa_new.json` e `build_new.py`: dados brutos e o script que gerou as ligas novas. Ficam só como referência: o script usa caminhos `raw/` da coleta original e não precisa rodar.
   - Para gerar: `python dados-brutos/build_all.py` e depois `python dados-brutos/build_final.py` (rodar na raiz do projeto).
   - Os scripts abrem os arquivos com `encoding='utf-8'`. No Windows isso é obrigatório.
@@ -115,9 +129,8 @@ React 19 + Vite 6, em JavaScript (sem TypeScript).
 1. **Fotos em alta resolução (em andamento).** Os escudos já estão prontos (20/11/2026). Faltam as fotos dos jogadores: `dados-brutos/baixar_imagens.py --so-jogadores` baixa para `public/img/players/` (precisa de `pip install pillow`; rodar na raiz do projeto), o `build_final.py` marca `hd` e o `Foto` usa `<img loading="lazy">` quando `hd` existe, ou o sprite quando não existe.
    - **Bloqueio:** em 20/11/2026 o `api.sofascore.app` respondeu 403 a pedidos simples. Não contornar o bloqueio imitando um navegador; buscar uma fonte permitida.
    - Quando todas as fotos existirem, apagar os sprites `p_*.webp` e o código de sprite em `Foto` (`src/componentes/Imagens.jsx`).
-2. Completar as estatísticas que faltam:
-   - ~960 jogadores de ARG e SAU, em `stats2.json`;
-   - os 17.348 jogadores das 36 ligas novas, pelos IDs em `ids_sofascore_novas.json` e `ids_sofascore_novas_2.json`. As fotos deles também faltam: o `baixar_imagens.py` hoje só lê `kept.json` e precisa passar a ler esses arquivos também.
+2. Completar as estatísticas que faltam. Os blocos 1 e 2 foram feitos em 21/11/2026; restam 699 jogadores, 282 deles da Série C.
+   - As fotos dos jogadores das duas rodadas também faltam: o `baixar_imagens.py` hoje só lê `kept.json` e precisa passar a ler `ids_sofascore_novas.json` e `ids_sofascore_novas_2.json` também.
 3. Script de atualização periódica dos dados (Transfermarkt e Sofascore).
 4. ~~Migrar para Vite~~ Feito em 20/11/2026 (React + Vite; a versão antiga sem framework está na tag git `antes-do-react`), publicado na Vercel.
 5. Simulação da temporada, link compartilhável do plano e modo "desafio diário" (para depois).

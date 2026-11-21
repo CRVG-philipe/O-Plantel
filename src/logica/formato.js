@@ -33,6 +33,5 @@ export const iniciais = (n) => n.split(" ").filter(Boolean).map((w) => w[0]).sli
 export function statLine(p) {
   const s = p.st;
   if (!s) return "Estatísticas indisponíveis";
-  if (!s[0]) return "Sem jogos na temporada";
-  return `${s[0]} J · ${s[1]} G · ${s[2]} A${s[3] ? " · nota " + dec(s[3]) : ""}`;
+  return `${s[0]} J · ${s[1]} G · ${s[2]} A${s[0] && s[3] ? " · nota " + dec(s[3]) : ""}`;
 }
