@@ -1,7 +1,8 @@
 """Calcula overall (45-92) e atributos de cada jogador.
 Entrada: raw/players_all.json [k, lg, nome, pos, nasc, valor€mi, stats[j,g,a,nota]|None, sofaId]
          raw/attrs.json {sofaId: [posSofa, a1..a5]} (opcional)
-Saída:   overall.json {k: {"nome|nasc": [ovr, estimado(0/1), atributos|null]}}
+Saída:   dados-brutos/overall/overall_v1.json {k: {"nome|nasc": [ovr, estimado(0/1), atributos|null]}}
+         Depois rode balancear.py, que aplica o balanceamento por liga e grava public/overall.json.
 """
 import json, math, statistics as stt, datetime as dt, collections, os, sys
 
@@ -105,7 +106,7 @@ for rank, i in enumerate(ordem):
     if at:
         attr = {'tipo': 'G' if at[0] == 'G' else 'L', 'v': at[1:]}
     out[x[0]][x[2] + '|' + x[4]] = [ovr, est, attr]
-json.dump(out, open('public/overall.json', 'w', encoding='utf-8'), ensure_ascii=False, separators=(',', ':'))
+json.dump(out, open('dados-brutos/overall/overall_v1.json', 'w', encoding='utf-8'), ensure_ascii=False, separators=(',', ':'))
 
 # relatório
 flat = [(v[0], k, nm) for k, d in out.items() for nm, v in d.items()]

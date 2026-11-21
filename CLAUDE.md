@@ -46,17 +46,28 @@ Foi inspirado no reconstruindo.thefenomeno.com, mas **não deve copiá-lo**. O f
     - Tudo é arredondado para € 0,05 mi, com mínimo de € 0,05 mi.
     - Em 21/11/2026, os estimados da Série C ficaram entre € 0,05 e 0,3 mi.
 - Cada liga tem `div` (1, 2 ou 3): a divisão dentro do país. A tela de divisão ordena por ele.
-- Overall e atributos (versão 1, gerada em 21/11/2026): `public/overall.json`, no formato `{clube: {"nome|nascimento": [overall, estimado, atributos]}}`. Todos os 23.613 jogadores têm overall, de 45 a 91; 15.295 têm atributos.
-  - **Gerado por** `python dados-brutos/overall/overall.py` (na raiz, sem argumentos). Ele lê `players_all.json` e `attrs.json` da mesma pasta e grava `public/overall.json`.
+- Overall e atributos (gerados em 21/11/2026): `public/overall.json`, no formato `{clube: {"nome|nascimento": [overall, estimado, atributos]}}`. Todos os 23.613 jogadores têm overall, de 44 a 91; 15.295 têm atributos.
+  - O overall do site é a **versão 1** (baseada no valor de mercado) com um **balanceamento por liga** por cima.
+  - **Para gerar** (na raiz, sem argumentos, nesta ordem):
+    1. `python dados-brutos/overall/overall.py`: lê `players_all.json` e `attrs.json` da mesma pasta e grava a versão 1 em `dados-brutos/overall/overall_v1.json`;
+    2. `python dados-brutos/overall/balancear.py`: lê `overall_v1.json` e `players_all.json`, aplica o balanceamento e grava `public/overall.json` e `dados-brutos/overall/balanceamento-parametros.json`.
     - O `data.json` não muda.
-  - **Regra (v1), baseada principalmente no valor de mercado:**
+  - **Regra da versão 1, baseada principalmente no valor de mercado:**
     - O valor é corrigido pela idade (jovem vale mais pelo potencial, veterano menos) e pelo setor (goleiro e defensor valem menos no mercado, então sobem). Quem não tem valor usa o percentil 20 da liga e fica "estimado".
     - Somam-se, em escala logarítmica, dois ajustes menores: a nota do Sofascore (pesada por `jogos / (jogos + 12)` e pela força da liga) e os atributos comparados com a mesma liga e setor.
     - Por fim, o percentil entre todos os jogadores vira o overall, de 45 a 91.
-  - **Histórico:** em 21/11/2026 houve uma versão 2 (mercado + desempenho, commit `ff8191ed`), revertida para esta.
+  - **Balanceamento por liga** (`balancear.py`):
+    - Cada liga ajustada recebe `f(x) = x + a + b × max(0, x − c)`, com `c` = percentil 85 da liga. `b` negativo comprime o topo; a ordem dos jogadores dentro da liga não muda. O resultado fica entre 40 e 92. Só o número muda: o "estimado" e os atributos continuam os da versão 1.
+    - O script procura `a` e `b` para chegar aos alvos de cada liga: média dos 11 melhores por time, melhor time e maior jogador.
+    - Efeito em 21/11/2026:
+      - sobem: Brasileirão (+3 a +4; o topo sobe menos), Série B (+2), Série C (+2) e Argentina (+2);
+      - descem ou têm o topo comprimido: Portugal (−3 a +1), Championship (−3 a −5), Holanda (−1 a −3), Turquia (−1 a −2), Bélgica (−2) e Escócia (−2).
+    - As cinco grandes ligas e as demais (36 no total) não mudam.
+    - Os parâmetros encontrados ficam em `dados-brutos/overall/balanceamento-parametros.json` (só para consulta).
+    - **Para mudar o nível de uma liga:** edite os alvos no `ALVO`, no topo do `balancear.py`, e rode de novo (só o passo 2).
   - **Ajustes manuais:** `public/overall-ajustes.json`, no formato `{clube: {"nome|nascimento": overall}}`, começa vazio (`{}`).
     - Quando um jogador tem ajuste, o número substitui o do `overall.json`; os atributos e o "~" continuam os mesmos.
-    - O script não mexe nesse arquivo, então o ajuste continua valendo quando o `overall.json` é gerado de novo. Para corrigir alguém, acrescente a linha nele: não precisa rodar nada.
+    - Vale por cima do balanceamento. Os scripts não mexem nesse arquivo, então o ajuste continua valendo quando o `overall.json` é gerado de novo. Para corrigir alguém, acrescente a linha nele: não precisa rodar nada.
     - Se o arquivo falhar, o site segue só com o `overall.json`.
   - `estimado` = 1 quando o jogador não tem valor de mercado: o site mostra "~" antes do número.
   - `atributos` = `null` ou `{tipo, v}`, com 5 números de 0 a 100:
@@ -70,7 +81,7 @@ Foi inspirado no reconstruindo.thefenomeno.com, mas **não deve copiá-lo**. O f
     - Sem atributos: só o overall e o texto "atributos indisponíveis".
   - **Força do time:**
     - `forcaDoTime(plano)` (`escalacao.js`) = média de overall dos titulares. Aparece na aba Time (`#forca`).
-    - `forcaAntes(plano)` = o elenco original escalado sozinho na mesma formação. O Resumo mostra "antes → depois" (`#forca-resumo`).
+    - `forcaAntes(plano, criterio)` = o elenco original escalado sozinho na mesma formação e pelo mesmo critério (valor ou overall). O Resumo mostra "antes → depois" (`#forca-resumo`).
 
 ## Comandos (na raiz do projeto)
 - `npm install`: instala as dependências (só na primeira vez ou quando o package.json mudar).
@@ -79,7 +90,7 @@ Foi inspirado no reconstruindo.thefenomeno.com, mas **não deve copiá-lo**. O f
   - `testes/app.test.jsx`: cliques simulados no site inteiro.
   - `testes/recomendacao.test.js` e `testes/busca.test.js`: a nota de recomendação e a busca por apelido.
   - `testes/emprestimos.test.js`: regras dos empréstimos (Botafogo, T1958).
-  - `testes/time.test.js`: compatibilidade de posição e reservas.
+  - `testes/time.test.js`: compatibilidade de posição, reservas e escalar pelo valor ou pelo overall.
   - `testes/overall.test.js`: overall (Mbappé = 91), força do time, ordem Overall e o overall na recomendação.
 - Com as ~23 mil fotos, o `npm run dev` às vezes demora para servir as imagens. Para conferir fotos, use `npm run build` e `npm run preview`.
 - `npm run build`: gera a versão final em `dist/` (não vai para o git). `npm run preview` serve o `dist/` para conferir.
@@ -226,10 +237,15 @@ React 19 + Vite 6, em JavaScript (sem TypeScript).
   - **Compatibilidade** (`compatibilidade.js`): cada vaga tem posições ideal (verde), boa (amarelo) e improvisado (vermelho, com "⚠").
     - Qualquer combinação fora da tabela também é improvisado.
     - Pontas (PE e PD) são ideais nas duas pontas e nas meias pelos lados (ME e MD). O MC é ideal também de VOL e de MEI.
+    - Atacantes (PE, PD, SA e CA) são ideais em qualquer vaga do ataque (PE, PD, SA e CA). A posição de origem continua com ordem 0, então o "Escalar sozinho" ainda põe cada um na sua posição primeiro.
     - `compatibilidade(vaga, pos)` devolve `{nivel, ordem}`: 0 = posição principal da vaga, 1 = outra ideal, 2 = boa, 3 = improvisado da tabela, 4 = fora da tabela.
     - Nas formações com 3 zagueiros, as vagas abertas são `ALE`/`ALD`, mostradas como "ALA". Ideal: LE/ME e LD/MD; boa: ponta, MC e VOL.
     - Vale para titulares e reservas, para "Escalar sozinho" e para encaixar quem chega.
     - Escalar sozinho: começa pelas vagas mais difíceis e vai do nível 0 ao 3; nunca escala fora da tabela.
+    - **Critério** (`escalarSozinho(plano, criterio)`): "v" = maior valor de mercado (padrão; desempate pelo overall) ou "o" = maior overall (desempate pelo valor; quem não tem overall fica por último).
+      - Na aba Time, o grupo "Escalar por: Valor | Overall" (`#auto-v`, `#auto-o`) escala na hora e marca o escolhido.
+      - A escolha fica em `plantel:escalar` ("v" ou "o"), separada dos planos, e vale também ao trocar de formação, ao abrir um plano sem time e ao reiniciar.
+      - Vagas que ficam vazias depois de uma venda (`completarTime`) e quem chega (`encaixarNoTime`) continuam pelo valor.
   - **Lista de escolha** (`PainelPosicao`): selo do nível ao lado de cada jogador, ordenada por nível e depois por nota. Quem está fora da tabela fica atrás do botão "Ver outros".
   - **Reservas** (`plano.res`):
     - até 2 por vaga (`MAX_RESERVAS`, banco de até 22);
@@ -286,7 +302,7 @@ React 19 + Vite 6, em JavaScript (sem TypeScript).
 
 ## Feito
 - 20/11/2026: migração para React + Vite (a versão antiga sem framework está na tag git `antes-do-react`), publicada na Vercel. Escudos em alta resolução.
-- 21/11/2026: fotos HD dos jogadores (95%, em WebP 150×150, qualidade 82) e estatísticas das 36 ligas novas. Overall e atributos (`overall.json`).
+- 21/11/2026: fotos HD dos jogadores (95%, em WebP 150×150, qualidade 82) e estatísticas das 36 ligas novas. Overall e atributos (`overall.json`), com balanceamento por liga.
 
 ## Cuidados
 - Fotos novas em `public/img/players/`: rodar `python dados-brutos/converter_fotos_webp.py` antes do commit.

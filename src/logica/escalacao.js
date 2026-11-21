@@ -17,21 +17,29 @@ const PASSADAS = [0, 1, 2, 3];
 // Quantas posições servem bem (ideal ou boa) numa vaga: vagas mais difíceis são preenchidas primeiro
 const opcoesBoas = (vaga) => ORDER.filter((pos) => compatibilidade(vaga, pos).ordem <= 2).length;
 
-// O mais valioso que serve na vaga com exatamente essa "ordem" de compatibilidade
-function melhorPara(sq, usados, vaga, ordem) {
-  return sq.filter((p) => !usados.has(p.id) && compatibilidade(vaga, p.pos).ordem === ordem).sort((a, b) => b.v - a.v)[0];
+// Critérios do "Escalar sozinho": "v" = maior valor de mercado (desempate: overall);
+// "o" = maior overall (desempate: valor; quem não tem overall, como jogador criado, fica por último)
+export const CRITERIOS = { v: "valor de mercado", o: "overall" };
+const COMPARAR = {
+  v: (a, b) => b.v - a.v || (b.ovr ?? 0) - (a.ovr ?? 0),
+  o: (a, b) => (b.ovr ?? 0) - (a.ovr ?? 0) || b.v - a.v,
+};
+
+// O melhor (pelo critério) que serve na vaga com exatamente essa "ordem" de compatibilidade
+function melhorPara(sq, usados, vaga, ordem, criterio = "v") {
+  return sq.filter((p) => !usados.has(p.id) && compatibilidade(vaga, p.pos).ordem === ordem).sort(COMPARAR[criterio] || COMPARAR.v)[0];
 }
 
-// Monta o time do zero: em cada vaga, o jogador mais valioso que serve, do mais compatível para o menos.
-// Começa pelas vagas mais difíceis de preencher. Não escala ninguém fora da tabela de compatibilidade.
-export function escalarSozinho(plano) {
+// Monta o time do zero: em cada vaga, o melhor jogador que serve (pelo valor ou pelo overall), do mais compatível
+// para o menos. Começa pelas vagas mais difíceis de preencher. Não escala ninguém fora da tabela de compatibilidade.
+export function escalarSozinho(plano, criterio = "v") {
   const sq = elencoAtual(plano), usados = new Set(), sl = FORMS[plano.form];
   plano.xi = {};
   const ord = sl.map((s, i) => i).sort((a, b) => opcoesBoas(sl[a][0]) - opcoesBoas(sl[b][0]));
   for (const ordem of PASSADAS)
     for (const i of ord) {
       if (plano.xi[i]) continue;
-      const c = melhorPara(sq, usados, sl[i][0], ordem);
+      const c = melhorPara(sq, usados, sl[i][0], ordem, criterio);
       if (c) { plano.xi[i] = c.id; usados.add(c.id); }
     }
 }
@@ -77,10 +85,10 @@ export function forcaDoTime(plano) {
 }
 
 // Força "antes do plano": o elenco original (sem vendas, contratações nem empréstimos mexidos),
-// escalado sozinho na mesma formação do plano
-export function forcaAntes(plano) {
+// escalado sozinho na mesma formação do plano (e pelo mesmo critério, para a comparação ser justa)
+export function forcaAntes(plano, criterio = "v") {
   const P = { club: plano.club, budget: plano.budget, st: {}, ins: [], form: plano.form, xi: {}, custom: [] };
-  escalarSozinho(P);
+  escalarSozinho(P, criterio);
   return forcaDoTime(P);
 }
 

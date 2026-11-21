@@ -38,7 +38,7 @@ export default function Resumo({ app }) {
   const prof = NEED.map(([l, ps, min]) => ({ l, min, ps, n: sq.filter((p) => ps.includes(p.pos)).length }));
   const mx = Math.max(6, ...prof.map((x) => x.n));
   // Força do time: antes (elenco original escalado sozinho) e depois (titulares do plano)
-  const fa = forcaAntes(plano), fd = forcaDoTime(plano), dif = fa && fd ? Math.round((fd.media - fa.media) * 10) / 10 : 0;
+  const fa = forcaAntes(plano, app.criterio), fd = forcaDoTime(plano), dif = fa && fd ? Math.round((fd.media - fa.media) * 10) / 10 : 0;
 
   // "Copiar resumo": tenta copiar; se o navegador não deixar, mostra o texto numa caixa
   const [textoManual, setTextoManual] = useState(null);

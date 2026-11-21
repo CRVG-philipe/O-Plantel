@@ -5,7 +5,7 @@ import { D, carregarDados } from "../src/logica/dados.js";
 import { FORMS } from "../src/logica/constantes.js";
 import { compatibilidade, nivel, rotuloVaga } from "../src/logica/compatibilidade.js";
 import { elencoAtual } from "../src/logica/elenco.js";
-import { adicionarReserva, completarTime, escalarSozinho, limparReservas, moverReservas, promover, reservasDa, todosReservas, trocarComReserva, trocarTitulares } from "../src/logica/escalacao.js";
+import { adicionarReserva, completarTime, escalarSozinho, forcaAntes, forcaDoTime, limparReservas, moverReservas, promover, reservasDa, todosReservas, trocarComReserva, trocarTitulares } from "../src/logica/escalacao.js";
 
 beforeAll(async () => {
   globalThis.fetch = async (url) => ({ ok: true, json: async () => JSON.parse(fs.readFileSync("public/" + url, "utf8")) });
@@ -38,7 +38,10 @@ test("CA na vaga de zagueiro é improvisado; o resto segue a tabela", () => {
   expect(nivel("GOL", "ZAG")).toBe("improvisado");
   expect(nivel("MC", "VOL")).toBe("ideal");
   expect(nivel("LE", "PE")).toBe("boa");
-  expect(nivel("CA", "SA")).toBe("boa");
+  // Atacantes (PE, PD, SA e CA) são ideais em qualquer vaga do ataque, mas a posição de origem vem primeiro
+  for (const v of ["PE", "PD", "SA", "CA"]) for (const pos of ["PE", "PD", "SA", "CA"]) expect(nivel(v, pos)).toBe("ideal");
+  expect(compatibilidade("CA", "CA").ordem).toBeLessThan(compatibilidade("CA", "PE").ordem);
+  expect(nivel("ME", "CA")).toBe("improvisado"); // meia pelo lado não é ataque
   // Pontas jogam nos dois lados e nas meias pelos lados; MC joga de VOL e de MEI
   for (const v of ["PE", "PD", "ME", "MD"]) for (const pos of ["PE", "PD"]) expect(nivel(v, pos)).toBe("ideal");
   expect(nivel("VOL", "MC")).toBe("ideal");
@@ -47,6 +50,25 @@ test("CA na vaga de zagueiro é improvisado; o resto segue a tabela", () => {
   expect(compatibilidade("PD", "PD").ordem).toBeLessThan(compatibilidade("PD", "PE").ordem);
   // Improvisado da tabela vem antes do improvisado "qualquer coisa"
   expect(compatibilidade("PE", "LE").ordem).toBeLessThan(compatibilidade("PE", "GOL").ordem);
+});
+
+test("escalar sozinho pelo valor ou pelo overall", () => {
+  const gol = vagaDe("4-3-3", "GOL"), ca = vagaDe("4-3-3", "CA");
+  const doElenco = (P, pos) => elencoAtual(P).filter((p) => p.pos === pos);
+  const porValor = arsenal();
+  const porOverall = { ...arsenal(), xi: {} };
+  escalarSozinho(porOverall, "o");
+  // No gol e no centroavante entra o melhor da posição pelo critério escolhido
+  for (const [i, pos] of [[gol, "GOL"], [ca, "CA"]]) {
+    const ps = doElenco(porValor, pos);
+    expect(D.BYID[porValor.xi[i]].v).toBe(Math.max(...ps.map((p) => p.v)));
+    expect(D.BYID[porOverall.xi[i]].ovr).toBe(Math.max(...ps.map((p) => p.ovr)));
+  }
+  expect(Object.keys(porOverall.xi)).toHaveLength(11);
+  // Pelo overall, a força do time não fica abaixo da escalação pelo valor neste elenco
+  expect(forcaDoTime(porOverall).media).toBeGreaterThanOrEqual(forcaDoTime(porValor).media);
+  // A força "antes" usa o mesmo critério: sem mudanças no plano, antes = depois
+  expect(forcaAntes(porOverall, "o").media).toBe(forcaDoTime(porOverall).media);
 });
 
 test("até 2 reservas por vaga: o 3º não entra", () => {

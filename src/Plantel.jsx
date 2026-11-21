@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { D } from "./logica/dados.js";
 import { FILTROS_PADRAO, PAISES } from "./logica/constantes.js";
 import { lum } from "./logica/formato.js";
-import { lerFiltroCaixa, lerPlanos, salvarFiltroCaixa, salvarPlanos } from "./logica/armazenamento.js";
+import { lerCriterioEscalar, lerFiltroCaixa, lerPlanos, salvarCriterioEscalar, salvarFiltroCaixa, salvarPlanos } from "./logica/armazenamento.js";
 import { ehEmprestadoFora, jogador, novoPlano } from "./logica/elenco.js";
 import { escalarSozinho, completarTime } from "./logica/escalacao.js";
 import { usarMoeda } from "./logica/dinheiro.js";
@@ -74,6 +74,12 @@ export default function Plantel() {
     if (f.fit !== filtros.fit) salvarFiltroCaixa(f.fit);
     setFiltrosEstado(f);
   }
+  // critério do "Escalar sozinho" ("v" valor de mercado ou "o" overall), guardado em "plantel:escalar"
+  const [criterio, setCriterioEstado] = useState(lerCriterioEscalar);
+  function setCriterio(c) {
+    salvarCriterioEscalar(c);
+    setCriterioEstado(c);
+  }
   // painel e aviso (toast)
   const [painel, setPainel] = useState({ tipo: null, args: {}, chave: 0, aberto: false });
   const [aviso, setAviso] = useState({ texto: "", on: false });
@@ -114,7 +120,7 @@ export default function Plantel() {
   function abrirClube(k) {
     const p = db.plans[k] ? structuredClone(db.plans[k]) : novoPlano(k);
     p.custom = p.custom || [];
-    if (!Object.keys(p.xi).length) escalarSozinho(p);
+    if (!Object.keys(p.xi).length) escalarSozinho(p, criterio);
     completarTime(p);
     gravar(p);
     setAberto(k);
@@ -149,7 +155,7 @@ export default function Plantel() {
 
   function reiniciarClube() {
     const p = novoPlano(aberto);
-    escalarSozinho(p);
+    escalarSozinho(p, criterio);
     gravar(p);
     setAba("elenco");
     mostrarAviso("Progresso do " + D.CL[aberto].n + " reiniciado");
@@ -220,8 +226,8 @@ export default function Plantel() {
   // ---------- tela ----------
   // "app" é o pacote de dados e ações que cada componente recebe
   const app = {
-    db, plano, aba, tela, pais, liga, indice, clubes, busca, chip, limite, filtros, moeda, cotacao,
-    setIndice, setBusca, setChip, setLimite, setFiltros, trocarMoeda, tema, alternarTema,
+    db, plano, aba, tela, pais, liga, indice, clubes, busca, chip, limite, filtros, moeda, cotacao, criterio,
+    setIndice, setBusca, setChip, setLimite, setFiltros, setCriterio, trocarMoeda, tema, alternarTema,
     abrirClube, trocarClube, reiniciarClube, excluirPlano, abrirJogador, abrirPainel, fecharPainel,
     mudar, irPara, passo, planejarClube, escolherPais, escolherDivisao, voltar, aviso: mostrarAviso,
   };

@@ -7,7 +7,7 @@ import { Avatar, Ovr, Bandeira, Nota, Pos, SeloNivel } from "./Jogador.jsx";
 import { short } from "../logica/formato.js";
 import { dinheiro } from "../logica/dinheiro.js";
 import { elencoAtual, jogador } from "../logica/elenco.js";
-import { escalarSozinho, forcaDoTime, MAX_RESERVAS, moverReservas, reservasDa, todosReservas, trocarComReserva, trocarTitulares } from "../logica/escalacao.js";
+import { CRITERIOS, escalarSozinho, forcaDoTime, MAX_RESERVAS, moverReservas, reservasDa, todosReservas, trocarComReserva, trocarTitulares } from "../logica/escalacao.js";
 import { Foto } from "./Imagens.jsx";
 
 // Força com uma casa decimal, com vírgula ("78,4")
@@ -51,8 +51,14 @@ export default function Time({ app }) {
     setSel(null);
   };
 
-  const trocarFormacao = (f) => { setSel(null); app.mudar((P) => { moverReservas(P, P.form, f); P.form = f; escalarSozinho(P); }); };
-  const escalar = () => { setSel(null); app.mudar(escalarSozinho); app.aviso("Time escalado pelos mais valiosos"); };
+  // Escalar sozinho pelo valor de mercado ("v") ou pelo overall ("o"); a escolha fica guardada e vale também ao trocar de formação
+  const trocarFormacao = (f) => { setSel(null); app.mudar((P) => { moverReservas(P, P.form, f); P.form = f; escalarSozinho(P, app.criterio); }); };
+  const escalar = (c) => {
+    setSel(null);
+    app.setCriterio(c);
+    app.mudar((P) => escalarSozinho(P, c));
+    app.aviso(c === "o" ? "Time escalado pelos de maior overall" : "Time escalado pelos mais valiosos");
+  };
 
   return (
     <section className="panel on" id="p-time">
@@ -60,7 +66,13 @@ export default function Time({ app }) {
         <select id="form" aria-label="Formação" value={plano.form} onChange={(e) => trocarFormacao(e.target.value)}>
           {Object.keys(FORMS).map((f) => <option key={f}>{f}</option>)}
         </select>
-        <button className="btn" id="auto" style={{ minHeight: 40 }} onClick={escalar}>Escalar sozinho</button>
+        <div className="auto" role="group" aria-label="Escalar sozinho">
+          <span>Escalar por</span>
+          {[["v", "Valor"], ["o", "Overall"]].map(([c, t]) => (
+            <button key={c} id={"auto-" + c} className={app.criterio === c ? "on" : ""} aria-pressed={app.criterio === c}
+              title={"Escalar sozinho pelo " + CRITERIOS[c]} onClick={() => escalar(c)}>{t}</button>
+          ))}
+        </div>
         <div className="xvs">
           <div className="xv" id="forca" title={forca ? `Média de overall de ${forca.n} titulares` : undefined}>
             Força do time<b className="num">{forca ? fmtForca(forca.media) : "—"}</b>

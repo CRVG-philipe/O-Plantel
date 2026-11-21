@@ -181,6 +181,11 @@ img.face{object-fit:cover;object-position:top;background-color:#fff} /* fotos HD
 /* time */
 .xhead{display:flex;align-items:center;gap:10px;margin-bottom:12px}
 .xhead select{min-height:40px;border:0;border-radius:10px;background:var(--sf);box-shadow:0 0 0 1px var(--line);padding:0 10px;font-weight:600}
+.xhead .auto{display:flex;align-items:center;gap:2px;background:var(--sf2);border-radius:10px;padding:3px;min-height:40px}
+.xhead .auto span{font-size:12px;color:var(--mute);padding:0 6px 0 8px;white-space:nowrap}
+.xhead .auto button{border:0;background:none;border-radius:8px;min-height:34px;padding:0 12px;font-size:13.5px;font-weight:600;color:var(--mute);transition:background-color .15s,color .15s}
+.xhead .auto button:hover{color:var(--ink)}
+.xhead .auto button.on{background:var(--sf);color:var(--ink);box-shadow:0 1px 2px rgb(0 0 0/.12),0 0 0 1px var(--line)}
 .xhead .xv{margin-left:auto;text-align:right;font-size:12px;color:var(--mute)}
 .xhead .xv b{display:block;font-size:16px;color:var(--ink)}
 .pitch{position:relative;aspect-ratio:68/92;width:100%;max-width:520px;margin:0 auto 18px;border-radius:18px;background:light-dark(#eef2ee,#16201a);overflow:hidden}

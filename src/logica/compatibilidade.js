@@ -18,10 +18,11 @@ export const COMPAT = {
   // Os pontas (PE e PD) são ideais nos dois lados: nas pontas e nas meias pelos lados
   ME: { ideal: ["ME", "PE", "PD"], boa: ["LE", "MEI"], improvisado: [] },
   MD: { ideal: ["MD", "PD", "PE"], boa: ["LD", "MEI"], improvisado: [] },
-  PE: { ideal: ["PE", "PD"], boa: ["ME", "SA"], improvisado: ["LE", "CA", "MEI"] },
-  PD: { ideal: ["PD", "PE"], boa: ["MD", "SA"], improvisado: ["LD", "CA", "MEI"] },
-  SA: { ideal: ["SA"], boa: ["CA", "MEI"], improvisado: ["PE", "PD"] },
-  CA: { ideal: ["CA"], boa: ["SA"], improvisado: ["PE", "PD"] },
+  // Atacantes (PE, PD, SA e CA) são ideais em qualquer vaga do ataque; a posição de origem continua vindo primeiro
+  PE: { ideal: ["PE", "PD", "SA", "CA"], boa: ["ME"], improvisado: ["LE", "MEI"] },
+  PD: { ideal: ["PD", "PE", "SA", "CA"], boa: ["MD"], improvisado: ["LD", "MEI"] },
+  SA: { ideal: ["SA", "CA", "PE", "PD"], boa: ["MEI"], improvisado: [] },
+  CA: { ideal: ["CA", "SA", "PE", "PD"], boa: [], improvisado: [] },
 };
 
 // Nome e rótulo curto de cada vaga (no campinho, os alas aparecem como "ALA")

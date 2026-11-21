@@ -328,8 +328,15 @@ test("fluxo completo: clube, vender, contratar, filtros, escalação, resumo, re
   const outro = noPainel().getAllByRole("button").find((b) => b.classList.contains("row") && !b.textContent.includes("atual"));
   clique(outro);
   expect(document.querySelector(".slot .lb").textContent).not.toBe(golAntes);
-  clique(botao("Escalar sozinho"));
+  // Escalar sozinho: pelo overall, depois pelo valor; a escolha fica marcada e guardada
+  const grupo = screen.getByRole("group", { name: "Escalar sozinho" });
+  clique(within(grupo).getByRole("button", { name: "Overall" }));
+  expect(aviso()).toBe("Time escalado pelos de maior overall");
+  expect(within(grupo).getByRole("button", { name: "Overall" }).getAttribute("aria-pressed")).toBe("true");
+  expect(localStorage.getItem("plantel:escalar")).toBe("o");
+  clique(within(grupo).getByRole("button", { name: "Valor" }));
   expect(aviso()).toBe("Time escalado pelos mais valiosos");
+  expect(localStorage.getItem("plantel:escalar")).toBe("v");
 
   // 8. Resumo
   clique(screen.getByRole("tab", { name: "Resumo" }));

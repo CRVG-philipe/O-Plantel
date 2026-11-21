@@ -32,6 +32,24 @@ export function lerFiltroCaixa() {
     return true;
   }
 }
+// Critério do "Escalar sozinho" na aba Time: "v" (valor de mercado, o padrão) ou "o" (overall).
+// Chave separada ("plantel:escalar"), também fora dos planos.
+const CHAVE_ESCALAR = "plantel:escalar";
+export function lerCriterioEscalar() {
+  try {
+    return localStorage.getItem(CHAVE_ESCALAR) === "o" ? "o" : "v";
+  } catch (e) {
+    return "v";
+  }
+}
+export function salvarCriterioEscalar(c) {
+  try {
+    localStorage.setItem(CHAVE_ESCALAR, c);
+  } catch (e) {
+    // segue sem salvar
+  }
+}
+
 export function salvarFiltroCaixa(ligado) {
   try {
     localStorage.setItem(CHAVE_CAIXA, ligado ? "1" : "0");
