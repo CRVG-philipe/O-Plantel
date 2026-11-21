@@ -8,6 +8,7 @@ import { dinheiro } from "../src/logica/dinheiro.js";
 import { corDeFundo } from "../src/logica/formato.js";
 
 const DATA = JSON.parse(fs.readFileSync("public/data.json", "utf8"));
+const APELIDOS = JSON.parse(fs.readFileSync("public/apelidos.json", "utf8"));
 const CHAVE = "plantel:v2";
 // Cotação que a "API de mentira" devolve nos testes
 const COTACAO_TESTE = { amount: 1, base: "EUR", date: "2026-11-19", rates: { BRL: 6, USD: 1.1 } };
@@ -23,6 +24,7 @@ beforeEach(() => {
       if (apiCotacaoFora) throw new Error("sem internet");
       return { ok: true, json: async () => structuredClone(COTACAO_TESTE) };
     }
+    if (String(url).includes("apelidos")) return { ok: true, json: async () => structuredClone(APELIDOS) };
     return { ok: true, json: async () => structuredClone(DATA) };
   });
   window.matchMedia = () => ({ matches: false });
@@ -167,11 +169,12 @@ test("divisões: logo de cada liga, em ordem (1ª antes da 2ª), nos países gra
   expect(botao("Planejar 27/28")).toBeTruthy();
 });
 
-test("ligas novas: jogadores sem foto e sem estatísticas aparecem sem erro e podem ser contratados", async () => {
+test("ligas novas: jogadores sem estatísticas aparecem sem erro e podem ser contratados", async () => {
   const c = clubesDa("SWE")[0];
   const novo = c.p.map((r, i) => ({ id: `${c.k}-${i}`, n: r[1], v: r[5], foto: r[7], st: r[8], hd: r[9] })).sort((a, b) => b.v - a.v)[0];
-  expect([novo.foto, novo.hd]).toEqual([-1, 0]);                  // ainda sem foto
-  expect(novo.st).toHaveLength(4);                                 // mas com estatísticas (bloco 2)
+  expect(novo.foto).toBe(-1);                                      // sem sprite antigo...
+  expect(novo.hd).toBeGreaterThan(0);                              // ...mas com foto HD
+  expect(novo.st).toHaveLength(4);                                 // e com estatísticas (bloco 2)
   // Um jogador ainda sem estatísticas (nome único no data.json), de uma liga nova
   const semStats = DATA.clubs.filter((x) => x.lg === "BRC").flatMap((x) => x.p.map((r) => ({ n: r[1], st: r[8], clube: x.n })))
     .find((j) => j.st === null && DATA.clubs.every((x) => x.p.filter((r) => r[1] === j.n).length <= (x.n === j.clube ? 1 : 0)));
@@ -182,7 +185,7 @@ test("ligas novas: jogadores sem foto e sem estatísticas aparecem sem erro e po
   clique(botao(/^Planejar /));
   clique(noPainel().getByRole("button", { name: "Começar" }));
   const linha = naPagina().getByText(novo.n).closest("button");
-  expect(linha.querySelector(".face.ini")).toBeTruthy();          // avatar com as iniciais
+  expect(linha.querySelector("img.face").getAttribute("src")).toBe(`img/players/${novo.hd}.webp`); // foto HD
   clique(linha);
   expect(painel().querySelector(".stg b").textContent).toBe(String(novo.st[0])); // jogos
   clique(noPainel().getByRole("button", { name: "Fechar" }));
@@ -240,9 +243,10 @@ test("fluxo completo: clube, vender, contratar, filtros, escalação, resumo, re
   expect(salvo().plans.T42.st[`T42-${raya}`]).toEqual({ s: "vende", fee: 40 });
   expect(salvo().plans.T42.xi[0]).not.toBe(`T42-${raya}`); // Raya era o goleiro titular
 
-  // 4. Mercado: buscar e contratar
+  // 4. Mercado: buscar e contratar (o mais caro de LaLiga que cabe no caixa, com folga para o passo 5;
+  //    "Só quem cabe no caixa" vem ligado)
   clique(screen.getByRole("tab", { name: "Mercado" }));
-  const alvo = DATA.clubs.filter((c) => c.lg === "ESP").flatMap((c) => c.p.map((r) => ({ n: r[1], v: r[5] }))).sort((a, b) => b.v - a.v)[0];
+  const alvo = DATA.clubs.filter((c) => c.lg === "ESP").flatMap((c) => c.p.map((r) => ({ n: r[1], v: r[5] }))).filter((x) => x.v <= 60).sort((a, b) => b.v - a.v)[0];
   fireEvent.change(screen.getByLabelText("Buscar jogador"), { target: { value: alvo.n } });
   clique(naPagina().getAllByText(alvo.n)[0].closest("button"));
   clique(noPainel().getByRole("button", { name: "Contratar" }));
@@ -252,10 +256,10 @@ test("fluxo completo: clube, vender, contratar, filtros, escalação, resumo, re
 
   // 5. Filtros: só LaLiga, depois limpar
   fireEvent.change(screen.getByLabelText("Buscar jogador"), { target: { value: "" } });
-  clique(botao("Filtros"));
+  clique(document.querySelector("#fOpen"));
   fireEvent.change(noPainel().getByLabelText("Liga"), { target: { value: "ESP" } });
   clique(noPainel().getByRole("button", { name: "Aplicar" }));
-  expect(document.querySelector("#fOpen").textContent).toBe("Filtros1");
+  expect(document.querySelector("#fOpen").textContent).toBe("Filtros2"); // liga + "só quem cabe no caixa"
   const nomesEsp = new Set(DATA.clubs.filter((c) => c.lg === "ESP").map((c) => c.n));
   const linhas = document.querySelectorAll("#mList .row");
   expect(linhas.length).toBe(40);
@@ -266,7 +270,7 @@ test("fluxo completo: clube, vender, contratar, filtros, escalação, resumo, re
   document.querySelectorAll("#mList .row .sub:not(.st)").forEach((s) => expect(s.textContent.startsWith("GOL")).toBe(true));
   clique(screen.getByRole("button", { name: /Filtros/ }));
   clique(noPainel().getByRole("button", { name: "Limpar" }));
-  expect(botao("Filtros")).toBeTruthy();
+  expect(document.querySelector("#fOpen").textContent).toBe("Filtros1"); // de volta ao padrão: só o "cabe no caixa"
 
   // 6. Criar jogador
   clique(botao("Todos"));
@@ -496,6 +500,34 @@ test("escudos em alta resolução em todos os lugares (sem sprite)", async () =>
   conferir(".ini-planos", 1);                                        // "Seus planos" no início
 });
 
+test("fotos dos jogadores: HD quando existe; senão o sprite antigo; senão as iniciais", async () => {
+  // Um exemplo de cada caso, com nome único no data.json
+  const todos = DATA.clubs.flatMap((c) => c.p.map((r) => ({ n: r[1], lg: c.lg, sp: r[7], hd: r[9], v: r[5] })));
+  // nome único e barato (cabe no caixa: "Só quem cabe no caixa" vem ligado)
+  const unico = (j) => j.v <= 5 && todos.filter((x) => x.n === j.n).length === 1;
+  const comHD = todos.find((j) => j.hd > 0 && j.lg === "ENG" && unico(j));
+  const sprite = todos.find((j) => j.hd === 0 && j.sp >= 0 && unico(j));
+  const iniciais = todos.find((j) => j.hd === 0 && j.sp < 0 && unico(j));
+  render(<App />);
+  await irParaBrasil();
+  clique(botao("Planejar 2027"));
+  clique(noPainel().getByRole("button", { name: "Começar" }));
+  clique(screen.getByRole("tab", { name: "Mercado" }));
+  const foto = (nome) => {
+    fireEvent.change(screen.getByLabelText("Buscar jogador"), { target: { value: nome } });
+    return [...document.querySelectorAll("#mList .row")].find((l) => l.querySelector(".nm").textContent === nome).querySelector(".face");
+  };
+  let f = foto(comHD.n);
+  expect(f.tagName).toBe("IMG");
+  expect(f.getAttribute("src")).toBe(`img/players/${comHD.hd}.webp`);
+  expect(f.getAttribute("loading")).toBe("lazy");
+  f = foto(sprite.n);
+  expect(f.tagName).toBe("SPAN");
+  expect(f.style.backgroundImage).toContain(`img/p_${sprite.lg}.webp`);
+  f = foto(iniciais.n);
+  expect(f.classList.contains("ini")).toBe(true);
+});
+
 test("visual do Mercado e das abas: bandeira, setor, nota, caixa, atalho / e indicador", async () => {
   render(<App />);
   await irParaBrasil();
@@ -512,7 +544,13 @@ test("visual do Mercado e das abas: bandeira, setor, nota, caixa, atalho / e ind
   // Atalho "/" põe o cursor na busca
   fireEvent.keyDown(document, { key: "/" });
   expect(document.activeElement).toBe(screen.getByLabelText("Buscar jogador"));
-  // Lista: o mais caro não cabe nos € 20 mi; um barato cabe
+  // Lista: desligando "Só quem cabe no caixa" e ordenando por valor, o mais caro não cabe nos € 20 mi; um barato cabe
+  clique(document.querySelector("#fOpen"));
+  clique(noPainel().getByRole("button", { name: "Só quem cabe no caixa" }));
+  fireEvent.change(noPainel().getByLabelText("Ordenar por"), { target: { value: "vd" } });
+  clique(noPainel().getByRole("button", { name: "Aplicar" }));
+  expect(document.querySelector(".ordem b").textContent).toBe("Valor ↓");
+  expect(document.querySelector(".selo-rec")).toBeNull();                     // selo só na ordem Recomendados
   const linhas = [...document.querySelectorAll("#mList .row")];
   const primeira = linhas[0];
   expect(primeira.classList.contains("too")).toBe(true);
@@ -524,7 +562,7 @@ test("visual do Mercado e das abas: bandeira, setor, nota, caixa, atalho / e ind
   expect(primeira.querySelector(".mc img").getAttribute("src")).toMatch(/^img\/teams\//); // mini escudo
   if (p.st && p.st[3]) expect(primeira.querySelector(".nota").className).toMatch(/n[5-8]/);
   fireEvent.change(screen.getByLabelText("Buscar jogador"), { target: { value: "" } });
-  clique(botao("Filtros"));
+  clique(document.querySelector("#fOpen"));
   fireEvent.change(noPainel().getByLabelText("Ordenar por"), { target: { value: "va" } });
   clique(noPainel().getByRole("button", { name: "Aplicar" }));
   expect(document.querySelector(".ordem b").textContent).toBe("Valor ↑");
@@ -639,6 +677,44 @@ test("estatísticas do bloco 1: quem jogou mostra a nota; quem não entrou em ca
   const grade = [...painel().querySelectorAll(".stg > div")].map((d) => d.textContent);
   expect(grade).toEqual(["0Jogos", "0Gols", "0Assistências", "—Gols por jogo", "—Assist. por jogo", "—Nota média"]);
   expect(painel().querySelector(".stt .nota")).toBeNull();
+});
+
+test("Mercado: recomendados com selo, 'só quem cabe' ligado e lembrado, busca por apelido", async () => {
+  const abrirMercado = async () => {
+    await irParaBrasil();
+    clique(botao(/^(Planejar 2027|Continuar meu plano)$/));
+    if (painel()) clique(noPainel().getByRole("button", { name: "Começar" }));
+    clique(screen.getByRole("tab", { name: "Mercado" }));
+  };
+  const { unmount } = render(<App />);
+  await abrirMercado();
+  // Padrão: ordem "Recomendados", 10 selos e todo mundo cabe no caixa
+  expect(document.querySelector(".ordem b").textContent).toBe("Recomendados");
+  expect(document.querySelectorAll("#mList .selo-rec").length).toBe(10);
+  expect([...document.querySelectorAll("#mList .row")].slice(0, 10).every((l) => l.querySelector(".selo-rec"))).toBe(true);
+  expect(document.querySelector("#mList .row.too")).toBeNull();
+  expect(document.querySelector("#fOpen").textContent).toBe("Filtros1");
+  // Busca por apelido: quem bate pelo apelido vem no topo, e o selo some durante a busca
+  fireEvent.change(screen.getByLabelText("Buscar jogador"), { target: { value: "Gabigol" } });
+  expect(document.querySelector("#mList .row .nm").textContent).toBe("Gabriel Barbosa");
+  expect(document.querySelector(".selo-rec")).toBeNull();
+  fireEvent.change(screen.getByLabelText("Buscar jogador"), { target: { value: "" } });
+  const total = () => +document.querySelector(".ordem span").textContent.replace(/\D/g, ""); // "1.234 jogadores"
+  const soOsQueCabem = total();
+  expect(soOsQueCabem).toBeLessThan(DATA.clubs.reduce((s, c) => s + c.p.length, 0) - 40);
+  // Desligar "Só quem cabe no caixa": aparecem também os caros, e a escolha fica salva fora do plano
+  clique(document.querySelector("#fOpen"));
+  clique(noPainel().getByRole("button", { name: "Só quem cabe no caixa" }));
+  clique(noPainel().getByRole("button", { name: "Aplicar" }));
+  expect(total()).toBeGreaterThan(soOsQueCabem);
+  expect(localStorage.getItem("plantel:caixa")).toBe("0");
+  expect(Object.keys(salvo().plans[clubesDa("BRA")[0].k]).sort()).toEqual(["budget", "club", "custom", "form", "ins", "st", "xi"]);
+  // Abrindo o site de novo, o filtro continua desligado
+  unmount();
+  render(<App />);
+  await abrirMercado();
+  expect(document.querySelector("#fOpen").textContent).toBe("Filtros");
+  expect(total()).toBeGreaterThan(soOsQueCabem);
 });
 
 test("Esc e clique fora fecham o painel", async () => {

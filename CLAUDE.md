@@ -21,7 +21,8 @@ Foi inspirado no reconstruindo.thefenomeno.com, mas **não deve copiá-lo**. O f
   - América do Sul: COL, URU, CHI, PAR, ECU, PER.
   - Europa: SWE, POL, CZE, CRO, SRB, UKR, ROU, RUS.
   - Ásia e Oriente Médio: JPN, KOR, CHN, QAT, UAE.
-- Os jogadores das duas rodadas ainda não têm foto (`índice_foto` -1, `hd` 0). O site mostra as iniciais.
+- Fotos HD dos jogadores (coletadas em 21/11/2026): 22.463 dos 23.613 (95%) têm foto em `public/img/players/<id>.webp`.
+  - Quem não tem usa o sprite antigo (só nas 10 ligas originais) ou as iniciais.
 - Estatísticas:
   - As duas rodadas e os jogadores de ARG e SAU que faltavam ganharam estatísticas coletadas em 21/11/2026:
     - bloco 1: rodada 1, mais ARG e SAU (8.438 jogadores);
@@ -36,7 +37,9 @@ Foi inspirado no reconstruindo.thefenomeno.com, mas **não deve copiá-lo**. O f
 ## Comandos (na raiz do projeto)
 - `npm install`: instala as dependências (só na primeira vez ou quando o package.json mudar).
 - `npm run dev`: roda o site em http://localhost:5173 e atualiza ao salvar.
-- `npm test`: testes automáticos (`testes/app.test.jsx`, cliques simulados com vitest + jsdom). Rodar depois de qualquer mudança.
+- `npm test`: testes automáticos (vitest + jsdom). Rodar depois de qualquer mudança.
+  - `testes/app.test.jsx`: cliques simulados no site inteiro.
+  - `testes/recomendacao.test.js` e `testes/busca.test.js`: a nota de recomendação e a busca por apelido.
 - `npm run build`: gera a versão final em `dist/` (não vai para o git). `npm run preview` serve o `dist/` para conferir.
 
 ## Estrutura
@@ -57,9 +60,12 @@ React 19 + Vite 6, em JavaScript (sem TypeScript).
   - `cotacao.js`: moeda escolhida e cotação no localStorage.
   - `elenco.js`: plano, elenco, saídas, alertas e texto do resumo.
   - `escalacao.js`: escalar, completar e encaixar.
-  - `mercado.js`: busca e filtros.
-  - `formato.js`: textos (datas, nomes curtos, iniciais).
-  - `armazenamento.js`: ler e salvar no localStorage.
+  - `mercado.js`: busca (nome, clube e apelido), filtros e ordens.
+  - `recomendacao.js`: nota de recomendação 0–100 (`pontuar(jogador, clubeOrigem, clubeDestino, plano)` e `notasDoMercado(plano)`).
+  - `afinidade.js`: tabela `AFINIDADE[ligaDestino][ligaOrigem]` (0 a 1), montada a partir de regras por grupo de ligas.
+  - `formato.js`: textos (datas, nomes curtos, iniciais) e `norm` (prepara texto para a busca).
+  - `armazenamento.js`: ler e salvar no localStorage (planos e o filtro "só quem cabe no caixa").
+- `public/apelidos.json`: `{ "apelido": "Nome exato como está no data.json" }`, usado na busca do Mercado. Um teste confere que todo nome existe.
 - `public/data.json`: `{leagues, clubs, updated}`. **É gerado pelo `build_final.py`: não editar à mão.**
   - Cada liga: `{k, n, pais, nat, season, div}`. `nat` = nacionalidade como aparece nos jogadores (para contar estrangeiros). `season` "2026" = ano fechado (planeja "2027"); "26/27" = planeja "27/28".
   - Cada clube: `{k, lg, n, coach, c, c2, hd, p:[...]}`. `hd` = ID do time no Sofascore se `public/img/teams/<hd>.webp` existe, senão 0 (aí o site mostra "+" no lugar do escudo).
@@ -67,7 +73,13 @@ React 19 + Vite 6, em JavaScript (sem TypeScript).
   - `stats` = `[jogos, gols, assistências, nota]` (temporada atual, todas as competições de clube) ou `null`.
   - Posições: GOL ZAG LD LE VOL MC MEI MD ME PD PE SA CA.
 - `public/img/p_<LIGA>.webp`: sprite de fotos (32 colunas, células de 48px). `índice_foto` aponta para a célula; -1 = sem foto.
-- `public/img/p_<LIGA>.webp` só existe para as 10 ligas originais. Os jogadores novos não estão em nenhum sprite.
+- `public/img/p_<LIGA>.webp` só existe para as 10 ligas originais. Os jogadores novos não estão em nenhum sprite. Hoje o sprite é só reserva para quem não tem foto HD.
+- `public/img/players/<id>.webp`: fotos HD dos jogadores, nomeadas pelo ID do Sofascore.
+  - São ~23 mil arquivos (~74 MB), todos em WebP 150×150, qualidade 82, com fundo branco.
+  - O `Foto` (`Imagens.jsx`) usa `<img loading="lazy">` quando `hd` existe; senão o sprite; senão as iniciais.
+  - No CSS, `img.face` tem fundo branco, para a foto ficar num círculo branco também no tema escuro.
+  - A pasta **vai** para o git (não está no `.gitignore`).
+  - Ao adicionar fotos com o `npm run dev` já rodando, reinicie o servidor: ele não enxerga arquivos novos em `public/` e devolve a página no lugar da foto.
 - `public/img/teams/<id>.webp`: escudos em alta (484, 160×160 px, fundo transparente), nomeados pelo ID do Sofascore. Não há mais sprite de escudos.
 - `public/img/leagues/<k>.webp`: logos das 26 ligas (160×160, fundo transparente), mostradas por `LogoLiga` num círculo branco, porque várias são pretas.
 - `public/img/flags/`: bandeiras dos 20 países (SVG do Wikimedia Commons).
@@ -82,7 +94,14 @@ React 19 + Vite 6, em JavaScript (sem TypeScript).
   - `novas_ligas.json`: as 16 ligas novas já no formato final (ligas com `div`, clubes e jogadores). O `build_final.py` junta essas ligas às originais e aplica duas correções:
     - nomes repetidos ficam "Bundesliga Austríaca", "Super League Suíça" e "Super League Grega";
     - a Liga MX passa a ter temporada "26/27" (vai de julho a maio).
-  - `ids_sofascore_novas.json`: `{clube: [ID Sofascore de cada jogador, na mesma ordem do elenco]}` (0 = não encontrado; ~98% têm). É para a próxima fase: fotos HD e estatísticas dos jogadores novos.
+  - `ids_sofascore_novas.json`: `{clube: [ID Sofascore de cada jogador, na mesma ordem do elenco]}` (0 = não encontrado; ~98% têm). Serve para separar jogadores com o mesmo nome no clube.
+  - `fotos-ids.json`: `{clube: {nome exato: ID Sofascore}}`, usado nas fotos HD.
+  - `marcar_fotos_hd.py`: grava o `hd` de cada jogador quando `public/img/players/<id>.webp` existe e mostra quantos têm foto, por liga.
+    - Roda sozinho (`python dados-brutos/marcar_fotos_hd.py`) ou chamado pelo `build_final.py`, no fim.
+    - Nome repetido no clube: usa o ID pela posição no elenco (`kept.json` ou `ids_sofascore_novas*.json`).
+  - `converter_fotos_webp.py` (precisa de `pip install pillow`): converte as fotos para WebP de verdade, por cima do arquivo e com o mesmo nome.
+    - Põe fundo branco onde há transparência, reduz para caber em 150×150 e salva com qualidade 82.
+    - No fim, mostra o tamanho da pasta antes e depois e confere se todas abrem como WebP.
   - Estatísticas por blocos, todas coletadas em 21/11/2026:
     - bloco 1: MEX, POR, BEL, SCO, NOR, NED, TUR, DEN, SUI, GRE, AUT, ENG2, ESP2, ITA2, GER2 e FRA2, mais os jogadores de ARG e SAU que estavam sem estatísticas;
     - bloco 2: COL, URU, CHI, PAR, ECU, PER, BRC, SWE, POL, CZE, CRO, SRB, UKR, ROU, RUS, JPN, KOR, CHN, QAT e UAE.
@@ -107,6 +126,22 @@ React 19 + Vite 6, em JavaScript (sem TypeScript).
   - **Peças em `componentes/Jogador.jsx`:** `Avatar` (anel do setor + mini escudo), `Bandeira`, `Pos`, `Nota` (≥8 azul, ≥7 verde, ≥6 amarelo, <6 laranja) e `MiniStats`.
   - **Bandeiras dos jogadores:** `public/img/flags/paises/<iso>.svg` (pacote flag-icons, MIT). O mapa nacionalidade → código está em `src/logica/nacionalidades.js`. Usamos imagem porque emoji de bandeira não aparece no Windows.
   - **Mercado:** busca fixa abaixo do topo a partir de 561px (`--topo-h`, medido pelo `Topo`), atalho "/", "cabe no caixa" / "faltam € X" (linha `.too` apagada) e legenda dos setores.
+- Mercado: padrões, recomendação e busca:
+  - **Padrões** (`FILTROS_PADRAO`): ordem "Recomendados" e "Só quem cabe no caixa" ligado.
+    - Se a pessoa mudar o "só quem cabe", a escolha fica em `plantel:caixa` ("1" ou "0"), separada dos planos.
+    - O contador do botão Filtros conta esse filtro, então o padrão mostra "Filtros 1".
+  - **Outras ordens:** maior valor, menor valor, mais jovens e melhor nota.
+  - **Recomendados:** nota de 0 a 100, com quatro partes.
+    - Origem, 40%: `AFINIDADE`.
+    - Preço realista, 30%: preço ÷ média de valor do elenco (Série C usa a média da liga), ideal entre 0,5x e 2x; quem não cabe no caixa vale 40%.
+    - Idade e contrato, 15%: 20–29 anos ideal; 31+ só em `LIGAS_DE_VETERANOS`; contrato acabando em até 12 meses ganha bônus.
+    - Necessidade, 15%: posição abaixo do mínimo de `NEED` no elenco planejado; essa parte é suave de propósito, para uma posição não tomar a lista.
+  - **Cálculo das notas:** recalculadas só quando o plano muda (`useMemo` no `Mercado`), não a cada tecla.
+  - **Selo "★ Recomendado":** nos 10 primeiros, só na ordem Recomendados e com a busca vazia.
+  - **Busca:** `norm` tira acento, ponto e apóstrofo, troca hífen por espaço e ø/æ/ß/ł por letras simples ("pepe" acha "Pepê", "vini jr." acha "Vinicius Junior").
+    - Apelido igual ao texto vem primeiro; apelido que só começa com o texto (3+ letras) vem depois; o resto, na ordem escolhida.
+    - Os apelidos são carregados com o data.json, em `D.APELIDOS`. Se o arquivo falhar, a busca segue sem eles.
+    - Não estão nos dados (não entraram nos apelidos): Cavani, Son Heung-min, Sergio Ramos, Chicharito, Memo Ochoa, Willian, Douglas Costa e o lateral Marcelo.
   - **Cor do clube no CSS:** `--club` (campo `c`, para o brilho) e `--clubVis`/`--clubVisInk`, sempre legíveis: no claro usa `--ac`; no escuro, `--clubEscuro` troca cor escura demais pela 2ª cor ou cinza.
   - **Cuidado:** a classe `.no` já existe (`.row .no`); não reutilizar esse nome.
 - Antes do plano (`EscolhaClube.jsx`, estado `tela` no `Plantel.jsx`): telas cheias com fundo colorido, linhas de campo em SVG (branco a 8%) e conteúdo num bloco de até 480px, com o botão principal logo abaixo do conteúdo. Modelo visual: `referencia-inicio-paises.html`, enviado pelo Philipe.
@@ -130,15 +165,20 @@ React 19 + Vite 6, em JavaScript (sem TypeScript).
 - Os planos ficam salvos no localStorage (chave `plantel:v2`, formato `{plans:{<clube>: plano}, last}`). **Não mudar os nomes dos campos do plano** (`club, budget, st, ins, form, xi, custom`), senão quem já tem planos salvos os perde.
 
 ## Pendências (em ordem sugerida)
-1. **Fotos em alta resolução (em andamento).** Os escudos já estão prontos (20/11/2026). Faltam as fotos dos jogadores: `dados-brutos/baixar_imagens.py --so-jogadores` baixa para `public/img/players/` (precisa de `pip install pillow`; rodar na raiz do projeto), o `build_final.py` marca `hd` e o `Foto` usa `<img loading="lazy">` quando `hd` existe, ou o sprite quando não existe.
-   - **Bloqueio:** em 20/11/2026 o `api.sofascore.app` respondeu 403 a pedidos simples. Não contornar o bloqueio imitando um navegador; buscar uma fonte permitida.
-   - Quando todas as fotos existirem, apagar os sprites `p_*.webp` e o código de sprite em `Foto` (`src/componentes/Imagens.jsx`).
-2. Completar as estatísticas que faltam. Os blocos 1 e 2 foram feitos em 21/11/2026; restam 699 jogadores, 282 deles da Série C.
-   - As fotos dos jogadores das duas rodadas também faltam: o `baixar_imagens.py` hoje só lê `kept.json` e precisa passar a ler `ids_sofascore_novas.json` e `ids_sofascore_novas_2.json` também.
-3. Script de atualização periódica dos dados (Transfermarkt e Sofascore).
-4. ~~Migrar para Vite~~ Feito em 20/11/2026 (React + Vite; a versão antiga sem framework está na tag git `antes-do-react`), publicado na Vercel.
-5. Simulação da temporada, link compartilhável do plano e modo "desafio diário" (para depois).
+1. Completar as estatísticas e fotos que faltam.
+   - Estatísticas: os blocos 1 e 2 foram feitos em 21/11/2026; restam 699 jogadores, 282 deles da Série C.
+   - Fotos HD (coletadas em 21/11/2026): faltam 1.150 jogadores, 325 deles da Série C. Quando chegarem mais, rodar `python dados-brutos/marcar_fotos_hd.py`.
+   - Os sprites `p_*.webp` ficam como reserva por enquanto: 11 jogadores sem foto HD ainda usam o sprite. Quando não houver mais nenhum, apagar os sprites e o código de sprite em `Foto` (`src/componentes/Imagens.jsx`).
+2. Script de atualização periódica dos dados (Transfermarkt e Sofascore).
+3. Simulação da temporada, link compartilhável do plano e modo "desafio diário" (para depois).
+
+## Feito
+- 20/11/2026: migração para React + Vite (a versão antiga sem framework está na tag git `antes-do-react`), publicada na Vercel. Escudos em alta resolução.
+- 21/11/2026: fotos HD dos jogadores (95%, em WebP 150×150, qualidade 82) e estatísticas das 36 ligas novas.
 
 ## Cuidados
+- Fotos novas em `public/img/players/`: rodar `python dados-brutos/converter_fotos_webp.py` antes do commit.
+  - Na coleta de 21/11/2026, 13.454 fotos eram PNG, JPEG ou GIF com o nome `.webp`. A conversão levou a pasta de 314 MB para 74 MB.
+  - O script pula quem já é WebP com 150×150 ou menos, então rodar de novo não estraga nada.
 - Transfermarkt: valores "€600mil" são **mil**, não milhões. Na regex, testar `mil` antes de `mi`.
 - O Sofascore bloqueia (403) quando recebe requisições demais. Usar pausas.

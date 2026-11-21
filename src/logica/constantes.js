@@ -83,4 +83,6 @@ export const PAISES = [
   { n: "Emirados Árabes", sigla: "UAE", continente: AO, cor: "#00732f", bandeira: "emirados.svg", ligas: ["UAE"] },
 ];
 
-export const FILTROS_PADRAO ={ lg: "", club: "", age: 99, sort: "vd", fit: false, free: false };
+// Filtros do Mercado ao abrir: ordem "Recomendados" e "Só quem cabe no caixa" ligado
+// (se a pessoa desligar, a escolha fica salva em "plantel:caixa"; ver armazenamento.js)
+export const FILTROS_PADRAO = { lg: "", club: "", age: 99, sort: "rec", fit: true, free: false };

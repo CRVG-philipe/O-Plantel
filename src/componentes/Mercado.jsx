@@ -1,18 +1,25 @@
 // Aba Mercado: busca (fixa ao rolar), botões de posição, filtros e lista de jogadores de outros clubes.
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { D } from "../logica/dados.js";
 import { CHIPS, corDoSetor } from "../logica/constantes.js";
 import { ctrTxt } from "../logica/formato.js";
 import { dinheiro, calcularDinheiro, precoDeCompra, valorJogador } from "../logica/dinheiro.js";
 import { buscarJogadores, contarFiltros } from "../logica/mercado.js";
+import { notasDoMercado } from "../logica/recomendacao.js";
 import { Avatar, Bandeira, MiniStats, Nota, Pos } from "./Jogador.jsx";
 
-const ORDEM = { vd: "Valor ↓", va: "Valor ↑", a: "Idade ↑" };
+const ORDEM = { rec: "Recomendados", vd: "Valor ↓", va: "Valor ↑", a: "Idade ↑", n: "Nota ↓" };
+const N_SELO = 10; // os 10 primeiros da lista em "Recomendados" ganham o selo
 export const LEGENDA = [["gol", "Goleiro"], ["def", "Defesa"], ["mei", "Meio"], ["ata", "Ataque"]];
 
 export default function Mercado({ app }) {
   const { plano, busca, chip, limite, filtros } = app;
-  const lista = buscarJogadores(plano, busca, chip, filtros);
+  // Notas de recomendação: só recalcula quando o plano muda (outro clube, venda, contratação, caixa),
+  // e não a cada tecla digitada na busca
+  const notas = useMemo(() => notasDoMercado(plano), [plano]);
+  const lista = buscarJogadores(plano, busca, chip, filtros, notas);
+  // Selo "Recomendado": só na ordem Recomendados e sem texto na busca (aí a lista é a recomendação pura)
+  const comSelo = filtros.sort === "rec" && !busca.trim() ? N_SELO : 0;
   const nFiltros = contarFiltros(filtros);
   const caixa = calcularDinheiro(plano).caixa;
   const criar = () => app.abrirPainel("criar");
@@ -55,7 +62,7 @@ export default function Mercado({ app }) {
         {lista.length ? (
           <>
             <div className="card">
-              {lista.slice(0, limite).map((p) => {
+              {lista.slice(0, limite).map((p, i) => {
                 const preco = precoDeCompra(p), cabe = preco <= caixa;
                 return (
                   <button className={"row" + (cabe ? "" : " too")} key={p.id} onClick={() => app.abrirJogador(p.id)}>
@@ -72,6 +79,7 @@ export default function Mercado({ app }) {
                     <div className="rt vl">
                       <div className="v num">{valorJogador(p.v)}</div>
                       <div className={"s" + (cabe ? "" : " falta")}>{cabe ? "cabe no caixa" : "faltam " + dinheiro(preco - caixa)}</div>
+                      {i < comSelo && <span className="selo-rec" title={`Nota de recomendação: ${notas.get(p.id)} de 100`}>★ Recomendado</span>}
                     </div>
                     <span className="add" aria-hidden="true">+</span>
                   </button>

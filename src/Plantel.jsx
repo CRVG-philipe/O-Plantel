@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { D } from "./logica/dados.js";
 import { FILTROS_PADRAO, PAISES } from "./logica/constantes.js";
 import { lum } from "./logica/formato.js";
-import { lerPlanos, salvarPlanos } from "./logica/armazenamento.js";
+import { lerFiltroCaixa, lerPlanos, salvarFiltroCaixa, salvarPlanos } from "./logica/armazenamento.js";
 import { jogador, novoPlano } from "./logica/elenco.js";
 import { escalarSozinho, completarTime } from "./logica/escalacao.js";
 import { usarMoeda } from "./logica/dinheiro.js";
@@ -67,7 +67,12 @@ export default function Plantel() {
   const [busca, setBusca] = useState("");
   const [chip, setChip] = useState(0);
   const [limite, setLimite] = useState(40);
-  const [filtros, setFiltros] = useState(FILTROS_PADRAO);
+  // filtros: os padrões, com "Só quem cabe no caixa" como a pessoa deixou da última vez
+  const [filtros, setFiltrosEstado] = useState(() => ({ ...FILTROS_PADRAO, fit: lerFiltroCaixa() }));
+  function setFiltros(f) {
+    if (f.fit !== filtros.fit) salvarFiltroCaixa(f.fit);
+    setFiltrosEstado(f);
+  }
   // painel e aviso (toast)
   const [painel, setPainel] = useState({ tipo: null, args: {}, chave: 0, aberto: false });
   const [aviso, setAviso] = useState({ texto: "", on: false });

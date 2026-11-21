@@ -21,3 +21,21 @@ export function salvarPlanos(db) {
     // navegador sem espaço ou em modo privado: segue sem salvar
   }
 }
+
+// Filtro "Só quem cabe no caixa" do Mercado: ligado por padrão; guarda só se a pessoa mudar.
+// Chave separada ("plantel:caixa", valor "1" ou "0") para não mexer no formato dos planos.
+const CHAVE_CAIXA = "plantel:caixa";
+export function lerFiltroCaixa() {
+  try {
+    return localStorage.getItem(CHAVE_CAIXA) !== "0";
+  } catch (e) {
+    return true;
+  }
+}
+export function salvarFiltroCaixa(ligado) {
+  try {
+    localStorage.setItem(CHAVE_CAIXA, ligado ? "1" : "0");
+  } catch (e) {
+    // segue sem salvar
+  }
+}

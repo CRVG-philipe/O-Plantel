@@ -80,7 +80,7 @@ main.col{padding:18px 16px 80px}
 .face.ini{display:inline-grid;place-items:center;font-weight:700;color:var(--mute)}
 /* escudos: imagens com fundo transparente */
 .crest{display:inline-block;flex:none;object-fit:contain}
-img.face{object-fit:cover;object-position:top}
+img.face{object-fit:cover;object-position:top;background-color:#fff} /* fotos HD têm fundo branco: círculo branco também no tema escuro */
 .stt{background:var(--sf2);border-radius:14px;padding:12px;margin-bottom:16px}
 .sth{display:flex;justify-content:space-between;font-size:12.5px;font-weight:600;color:var(--mute);margin-bottom:8px}
 .stg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
@@ -135,6 +135,10 @@ img.face{object-fit:cover;object-position:top}
 @media (hover:hover) and (pointer:fine){.inp kbd{display:inline-block}}
 .fbtn{border:0;border-radius:12px;background:var(--sf);box-shadow:0 0 0 1px var(--line);padding:0 14px;font-weight:600;min-height:44px;white-space:nowrap}
 .fbtn b{background:var(--clubVis);color:var(--clubVisInk);border-radius:999px;font-size:11px;padding:1px 6px;margin-left:6px}
+/* selo "Recomendado" nos 10 primeiros do Mercado (ordem Recomendados), na cor do clube */
+.selo-rec{display:inline-block;margin-top:4px;font-size:10.5px;font-weight:700;letter-spacing:.2px;line-height:1.5;white-space:nowrap;
+  padding:1px 7px;border-radius:99px;color:var(--clubVis);background:color-mix(in srgb,var(--clubVis) 13%,transparent)}
+@media (max-width:560px){.selo-rec{font-size:9.5px;padding:0 5px;letter-spacing:0}}
 .ordem{display:flex;justify-content:space-between;color:var(--mute2);font-size:12px;padding:0 4px 8px}
 .ordem b{color:var(--mute);font-weight:600}
 .chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:12px;scrollbar-width:none}

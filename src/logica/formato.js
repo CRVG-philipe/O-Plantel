@@ -1,8 +1,11 @@
 // Funções pequenas que transformam dados em texto para mostrar na tela.
 import { MES } from "./constantes.js";
 
-// Tira acentos e deixa minúsculo, para a busca achar "São Paulo" digitando "sao paulo"
-export const norm = (s) => s.toLowerCase().normalize("NFD").replace(/\p{M}/gu, "");
+// Prepara um texto para a busca: minúsculo, sem acento, sem ponto nem apóstrofo, hífen vira espaço.
+// Assim "sao paulo" acha "São Paulo", "pepe" acha "Pepê", "vini jr" acha "Vini Jr." e "odegaard" acha "Ødegaard".
+const LETRAS = { ø: "o", æ: "ae", œ: "oe", ß: "ss", ł: "l", đ: "d", ı: "i" };
+export const norm = (s) => s.toLowerCase().normalize("NFD").replace(/\p{M}/gu, "")
+  .replace(/[øæœßłđı]/g, (l) => LETRAS[l]).replace(/[.'’]/g, "").replace(/-/g, " ").replace(/\s+/g, " ");
 
 // "2027-06" vira "jun/27"
 export const ctrTxt = (c) => (c ? MES[+c.slice(5, 7) - 1] + "/" + c.slice(2, 4) : "–");

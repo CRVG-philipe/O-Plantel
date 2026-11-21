@@ -6,11 +6,22 @@ import { norm } from "./formato.js";
 //   D.CLUBS   lista de clubes        D.CL[k]   clube pela chave (ex.: "T42")
 //   D.LEAGUES lista de ligas         D.LG[k]   liga pela chave (ex.: "BRA")
 //   D.ALL     todos os jogadores     D.BYID[id] jogador pelo id (ex.: "T42-3")
-export const D = { DATA: null, CLUBS: [], LEAGUES: [], LG: {}, CL: {}, ALL: [], BYID: {} };
+//   D.APELIDOS apelido → nome do jogador, os dois já preparados para a busca ("gabigol" → "gabriel barbosa")
+export const D = { DATA: null, CLUBS: [], LEAGUES: [], LG: {}, CL: {}, ALL: [], BYID: {}, APELIDOS: {} };
+
+// Apelidos (public/apelidos.json: { "apelido": "Nome como está no data.json" }). Se falhar, segue sem eles.
+async function carregarApelidos() {
+  try {
+    const a = await fetch("apelidos.json").then((r) => r.json());
+    return Object.fromEntries(Object.entries(a).map(([k, v]) => [norm(k.trim()), norm(v)]));
+  } catch (e) {
+    return {};
+  }
+}
 
 export async function carregarDados() {
-  const DATA = await fetch("data.json").then((r) => r.json());
-  Object.assign(D, { DATA, LG: {}, CL: {}, ALL: [], BYID: {} }); // começa do zero
+  const [DATA, APELIDOS] = await Promise.all([fetch("data.json").then((r) => r.json()), carregarApelidos()]);
+  Object.assign(D, { DATA, APELIDOS, LG: {}, CL: {}, ALL: [], BYID: {} }); // começa do zero
   D.CLUBS = DATA.clubs;
   D.LEAGUES = DATA.leagues;
 
