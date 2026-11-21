@@ -184,6 +184,9 @@ React 19 + Vite 6, em JavaScript (sem TypeScript).
     - Se a pessoa mudar o "só quem cabe", a escolha fica em `plantel:caixa` ("1" ou "0"), separada dos planos.
     - O contador do botão Filtros conta esse filtro, então o padrão mostra "Filtros 1".
   - **Outras ordens:** maior valor, menor valor, mais jovens, melhor nota e Overall (`o`).
+  - **Filtros** (`PainelFiltros`): liga, clube, nacionalidade (`nat`), idade máxima, ordem, "só quem cabe" e "contrato acabando".
+    - Com uma liga escolhida, a lista de clubes mostra só os clubes dela (sem os grupos das outras ligas).
+    - Nacionalidade: `nacionalidadesDoMercado(plano, lg, club)` (`mercado.js`) lista, em ordem alfabética e com a contagem, só as nacionalidades de quem está na liga/clube escolhidos. A bandeira da escolhida aparece ao lado do título.
   - **Recomendados:** nota de 0 a 100, com cinco partes.
     - Origem, 35%: `AFINIDADE`.
     - Preço realista, 25%: preço ÷ média de valor do elenco (Série C usa a média da liga), ideal entre 0,5x e 2x; quem não cabe no caixa vale 40%.

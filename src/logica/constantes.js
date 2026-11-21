@@ -86,4 +86,4 @@ export const PAISES = [
 
 // Filtros do Mercado ao abrir: ordem "Recomendados" e "Só quem cabe no caixa" ligado
 // (se a pessoa desligar, a escolha fica salva em "plantel:caixa"; ver armazenamento.js)
-export const FILTROS_PADRAO = { lg: "", club: "", age: 99, sort: "rec", fit: true, free: false };
+export const FILTROS_PADRAO = { lg: "", club: "", nat: "", age: 99, sort: "rec", fit: true, free: false };

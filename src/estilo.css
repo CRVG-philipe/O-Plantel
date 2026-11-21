@@ -399,6 +399,8 @@ details.bench[open] summary::after{content:"Ocultar"}
 .opt[aria-pressed=true] .r{border:5px solid var(--ac)}
 .opt small{display:block;color:var(--mute);font-size:12.5px}
 .field{display:block;font-size:13px;color:var(--mute);margin:4px 0 14px}
+.field-tit{display:flex;align-items:center;gap:6px}
+.field-tit .fl{border-radius:2px}
 .field input,.field select{display:block;width:100%;margin-top:6px;min-height:48px;border:0;border-radius:12px;background:var(--sf2);padding:0 14px;font-size:17px;font-weight:600;color:var(--ink)}
 .presets{display:flex;gap:6px;flex-wrap:wrap;margin:-6px 0 16px}
 .presets button{border:0;background:var(--sf2);border-radius:999px;padding:0 12px;min-height:34px;font-size:13.5px;font-weight:600}

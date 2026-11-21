@@ -6,7 +6,22 @@ import { calcularDinheiro, precoDeCompra } from "./dinheiro.js";
 
 // Quantos filtros estão ligados (o número que aparece no botão "Filtros")
 export function contarFiltros(F) {
-  return (F.lg ? 1 : 0) + (F.club ? 1 : 0) + (F.age < 99 ? 1 : 0) + (F.fit ? 1 : 0) + (F.free ? 1 : 0) + (F.sort !== FILTROS_PADRAO.sort ? 1 : 0);
+  return (F.lg ? 1 : 0) + (F.club ? 1 : 0) + (F.nat ? 1 : 0) + (F.age < 99 ? 1 : 0) + (F.fit ? 1 : 0) + (F.free ? 1 : 0) + (F.sort !== FILTROS_PADRAO.sort ? 1 : 0);
+}
+
+// Quem pode aparecer no Mercado: jogadores de outros clubes, menos os emprestados pelo próprio clube
+// (esses já estão na seção "Emprestados a outros clubes")
+const deFora = (p, plano) => p.club !== plano.club && p.emp?.de.k !== plano.club;
+
+// Nacionalidades para o filtro: as de quem está no Mercado (só na liga/clube escolhidos, se houver),
+// em ordem alfabética, com quantos jogadores tem cada uma: [["Alemanha", 746], ...]
+export function nacionalidadesDoMercado(plano, lg, club) {
+  const conta = new Map();
+  for (const p of D.ALL) {
+    if (!p.nat || !deFora(p, plano) || (lg && p.lg !== lg) || (club && p.club !== club)) continue;
+    conta.set(p.nat, (conta.get(p.nat) || 0) + 1);
+  }
+  return [...conta].sort((a, b) => a[0].localeCompare(b[0], "pt-BR"));
 }
 
 // Nomes (já preparados para a busca) dos jogadores cujo apelido bate com o que foi digitado: Map nome → força.
@@ -40,11 +55,11 @@ export function buscarJogadores(plano, busca, chip, F, notas) {
   const jaVem = new Set(plano.ins.map((m) => m.id));
   const porApelido = nomesPorApelido(q);
   const l = D.ALL.filter((p) =>
-    p.club !== plano.club && !jaVem.has(p.id) &&
-    p.emp?.de.k !== plano.club && // emprestado pelo próprio clube: já está na seção "Emprestados a outros clubes"
+    deFora(p, plano) && !jaVem.has(p.id) &&
     (!ps || ps.includes(p.pos)) &&
     (!F.lg || p.lg === F.lg) &&
     (!F.club || p.club === F.club) &&
+    (!F.nat || p.nat === F.nat) &&
     p.a <= F.age &&
     (!F.fit || precoDeCompra(p) <= caixa) &&
     (!F.free || p.end26) &&

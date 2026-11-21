@@ -1,8 +1,10 @@
 // Painel de filtros do Mercado. As mudanças só valem ao tocar em "Aplicar".
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { D } from "../../logica/dados.js";
 import { FILTROS_PADRAO } from "../../logica/constantes.js";
+import { nacionalidadesDoMercado } from "../../logica/mercado.js";
 import { Cabecalho } from "../Painel.jsx";
+import { Bandeira } from "../Jogador.jsx";
 import { Opcao } from "./comum.jsx";
 
 const IDADES = [[99, "Qualquer idade"], [21, "Até 21 anos"], [23, "Até 23 anos"], [26, "Até 26 anos"], [29, "Até 29 anos"]];
@@ -15,6 +17,14 @@ export default function PainelFiltros({ app }) {
     if (n.club && n.lg && D.CL[n.club].lg !== n.lg) n.club = ""; // clube de outra liga não vale
     return n;
   });
+
+  // Clubes que aparecem na lista: só os da liga escolhida (ou todos, separados por liga)
+  const clubesDa = (lg) => D.CLUBS.filter((c) => c.lg === lg && c.k !== app.plano.club).sort((a, b) => a.n.localeCompare(b.n));
+  const liga = t.lg ? D.LG[t.lg] : null;
+
+  // Nacionalidades de quem está na liga/clube escolhidos, com quantos jogadores tem cada uma
+  const nats = useMemo(() => nacionalidadesDoMercado(app.plano, t.lg, t.club), [app.plano, t.lg, t.club]);
+  const natFora = t.nat && !nats.some(([n]) => n === t.nat); // a escolhida não existe nessa liga/clube
 
   const aplicar = (f) => { app.setFiltros(f); app.fecharPainel(); app.setLimite(40); };
 
@@ -29,14 +39,22 @@ export default function PainelFiltros({ app }) {
       </label>
       <label className="field">Clube
         <select id="fc" value={t.club} onChange={(e) => muda("club", e.target.value)}>
-          <option value="">Todos os clubes</option>
-          {D.LEAGUES.map((l) => (
-            <optgroup key={l.k} label={l.n}>
-              {D.CLUBS.filter((c) => c.lg === l.k && c.k !== app.plano.club && (!t.lg || t.lg === l.k))
-                .sort((a, b) => a.n.localeCompare(b.n))
-                .map((c) => <option key={c.k} value={c.k}>{c.n}</option>)}
-            </optgroup>
-          ))}
+          <option value="">{liga ? "Todos os clubes da liga" : "Todos os clubes"}</option>
+          {liga
+            ? clubesDa(liga.k).map((c) => <option key={c.k} value={c.k}>{c.n}</option>)
+            : D.LEAGUES.map((l) => (
+              <optgroup key={l.k} label={l.n}>
+                {clubesDa(l.k).map((c) => <option key={c.k} value={c.k}>{c.n}</option>)}
+              </optgroup>
+            ))}
+        </select>
+      </label>
+      <label className="field">
+        <span className="field-tit">Nacionalidade {t.nat ? <Bandeira nat={t.nat} /> : null}</span>
+        <select id="fn" value={t.nat} onChange={(e) => muda("nat", e.target.value)}>
+          <option value="">Todas as nacionalidades</option>
+          {natFora ? <option value={t.nat}>{t.nat} (0)</option> : null}
+          {nats.map(([n, q]) => <option key={n} value={n}>{n} ({q.toLocaleString("pt-BR")})</option>)}
         </select>
       </label>
       <label className="field">Idade máxima

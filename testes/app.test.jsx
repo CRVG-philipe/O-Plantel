@@ -280,6 +280,26 @@ test("fluxo completo: clube, vender, contratar, filtros, escalação, resumo, re
   expect(document.querySelectorAll("#mList .row").length).toBe(80);
   clique(botao("Goleiros"));
   document.querySelectorAll("#mList .row .sub:not(.st)").forEach((s) => expect(s.textContent.startsWith("GOL")).toBe(true));
+  clique(botao("Todos"));
+  // Com LaLiga escolhida, a lista de clubes só tem os clubes da LaLiga (sem os grupos das outras ligas)
+  clique(screen.getByRole("button", { name: /Filtros/ }));
+  const opcoesClube = [...painel().querySelectorAll("#fc option")].slice(1).map((o) => o.textContent);
+  expect(painel().querySelectorAll("#fc optgroup")).toHaveLength(0);
+  expect(opcoesClube.length).toBe(nomesEsp.size); // o plano é do Arsenal: todos os clubes da LaLiga aparecem
+  opcoesClube.forEach((n) => expect(nomesEsp.has(n)).toBe(true));
+  // Nacionalidade: só as que existem na LaLiga, com a contagem; escolher "Brasil" deixa só brasileiros
+  const opcoesNat = [...painel().querySelectorAll("#fn option")].slice(1).map((o) => o.value);
+  expect(opcoesNat).toContain("Brasil");
+  expect(opcoesNat).not.toContain("Qatar");
+  fireEvent.change(noPainel().getByLabelText(/Nacionalidade/), { target: { value: "Brasil" } });
+  clique(noPainel().getByRole("button", { name: "Aplicar" }));
+  expect(document.querySelector("#fOpen").textContent).toBe("Filtros3"); // liga + nacionalidade + caixa
+  const brasileiros = document.querySelectorAll("#mList .row");
+  expect(brasileiros.length).toBeGreaterThan(0);
+  brasileiros.forEach((l) => {
+    expect(l.querySelector(".nm img.fl").getAttribute("alt")).toBe("Brasil");
+    expect([...nomesEsp].some((n) => l.querySelector(".sub").textContent.includes(n))).toBe(true);
+  });
   clique(screen.getByRole("button", { name: /Filtros/ }));
   clique(noPainel().getByRole("button", { name: "Limpar" }));
   expect(document.querySelector("#fOpen").textContent).toBe("Filtros1"); // de volta ao padrão: só o "cabe no caixa"
