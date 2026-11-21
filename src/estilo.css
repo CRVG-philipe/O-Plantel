@@ -176,6 +176,18 @@ img.face{object-fit:cover;object-position:top;background-color:#fff} /* fotos HD
 .chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:12px;scrollbar-width:none}
 .chips button{border:0;background:var(--sf);box-shadow:0 0 0 1px var(--line);border-radius:999px;min-height:36px;padding:0 14px;font-size:13.5px;font-weight:600;white-space:nowrap;flex:none}
 .chips button[aria-pressed=true]{background:var(--ink);color:var(--bg);box-shadow:none}
+/* Setas ‹ › da fileira de posições (Mercado): só aparecem quando há o que rolar daquele lado */
+.rolavel{position:relative}
+.rola{position:absolute;top:0;height:36px;width:44px;border:0;padding:0;display:grid;place-items:center;font-size:22px;line-height:1;font-weight:600;color:var(--ink);z-index:1;cursor:pointer}
+.rola::before{content:"";position:absolute;top:4px;width:28px;height:28px;border-radius:50%;background:var(--sf);box-shadow:0 0 0 1px var(--line),0 2px 6px rgb(0 0 0/.12);z-index:-1}
+.rola.esq{left:0;justify-content:start;background:linear-gradient(90deg,var(--bg) 55%,transparent)}
+.rola.esq::before{left:0}
+.rola.dir{right:0;justify-content:end;background:linear-gradient(270deg,var(--bg) 55%,transparent)}
+.rola.dir::before{right:0}
+.rola.esq{padding-left:9px}.rola.dir{padding-right:9px}
+.rola:hover::before{background:var(--sf2)}
+.rola[hidden]{display:none}
+@media (hover:none){.rola{display:none}} /* no celular, arrastar com o dedo já basta */
 .more{border:0;background:none;color:var(--clubVis);font-weight:600;width:100%;padding:14px;min-height:44px}
 .empty{padding:28px 16px;text-align:center;color:var(--mute);font-size:14px}
 /* time */
@@ -404,6 +416,23 @@ details.bench[open] summary::after{content:"Ocultar"}
 .opt[aria-pressed=true] .r{border:5px solid var(--ac)}
 .opt small{display:block;color:var(--mute);font-size:12.5px}
 .field{display:block;font-size:13px;color:var(--mute);margin:4px 0 14px}
+/* Faixa de 0 a 100 nos filtros (Overall e Idade): caixa · barra com duas alças · caixa */
+.faixa-topo{display:flex;justify-content:space-between;align-items:baseline}
+.faixa-topo b{font-size:14px;color:var(--ink)}
+.faixa-corpo{display:flex;align-items:center;gap:12px;margin-top:6px}
+.faixa .faixa-num{width:64px;flex:none;margin:0;min-height:44px;padding:0 6px;text-align:center;font-size:16px;-moz-appearance:textfield;appearance:textfield}
+.faixa .faixa-num::-webkit-inner-spin-button,.faixa .faixa-num::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.faixa-barra{position:relative;flex:1;height:44px}
+.faixa-trilho{position:absolute;left:0;right:0;top:50%;height:6px;margin-top:-3px;border-radius:3px;
+  background:linear-gradient(90deg,var(--line) var(--a),var(--clubVis,var(--ink)) var(--a),var(--clubVis,var(--ink)) var(--b),var(--line) var(--b))}
+.faixa input[type=range]{position:absolute;inset:0;width:100%;height:100%;margin:0;padding:0;min-height:0;background:none;border-radius:0;
+  -webkit-appearance:none;appearance:none;pointer-events:none;z-index:2}
+.faixa input[type=range]::-webkit-slider-runnable-track{background:none;height:100%}
+.faixa input[type=range]::-moz-range-track{background:none}
+.faixa input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;pointer-events:auto;width:22px;height:22px;margin-top:11px;border-radius:50%;
+  background:var(--sf);border:2px solid var(--clubVis,var(--ink));box-shadow:0 1px 4px rgb(0 0 0/.2);cursor:grab}
+.faixa input[type=range]::-moz-range-thumb{pointer-events:auto;width:18px;height:18px;border-radius:50%;background:var(--sf);
+  border:2px solid var(--clubVis,var(--ink));box-shadow:0 1px 4px rgb(0 0 0/.2);cursor:grab}
 .field-tit{display:flex;align-items:center;gap:6px}
 .field-tit .fl{border-radius:2px}
 .field input,.field select{display:block;width:100%;margin-top:6px;min-height:48px;border:0;border-radius:12px;background:var(--sf2);padding:0 14px;font-size:17px;font-weight:600;color:var(--ink)}

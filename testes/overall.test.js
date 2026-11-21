@@ -5,7 +5,7 @@ import { D, carregarDados } from "../src/logica/dados.js";
 import { FILTROS_PADRAO } from "../src/logica/constantes.js";
 import { jogador, novoPlano } from "../src/logica/elenco.js";
 import { escalarSozinho, forcaAntes, forcaDoTime } from "../src/logica/escalacao.js";
-import { buscarJogadores } from "../src/logica/mercado.js";
+import { buscarJogadores, contarFiltros } from "../src/logica/mercado.js";
 import { pontuar } from "../src/logica/recomendacao.js";
 
 beforeAll(async () => {
@@ -61,6 +61,24 @@ test("Mercado: ordem 'Overall' põe o maior overall primeiro", () => {
   const l = buscarJogadores(P, "", 0, { ...FILTROS_PADRAO, fit: false, sort: "o" });
   expect(l[0].ovr).toBe(91);
   for (let i = 1; i < 200; i++) expect(l[i - 1].ovr).toBeGreaterThanOrEqual(l[i].ovr);
+});
+
+test("Mercado: faixas de overall e de idade (0 a 100)", () => {
+  const P = novoPlano("T1974");
+  const base = { ...FILTROS_PADRAO, fit: false };
+  const todos = buscarJogadores(P, "", 0, base).length;
+  const l = buscarJogadores(P, "", 0, { ...base, ovr: [70, 80], idade: [15, 49] });
+  expect(l.length).toBeGreaterThan(100);
+  expect(l.length).toBeLessThan(todos);
+  expect(l.every((p) => p.ovr >= 70 && p.ovr <= 80 && p.a >= 15 && p.a <= 49)).toBe(true);
+  // Faixa inteira (0–100) não filtra nada; os limites entram na faixa
+  expect(buscarJogadores(P, "", 0, { ...base, ovr: [0, 100], idade: [0, 100] }).length).toBe(todos);
+  expect(buscarJogadores(P, "", 0, { ...base, ovr: [91, 91] }).every((p) => p.ovr === 91)).toBe(true);
+  expect(buscarJogadores(P, "", 0, { ...base, ovr: [91, 91] }).length).toBeGreaterThan(0);
+  // Cada faixa ligada conta 1 no botão "Filtros"
+  expect(contarFiltros({ ...base, ovr: [70, 80] })).toBe(1);
+  expect(contarFiltros({ ...base, ovr: [70, 80], idade: [0, 23] })).toBe(2);
+  expect(contarFiltros(base)).toBe(0);
 });
 
 test("ajustes manuais do arquivo: Fábio (Fluminense, goleiro) 78 e Thiago Mendes (Vasco) 79", () => {

@@ -190,13 +190,17 @@ React 19 + Vite 6, em JavaScript (sem TypeScript).
   - **Cores por setor:** `--gol` amarelo, `--def` azul, `--mei` verde, `--ata` vermelho (`SETOR`/`corDoSetor` em `constantes.js`).
   - **Peças em `componentes/Jogador.jsx`:** `Avatar` (anel do setor + mini escudo), `Bandeira`, `Pos`, `Nota` (≥8 azul, ≥7 verde, ≥6 amarelo, <6 laranja) e `MiniStats`.
   - **Bandeiras dos jogadores:** `public/img/flags/paises/<iso>.svg` (pacote flag-icons, MIT). O mapa nacionalidade → código está em `src/logica/nacionalidades.js`. Usamos imagem porque emoji de bandeira não aparece no Windows.
+  - **Fileira de posições** (`Rolavel`, em `Mercado.jsx`): no computador, setas ‹ › nas pontas (`.rola`), que só aparecem quando há o que rolar daquele lado, e a rodinha do mouse rola para o lado. Em tela de toque (`hover:none`) as setas somem: arrastar com o dedo basta.
   - **Mercado:** busca fixa abaixo do topo a partir de 561px (`--topo-h`, medido pelo `Topo`), atalho "/", "cabe no caixa" / "faltam € X" (linha `.too` apagada) e legenda dos setores.
 - Mercado: padrões, recomendação e busca:
   - **Padrões** (`FILTROS_PADRAO`): ordem "Recomendados" e "Só quem cabe no caixa" ligado.
     - Se a pessoa mudar o "só quem cabe", a escolha fica em `plantel:caixa` ("1" ou "0"), separada dos planos.
     - O contador do botão Filtros conta esse filtro, então o padrão mostra "Filtros 1".
   - **Outras ordens:** maior valor, menor valor, mais jovens, melhor nota e Overall (`o`).
-  - **Filtros** (`PainelFiltros`): liga, clube, nacionalidade (`nat`), idade máxima, ordem, "só quem cabe" e "contrato acabando".
+  - **Filtros** (`PainelFiltros`): liga, clube, nacionalidade (`nat`), faixa de overall (`ovr`), faixa de idade (`idade`), ordem, "só quem cabe" e "contrato acabando".
+    - Faixas (`Faixa`): `[mínimo, máximo]` de 0 a 100 (`FAIXA_TODA` = sem filtro), com duas alças para arrastar e duas caixas para digitar (`#fo-min`, `#fo-max`, `#fa-min`, `#fa-max`). O título mostra "70–80" ou "qualquer".
+      - Digitando, cada número válido já vale e a caixa só se arruma ao sair dela (para "80" não virar outra coisa no "8"). Ao aplicar, a faixa é posta em ordem (25–20 vira 20–25).
+      - Com a faixa de overall ligada, quem não tem overall (jogador criado) não aparece. Cada faixa ligada conta 1 no botão "Filtros".
     - Com uma liga escolhida, a lista de clubes mostra só os clubes dela (sem os grupos das outras ligas).
     - Nacionalidade: `nacionalidadesDoMercado(plano, lg, club)` (`mercado.js`) lista, em ordem alfabética e com a contagem, só as nacionalidades de quem está na liga/clube escolhidos. A bandeira da escolhida aparece ao lado do título.
   - **Recomendados:** nota de 0 a 100, com cinco partes.

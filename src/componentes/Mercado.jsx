@@ -1,5 +1,5 @@
 // Aba Mercado: busca (fixa ao rolar), botões de posição, filtros e lista de jogadores de outros clubes.
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { D } from "../logica/dados.js";
 import { CHIPS, corDoSetor } from "../logica/constantes.js";
 import { ctrTxt } from "../logica/formato.js";
@@ -49,13 +49,13 @@ export default function Mercado({ app }) {
           </label>
           <button className="fbtn" id="fOpen" onClick={() => app.abrirPainel("filtros")}>Filtros{nFiltros ? <b>{nFiltros}</b> : null}</button>
         </div>
-        <div className="chips" id="pos">
+        <Rolavel id="pos">
           {CHIPS.map(([t, ps], i) => (
             <button key={t} aria-pressed={i === chip} onClick={() => { app.setChip(i); app.setLimite(40); }}>
               {ps && <i className="ponto" style={{ background: corDoSetor(ps[0]) }}></i>}{t}
             </button>
           ))}
-        </div>
+        </Rolavel>
       </div>
       <div className="ordem"><span>{lista.length.toLocaleString("pt-BR")} jogadores</span><span>Ordenar: <b>{ORDEM[filtros.sort]}</b></span></div>
       <div id="mList">
@@ -103,6 +103,39 @@ export default function Mercado({ app }) {
         )}
       </div>
     </section>
+  );
+}
+
+// Fileira de botões que rola para o lado. No computador não há dedo para arrastar, então aparecem setas
+// ‹ › nas pontas (só quando há o que rolar daquele lado), e a rodinha do mouse também rola para o lado.
+function Rolavel({ id, children }) {
+  const ref = useRef();
+  const [lados, setLados] = useState({ esq: false, dir: false });
+  useEffect(() => {
+    const el = ref.current;
+    const medir = () => setLados({ esq: el.scrollLeft > 2, dir: el.scrollLeft + el.clientWidth < el.scrollWidth - 2 });
+    const roda = (e) => {
+      if (el.scrollWidth <= el.clientWidth || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+      e.preventDefault();
+      el.scrollLeft += e.deltaY;
+    };
+    medir();
+    el.addEventListener("scroll", medir, { passive: true });
+    el.addEventListener("wheel", roda, { passive: false });
+    window.addEventListener("resize", medir);
+    return () => { el.removeEventListener("scroll", medir); el.removeEventListener("wheel", roda); window.removeEventListener("resize", medir); };
+  }, []);
+  const rolar = (dir) => {
+    const el = ref.current;
+    const passo = dir * Math.max(120, el.clientWidth * 0.7);
+    if (el.scrollBy) el.scrollBy({ left: passo, behavior: "smooth" }); else el.scrollLeft += passo;
+  };
+  return (
+    <div className="rolavel">
+      <div className="chips" id={id} ref={ref}>{children}</div>
+      <button type="button" className="rola esq" aria-label="Rolar para a esquerda" hidden={!lados.esq} onClick={() => rolar(-1)}>‹</button>
+      <button type="button" className="rola dir" aria-label="Rolar para a direita" hidden={!lados.dir} onClick={() => rolar(1)}>›</button>
+    </div>
   );
 }
 

@@ -301,7 +301,27 @@ test("fluxo completo: clube, vender, contratar, filtros, escalação, resumo, re
     expect(l.querySelector(".nm img.fl").getAttribute("alt")).toBe("Brasil");
     expect([...nomesEsp].some((n) => l.querySelector(".sub").textContent.includes(n))).toBe(true);
   });
+  // Faixas de overall e idade (0 a 100), digitadas nas caixas. A ordem se arruma sozinha: máximo 20 e mínimo 25 viram 20–25
   clique(screen.getByRole("button", { name: /Filtros/ }));
+  fireEvent.change(noPainel().getByLabelText("Overall mínimo"), { target: { value: "70" } });
+  fireEvent.change(noPainel().getByLabelText("Overall máximo"), { target: { value: "80" } });
+  fireEvent.change(noPainel().getByLabelText("Idade mínimo"), { target: { value: "25" } });
+  fireEvent.change(noPainel().getByLabelText("Idade máximo"), { target: { value: "20" } });
+  expect(painel().querySelector("#fo-t").parentElement.textContent).toBe("Overall70–80");
+  expect(painel().querySelector("#fa-t").parentElement.textContent).toBe("Idade20–25 anos");
+  fireEvent.change(noPainel().getByLabelText(/Nacionalidade/), { target: { value: "" } });
+  clique(noPainel().getByRole("button", { name: "Aplicar" }));
+  expect(document.querySelector("#fOpen").textContent).toBe("Filtros4"); // liga + overall + idade + caixa
+  const naFaixa = document.querySelectorAll("#mList .row");
+  expect(naFaixa.length).toBeGreaterThan(0);
+  naFaixa.forEach((l) => {
+    const o = +l.querySelector(".ovr").textContent, a = +l.querySelector(".sub").textContent.match(/(\d+) anos/)[1];
+    expect(o >= 70 && o <= 80 && a >= 20 && a <= 25).toBe(true);
+  });
+  // Reabrindo o painel, a faixa aparece já em ordem
+  clique(screen.getByRole("button", { name: /Filtros/ }));
+  expect(noPainel().getByLabelText("Idade mínimo").value).toBe("20");
+  expect(noPainel().getByLabelText("Idade máximo").value).toBe("25");
   clique(noPainel().getByRole("button", { name: "Limpar" }));
   expect(document.querySelector("#fOpen").textContent).toBe("Filtros1"); // de volta ao padrão: só o "cabe no caixa"
 
