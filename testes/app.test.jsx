@@ -12,6 +12,7 @@ const APELIDOS = JSON.parse(fs.readFileSync("public/apelidos.json", "utf8"));
 const ESTIMADOS = JSON.parse(fs.readFileSync("public/valores-estimados.json", "utf8"));
 const EMPRESTIMOS = JSON.parse(fs.readFileSync("public/emprestimos.json", "utf8"));
 const OVERALL = JSON.parse(fs.readFileSync("public/overall.json", "utf8"));
+const AJUSTES = JSON.parse(fs.readFileSync("public/overall-ajustes.json", "utf8")); // ajustes manuais do overall
 let semEstimados = false; // true = simula o valores-estimados.json fora do ar
 const CHAVE = "plantel:v2";
 // Cotação que a "API de mentira" devolve nos testes
@@ -31,7 +32,7 @@ beforeEach(() => {
     }
     if (String(url).includes("apelidos")) return { ok: true, json: async () => structuredClone(APELIDOS) };
     if (String(url).includes("emprestimos")) return { ok: true, json: async () => structuredClone(EMPRESTIMOS) };
-    if (String(url).includes("overall-ajustes")) return { ok: true, json: async () => ({}) };
+    if (String(url).includes("overall-ajustes")) return { ok: true, json: async () => structuredClone(AJUSTES) };
     if (String(url).includes("overall")) return { ok: true, json: async () => structuredClone(OVERALL) };
     if (String(url).includes("valores-estimados")) {
       if (semEstimados) throw new Error("fora do ar");
@@ -942,6 +943,20 @@ test("overall e atributos: selo nas listas, ficha com e sem atributos, força do
   clique(noPainel().getByRole("button", { name: "Aplicar" }));
   expect(document.querySelector(".ordem").textContent).toContain("Overall");
   expect(document.querySelector("#mList .row .ovr").textContent).toBe("91");
+  // Ajustes manuais (overall-ajustes.json) por cima do overall.json: Fábio (Fluminense, goleiro) 78 e Thiago Mendes (Vasco) 79
+  const ovrNoMercado = (nome, clube) => {
+    fireEvent.change(screen.getByLabelText("Buscar jogador"), { target: { value: nome } });
+    const l = [...document.querySelectorAll("#mList .row")].find((r) => r.querySelector(".nm").textContent === nome && r.textContent.includes(clube));
+    return l.querySelector(".ovr").textContent;
+  };
+  expect(ovrNoMercado("Fábio", "Fluminense")).toBe("78");
+  expect(ovrNoMercado("Thiago Mendes", "Vasco")).toBe("79");
+  // Nenhum overall aparece com "~" (o "~" ficou só para valor de mercado estimado)
+  fireEvent.change(screen.getByLabelText("Buscar jogador"), { target: { value: "" } });
+  const selos = [...document.querySelectorAll(".ovr")];
+  expect(selos.length).toBeGreaterThan(20);
+  selos.forEach((s) => expect(s.textContent).not.toContain("~"));
+  expect(document.body.textContent).not.toContain("overall estimado");
 });
 test("aba Time: tocar em um jogador e depois em outro troca os dois de posição", async () => {
   localStorage.setItem(CHAVE, JSON.stringify({ plans: { T42: { club: "T42", budget: 50, st: {}, ins: [], form: "4-3-3", xi: {}, custom: [] } }, last: "T42" }));

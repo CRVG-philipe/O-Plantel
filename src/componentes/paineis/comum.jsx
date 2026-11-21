@@ -34,7 +34,7 @@ export function Atributos({ p }) {
   const nomes = p.atr && NOMES_ATRIBUTOS[p.atr.tipo];
   return (
     <div className="atr" id="atributos">
-      <div className="sth">Overall e atributos{p.ovrEst && <span>overall estimado</span>}</div>
+      <div className="sth">Overall e atributos</div>
       <div className="atr-corpo">
         <Ovr p={p} grande />
         {nomes ? (

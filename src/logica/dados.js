@@ -7,7 +7,7 @@ import { norm } from "./formato.js";
 //   D.LEAGUES lista de ligas         D.LG[k]   liga pela chave (ex.: "BRA")
 //   D.ALL     todos os jogadores     D.BYID[id] jogador pelo id (ex.: "T42-3")
 //   D.APELIDOS apelido → nome do jogador, os dois já preparados para a busca ("gabigol" → "gabriel barbosa")
-//   Cada jogador pode ter p.ovr (overall), p.ovrEst (overall estimado) e p.atr (atributos), de overall.json
+//   Cada jogador pode ter p.ovr (overall, de overall.json com os ajustes manuais por cima) e p.atr (atributos)
 //   D.EMP     empréstimos por clube: { "<clube>": { in: [ids recebidos], out: [{ id, para: {k, n}, ate, contrato }] } }
 export const D = { DATA: null, CLUBS: [], LEAGUES: [], LG: {}, CL: {}, ALL: [], BYID: {}, APELIDOS: {}, EMP: {} };
 
@@ -146,12 +146,12 @@ export async function carregarDados() {
       // Valor: o real do Transfermarkt sempre tem prioridade; sem ele (0), o estimado, marcado com "vEst"
       const est = v > 0 ? undefined : ESTIMADOS?.[c.k]?.[n + "|" + dob];
       const p = { id: c.k + "-" + i, num, n, nn: norm(n), nasc: dob, pos, ctr, v: est > 0 ? est : v, vEst: est > 0, nat, a, st, sp, hd, lg: c.lg, club: c.k, end26: !!ctr && ctr <= lim };
-      // Overall (45–91), se é estimado (jogador sem valor de mercado) e atributos ({ tipo: "L"|"G", v: [5 números] } ou null)
+      // Overall e atributos ({ tipo: "L"|"G", v: [5 números] } ou null). O 2º campo do overall.json não é usado.
       const o = OVERALL?.[c.k]?.[n + "|" + dob];
-      if (o) { p.ovr = o[0]; p.ovrEst = !!o[1]; p.atr = o[2] || null; }
-      // Ajuste manual: troca só o número do overall
+      if (o) { p.ovr = o[0]; p.atr = o[2] || null; }
+      // Ajuste manual: troca só o número do overall (vale em tudo: listas, força do time, ordem e recomendação)
       const aj = AJUSTES?.[c.k]?.[n + "|" + dob];
-      if (typeof aj === "number") { p.ovr = aj; p.ovrEst = p.ovrEst || false; p.atr = p.atr || null; }
+      if (typeof aj === "number") { p.ovr = aj; p.atr = p.atr || null; }
       D.ALL.push(p);
       D.BYID[p.id] = p;
     });

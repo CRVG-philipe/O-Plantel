@@ -31,6 +31,6 @@ for L, (t_avg, t_best, t_max) in ALVO.items():
 out = {}
 for k, d in O.items():
     p = PARAM.get(lg[k])
-    out[k] = {nm: ([max(40, min(92, round(v[0] + p[0] + p[1] * max(0, v[0] - p[2]))))] + v[1:] if p else v) for nm, v in d.items()}
+    out[k] = {nm: ([max(40, min(92, round(v[0] + p[0] + p[1] * max(0, v[0] - p[2]))))] if p else [v[0]]) + [0, v[2]] for nm, v in d.items()}
 json.dump(out, open(OUT, 'w', encoding='utf-8'), ensure_ascii=False, separators=(',', ':'))
 json.dump({L: {'a': p[0], 'b': p[1], 'c': p[2]} for L, p in PARAM.items()}, open('dados-brutos/overall/balanceamento-parametros.json', 'w'), indent=1)

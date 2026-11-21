@@ -18,14 +18,15 @@ const achar = (nome, nasc) => D.ALL.find((p) => p.n === nome && (!nasc || p.nasc
 test("o overall do Mbappé é 91, com os 5 atributos de jogador de linha", () => {
   const m = achar("Kylian Mbappé", "1998-12-20");
   expect(m.ovr).toBe(91);
-  expect(m.ovrEst).toBe(false);
   expect(m.atr.tipo).toBe("L");
   expect(m.atr.v).toHaveLength(5);
 });
 
-test("todo jogador da base tem overall (o script limita entre 40 e 92); o estimado é marcado", () => {
+test("todo jogador da base tem overall (o script limita entre 40 e 92); não existe mais overall estimado", () => {
   expect(D.ALL.every((p) => p.ovr >= 40 && p.ovr <= 92)).toBe(true);
-  expect(D.ALL.some((p) => p.ovrEst)).toBe(true);
+  expect(D.ALL.some((p) => "ovrEst" in p)).toBe(false);
+  const arq = JSON.parse(fs.readFileSync("public/overall.json", "utf8"));
+  expect(Object.values(arq).every((c) => Object.values(c).every((v) => v[1] === 0))).toBe(true);
   // Atributos: null ou { tipo, 5 números de 0 a 100 }; goleiro tem tipo "G"
   for (const p of D.ALL) {
     if (p.atr === null) continue;
@@ -62,9 +63,23 @@ test("Mercado: ordem 'Overall' põe o maior overall primeiro", () => {
   for (let i = 1; i < 200; i++) expect(l[i - 1].ovr).toBeGreaterThanOrEqual(l[i].ovr);
 });
 
+test("ajustes manuais do arquivo: Fábio (Fluminense, goleiro) 78 e Thiago Mendes (Vasco) 79", () => {
+  const fabio = D.ALL.find((p) => p.n === "Fábio" && p.club === "T1961");
+  expect(fabio.pos).toBe("GOL");
+  expect(fabio.ovr).toBe(78);
+  expect(D.ALL.find((p) => p.n === "Thiago Mendes" && p.club === "T1974").ovr).toBe(79);
+  // Todo ajuste do arquivo bate com um jogador da base e vale no lugar do overall.json
+  const ajustes = JSON.parse(fs.readFileSync("public/overall-ajustes.json", "utf8"));
+  for (const [k, js] of Object.entries(ajustes))
+    for (const [chave, ovr] of Object.entries(js)) {
+      const p = D.ALL.find((x) => x.club === k && x.n + "|" + x.nasc === chave);
+      expect(p, chave).toBeTruthy();
+      expect(p.ovr).toBe(ovr);
+    }
+});
+
 test("ajuste manual (overall-ajustes.json) troca só o número do overall; os atributos continuam", async () => {
   const lerPublic = (url) => JSON.parse(fs.readFileSync("public/" + url, "utf8"));
-  expect(lerPublic("overall-ajustes.json")).toEqual({}); // começa vazio
   const mbappe = () => achar("Kylian Mbappé", "1998-12-20");
   const atr = mbappe().atr, haaland = achar("Erling Haaland").ovr;
   const carregarCom = async (ajustes) => {
@@ -81,7 +96,7 @@ test("ajuste manual (overall-ajustes.json) troca só o número do overall; os at
   // Arquivo de ajustes fora do ar: segue com o número do overall.json
   await carregarCom(null);
   expect(mbappe().ovr).toBe(91);
-  await carregarCom({}); // volta ao normal para os outros testes
+  await carregarCom(lerPublic("overall-ajustes.json")); // volta ao normal para os outros testes
 });
 
 test("recomendação: overall bem acima da média do elenco ganha pontos, desde que o preço caiba no patamar", () => {

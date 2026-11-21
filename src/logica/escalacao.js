@@ -25,9 +25,15 @@ const COMPARAR = {
   o: (a, b) => (b.ovr ?? 0) - (a.ovr ?? 0) || b.v - a.v,
 };
 
-// O melhor (pelo critério) que serve na vaga com exatamente essa "ordem" de compatibilidade
+// Em qual passada o jogador entra na vaga: a "ordem" de compatibilidade, com uma exceção no meio-campo.
+// VOL ↔ MC e MEI ↔ MC disputam a vaga de igual para igual com o dono da posição (passada 0):
+// ganha quem tiver mais valor (ou overall). Nas outras vagas, a posição de origem vem primeiro.
+const MEIO = { VOL: ["MC"], MC: ["VOL", "MEI"], MEI: ["MC"] };
+export const passada = (vaga, pos) => (MEIO[vaga]?.includes(pos) ? 0 : compatibilidade(vaga, pos).ordem);
+
+// O melhor (pelo critério) que serve na vaga nessa passada
 function melhorPara(sq, usados, vaga, ordem, criterio = "v") {
-  return sq.filter((p) => !usados.has(p.id) && compatibilidade(vaga, p.pos).ordem === ordem).sort(COMPARAR[criterio] || COMPARAR.v)[0];
+  return sq.filter((p) => !usados.has(p.id) && passada(vaga, p.pos) === ordem).sort(COMPARAR[criterio] || COMPARAR.v)[0];
 }
 
 // Monta o time do zero: em cada vaga, o melhor jogador que serve (pelo valor ou pelo overall), do mais compatível
@@ -42,6 +48,21 @@ export function escalarSozinho(plano, criterio = "v") {
       const c = melhorPara(sq, usados, sl[i][0], ordem, criterio);
       if (c) { plano.xi[i] = c.id; usados.add(c.id); }
     }
+  arrumarPosicoes(plano);
+}
+
+// Com os 11 já escolhidos, troca dois titulares de vaga quando os dois ficam mais perto da posição de origem
+// (ex.: VOL escalado na vaga de MC e MC na de VOL → cada um volta para a sua). Ninguém entra nem sai do time.
+function arrumarPosicoes(plano) {
+  const sl = FORMS[plano.form], ord = (i, id) => compatibilidade(sl[i][0], jogador(plano, id).pos).ordem;
+  for (let mudou = true, voltas = 0; mudou && voltas < 20; voltas++) {
+    mudou = false;
+    for (const i in plano.xi)
+      for (const j in plano.xi) {
+        const a = plano.xi[i], b = plano.xi[j];
+        if (+i < +j && ord(i, b) + ord(j, a) < ord(i, a) + ord(j, b)) { plano.xi[i] = b; plano.xi[j] = a; mudou = true; }
+      }
+  }
 }
 
 // Se alguém do time saiu do elenco (vendido, por exemplo), tira ele e preenche o buraco.

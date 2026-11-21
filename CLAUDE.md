@@ -46,18 +46,18 @@ Foi inspirado no reconstruindo.thefenomeno.com, mas **não deve copiá-lo**. O f
     - Tudo é arredondado para € 0,05 mi, com mínimo de € 0,05 mi.
     - Em 21/11/2026, os estimados da Série C ficaram entre € 0,05 e 0,3 mi.
 - Cada liga tem `div` (1, 2 ou 3): a divisão dentro do país. A tela de divisão ordena por ele.
-- Overall e atributos (gerados em 21/11/2026): `public/overall.json`, no formato `{clube: {"nome|nascimento": [overall, estimado, atributos]}}`. Todos os 23.613 jogadores têm overall, de 44 a 91; 15.295 têm atributos.
+- Overall e atributos (gerados em 21/11/2026): `public/overall.json`, no formato `{clube: {"nome|nascimento": [overall, 0, atributos]}}`. Todos os 23.613 jogadores têm overall, de 44 a 91; 15.295 têm atributos.
   - O overall do site é a **versão 1** (baseada no valor de mercado) com um **balanceamento por liga** por cima.
   - **Para gerar** (na raiz, sem argumentos, nesta ordem):
     1. `python dados-brutos/overall/overall.py`: lê `players_all.json` e `attrs.json` da mesma pasta e grava a versão 1 em `dados-brutos/overall/overall_v1.json`;
     2. `python dados-brutos/overall/balancear.py`: lê `overall_v1.json` e `players_all.json`, aplica o balanceamento e grava `public/overall.json` e `dados-brutos/overall/balanceamento-parametros.json`.
     - O `data.json` não muda.
   - **Regra da versão 1, baseada principalmente no valor de mercado:**
-    - O valor é corrigido pela idade (jovem vale mais pelo potencial, veterano menos) e pelo setor (goleiro e defensor valem menos no mercado, então sobem). Quem não tem valor usa o percentil 20 da liga e fica "estimado".
+    - O valor é corrigido pela idade (jovem vale mais pelo potencial, veterano menos) e pelo setor (goleiro e defensor valem menos no mercado, então sobem). Quem não tem valor usa o percentil 20 da liga.
     - Somam-se, em escala logarítmica, dois ajustes menores: a nota do Sofascore (pesada por `jogos / (jogos + 12)` e pela força da liga) e os atributos comparados com a mesma liga e setor.
     - Por fim, o percentil entre todos os jogadores vira o overall, de 45 a 91.
   - **Balanceamento por liga** (`balancear.py`):
-    - Cada liga ajustada recebe `f(x) = x + a + b × max(0, x − c)`, com `c` = percentil 85 da liga. `b` negativo comprime o topo; a ordem dos jogadores dentro da liga não muda. O resultado fica entre 40 e 92. Só o número muda: o "estimado" e os atributos continuam os da versão 1.
+    - Cada liga ajustada recebe `f(x) = x + a + b × max(0, x − c)`, com `c` = percentil 85 da liga. `b` negativo comprime o topo; a ordem dos jogadores dentro da liga não muda. O resultado fica entre 40 e 92. Os atributos continuam os da versão 1.
     - O script procura `a` e `b` para chegar aos alvos de cada liga: média dos 11 melhores por time, melhor time e maior jogador.
     - Efeito em 21/11/2026:
       - sobem: Brasileirão (+3 a +4; o topo sobe menos), Série B (+2), Série C (+2) e Argentina (+2);
@@ -65,15 +65,16 @@ Foi inspirado no reconstruindo.thefenomeno.com, mas **não deve copiá-lo**. O f
     - As cinco grandes ligas e as demais (36 no total) não mudam.
     - Os parâmetros encontrados ficam em `dados-brutos/overall/balanceamento-parametros.json` (só para consulta).
     - **Para mudar o nível de uma liga:** edite os alvos no `ALVO`, no topo do `balancear.py`, e rode de novo (só o passo 2).
-  - **Ajustes manuais:** `public/overall-ajustes.json`, no formato `{clube: {"nome|nascimento": overall}}`, começa vazio (`{}`).
-    - Quando um jogador tem ajuste, o número substitui o do `overall.json`; os atributos e o "~" continuam os mesmos.
-    - Vale por cima do balanceamento. Os scripts não mexem nesse arquivo, então o ajuste continua valendo quando o `overall.json` é gerado de novo. Para corrigir alguém, acrescente a linha nele: não precisa rodar nada.
+  - **Ajustes manuais:** `public/overall-ajustes.json` guarda os ajustes feitos à mão, no formato `{clube: {"nome|nascimento": overall}}`. Em 21/11/2026 tinha 20 ajustes de jogadores do Brasileirão (ex.: Fábio, do Fluminense, 78; Thiago Mendes, do Vasco, 79).
+    - **Editar à mão.** Quando um jogador tem ajuste, o número substitui o do `overall.json`; os atributos continuam os mesmos.
+    - O ajuste vale em tudo: selo, ficha, força do time, ordem "Overall", "Escalar por overall" e recomendação (todos leem `p.ovr`).
+    - Vale por cima do balanceamento. Nenhum script mexe nesse arquivo: ele **não é apagado** quando o `balancear.py` (ou o `overall.py`) roda. Para corrigir alguém, acrescente a linha nele: não precisa rodar nada.
     - Se o arquivo falhar, o site segue só com o `overall.json`.
-  - `estimado` = 1 quando o jogador não tem valor de mercado: o site mostra "~" antes do número.
+  - O 2º campo do `overall.json` é sempre 0 (o `balancear.py` grava assim). Não existe mais overall aproximado: o site não mostra "~" no overall. O "~" continua só no valor de mercado estimado.
   - `atributos` = `null` ou `{tipo, v}`, com 5 números de 0 a 100:
     - tipo "L" (linha): Ataque, Técnica, Tática, Defesa, Criatividade;
     - tipo "G" (goleiro): Defesas, Antecipação, Saída de bola, Jogo aéreo, Tática.
-  - **Ao carregar** (`dados.js`): `p.ovr`, `p.ovrEst` e `p.atr`. Jogador criado ou "avulso" fica sem overall.
+  - **Ao carregar** (`dados.js`): `p.ovr` e `p.atr`. Jogador criado ou "avulso" fica sem overall.
   - **Selo** `Ovr` (`Jogador.jsx`): um quadradinho ao lado da foto em Elenco, Mercado, Time, Resumo e na escolha da vaga.
     - Cores (`classeOvr`): 85+ dourado, 78–84 verde, 70–77 azul, 60–69 cinza, abaixo de 60 bronze.
     - Sem overall: aparece "–".
@@ -91,7 +92,7 @@ Foi inspirado no reconstruindo.thefenomeno.com, mas **não deve copiá-lo**. O f
   - `testes/recomendacao.test.js` e `testes/busca.test.js`: a nota de recomendação e a busca por apelido.
   - `testes/emprestimos.test.js`: regras dos empréstimos (Botafogo, T1958).
   - `testes/time.test.js`: compatibilidade de posição, reservas e escalar pelo valor ou pelo overall.
-  - `testes/overall.test.js`: overall (Mbappé = 91), força do time, ordem Overall e o overall na recomendação.
+  - `testes/overall.test.js`: overall (Mbappé = 91), ajustes manuais (Fábio = 78, Thiago Mendes = 79), força do time, ordem Overall e o overall na recomendação.
 - Com as ~23 mil fotos, o `npm run dev` às vezes demora para servir as imagens. Para conferir fotos, use `npm run build` e `npm run preview`.
 - `npm run build`: gera a versão final em `dist/` (não vai para o git). `npm run preview` serve o `dist/` para conferir.
 
@@ -236,12 +237,14 @@ React 19 + Vite 6, em JavaScript (sem TypeScript).
 - Aba Time: titulares, reservas e compatibilidade.
   - **Compatibilidade** (`compatibilidade.js`): cada vaga tem posições ideal (verde), boa (amarelo) e improvisado (vermelho, com "⚠").
     - Qualquer combinação fora da tabela também é improvisado.
-    - Pontas (PE e PD) são ideais nas duas pontas e nas meias pelos lados (ME e MD). O MC é ideal também de VOL e de MEI.
+    - Pontas (PE e PD) são ideais nas duas pontas e nas meias pelos lados (ME e MD). O MC é ideal também de VOL e de MEI, e o VOL e o MEI são ideais de MC.
     - Atacantes (PE, PD, SA e CA) são ideais em qualquer vaga do ataque (PE, PD, SA e CA). A posição de origem continua com ordem 0, então o "Escalar sozinho" ainda põe cada um na sua posição primeiro.
     - `compatibilidade(vaga, pos)` devolve `{nivel, ordem}`: 0 = posição principal da vaga, 1 = outra ideal, 2 = boa, 3 = improvisado da tabela, 4 = fora da tabela.
     - Nas formações com 3 zagueiros, as vagas abertas são `ALE`/`ALD`, mostradas como "ALA". Ideal: LE/ME e LD/MD; boa: ponta, MC e VOL.
     - Vale para titulares e reservas, para "Escalar sozinho" e para encaixar quem chega.
     - Escalar sozinho: começa pelas vagas mais difíceis e vai do nível 0 ao 3; nunca escala fora da tabela.
+    - **Meio-campo** (`passada`, em `escalacao.js`): VOL ↔ MC e MEI ↔ MC disputam a vaga de igual para igual com o dono da posição, e ganha quem tiver mais valor ou overall. Exemplo: dois volantes melhores que os MC jogam um de VOL e o outro de MC. VOL ↔ MEI não vale.
+      - No fim, `arrumarPosicoes` troca dois titulares de vaga quando os dois ficam mais perto da posição de origem (um VOL na vaga de MC e um MC na de VOL voltam cada um para a sua). Ninguém entra nem sai do time nessa etapa.
     - **Critério** (`escalarSozinho(plano, criterio)`): "v" = maior valor de mercado (padrão; desempate pelo overall) ou "o" = maior overall (desempate pelo valor; quem não tem overall fica por último).
       - Na aba Time, o grupo "Escalar por: Valor | Overall" (`#auto-v`, `#auto-o`) escala na hora e marca o escolhido.
       - A escolha fica em `plantel:escalar` ("v" ou "o"), separada dos planos, e vale também ao trocar de formação, ao abrir um plano sem time e ao reiniciar.

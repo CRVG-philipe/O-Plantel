@@ -11,9 +11,9 @@ export const COMPAT = {
   LD: { ideal: ["LD"], boa: ["MD", "PD"], improvisado: ["ZAG", "VOL"] },
   ALE: { ideal: ["LE", "ME"], boa: ["PE", "MC", "VOL"], improvisado: ["MEI"] },
   ALD: { ideal: ["LD", "MD"], boa: ["PD", "MC", "VOL"], improvisado: ["MEI"] },
-  // O MC é ideal também de volante e de meia ofensivo
+  // O MC é ideal também de volante e de meia ofensivo; o VOL e o MEI são ideais de MC
   VOL: { ideal: ["VOL", "MC"], boa: ["ZAG"], improvisado: ["MEI", "LE", "LD"] },
-  MC: { ideal: ["MC", "VOL"], boa: ["MEI", "ME", "MD"], improvisado: ["PE", "PD"] },
+  MC: { ideal: ["MC", "VOL", "MEI"], boa: ["ME", "MD"], improvisado: ["PE", "PD"] },
   MEI: { ideal: ["MEI", "MC"], boa: ["SA", "ME", "MD"], improvisado: ["PE", "PD"] },
   // Os pontas (PE e PD) são ideais nos dois lados: nas pontas e nas meias pelos lados
   ME: { ideal: ["ME", "PE", "PD"], boa: ["LE", "MEI"], improvisado: [] },

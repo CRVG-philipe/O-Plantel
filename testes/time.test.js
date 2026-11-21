@@ -5,7 +5,7 @@ import { D, carregarDados } from "../src/logica/dados.js";
 import { FORMS } from "../src/logica/constantes.js";
 import { compatibilidade, nivel, rotuloVaga } from "../src/logica/compatibilidade.js";
 import { elencoAtual } from "../src/logica/elenco.js";
-import { adicionarReserva, completarTime, escalarSozinho, forcaAntes, forcaDoTime, limparReservas, moverReservas, promover, reservasDa, todosReservas, trocarComReserva, trocarTitulares } from "../src/logica/escalacao.js";
+import { adicionarReserva, completarTime, escalarSozinho, forcaAntes, forcaDoTime, limparReservas, passada, moverReservas, promover, reservasDa, todosReservas, trocarComReserva, trocarTitulares } from "../src/logica/escalacao.js";
 
 beforeAll(async () => {
   globalThis.fetch = async (url) => ({ ok: true, json: async () => JSON.parse(fs.readFileSync("public/" + url, "utf8")) });
@@ -69,6 +69,46 @@ test("escalar sozinho pelo valor ou pelo overall", () => {
   expect(forcaDoTime(porOverall).media).toBeGreaterThanOrEqual(forcaDoTime(porValor).media);
   // A força "antes" usa o mesmo critério: sem mudanças no plano, antes = depois
   expect(forcaAntes(porOverall, "o").media).toBe(forcaDoTime(porOverall).media);
+});
+
+test("escalar sozinho: VOL ↔ MC e MEI ↔ MC disputam a vaga pelo valor ou pelo overall", () => {
+  expect(passada("MC", "VOL")).toBe(0);
+  expect(passada("VOL", "MC")).toBe(0);
+  expect(passada("MC", "MEI")).toBe(0);
+  expect(passada("MEI", "MC")).toBe(0);
+  expect(passada("VOL", "MEI")).toBeGreaterThan(0); // VOL ↔ MEI não
+  expect(passada("CA", "PE")).toBeGreaterThan(0);   // no ataque, a posição de origem continua primeiro
+  expect(nivel("MC", "MEI")).toBe("ideal");
+  const vaga = (r) => vagaDe("4-3-3", r);
+  const novo = (id, pos, v, ovr) => ({ id, n: id, pos, a: 25, v, ovr, nat: "", club: "NOVO", num: "", ctr: "" });
+  const com = (...ps) => {
+    const P = arsenal();
+    P.custom = ps;
+    P.ins = ps.map((p) => ({ id: p.id, type: "compra", fee: 0 }));
+    return P;
+  };
+  // Dois volantes valiosíssimos: os dois jogam (um de VOL, o outro na vaga de MC), cada um na sua posição quando dá
+  const P = com(novo("V1", "VOL", 500), novo("V2", "VOL", 450));
+  escalarSozinho(P, "v");
+  expect(P.xi[vaga("VOL")]).toBe("V1");
+  expect(P.xi[vaga("MC")]).toBe("V2");
+  // Dois meias ofensivos valiosíssimos: um de MEI e o outro na vaga de MC
+  const M = com(novo("M1", "MEI", 500), novo("M2", "MEI", 450));
+  escalarSozinho(M, "v");
+  expect([M.xi[vaga("MEI")], M.xi[vaga("MC")]].sort()).toEqual(["M1", "M2"]);
+  // Pelo overall: volantes baratos com overall altíssimo também ocupam VOL e MC
+  const O = com(novo("V1", "VOL", 0.1, 95), novo("V2", "VOL", 0.1, 94));
+  escalarSozinho(O, "o");
+  expect([O.xi[vaga("VOL")], O.xi[vaga("MC")]].sort()).toEqual(["V1", "V2"]);
+  // Três meias centrais valiosíssimos: os três jogam (VOL, MC e MEI aceitam o MC)
+  const Q = com(novo("C1", "MC", 500), novo("C2", "MC", 450), novo("C3", "MC", 400));
+  escalarSozinho(Q, "v");
+  expect(["C1", "C2", "C3"].every((id) => Object.values(Q.xi).includes(id))).toBe(true);
+  // Ninguém fica fora da sua posição quando dá para trocar: nenhum par de titulares ficaria melhor trocado
+  for (const X of [P, M, O, Q]) {
+    const sl = FORMS[X.form], ord = (i, id) => compatibilidade(sl[i][0], (D.BYID[id] || X.custom.find((c) => c.id === id)).pos).ordem;
+    for (const i in X.xi) for (const j in X.xi) expect(ord(i, X.xi[j]) + ord(j, X.xi[i])).toBeGreaterThanOrEqual(ord(i, X.xi[i]) + ord(j, X.xi[j]));
+  }
 });
 
 test("até 2 reservas por vaga: o 3º não entra", () => {
