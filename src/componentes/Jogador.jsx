@@ -30,6 +30,11 @@ export function Valor({ p }) {
   return <span className="estimado" title="valor estimado">{valorJogador(p.v, true)}</span>;
 }
 
+// Selo de compatibilidade com a vaga: ideal (verde), boa (amarelo), improvisado (vermelho, com aviso)
+export const SeloNivel = ({ nivel }) => (
+  <span className={"nivel " + nivel} title={nivel === "improvisado" ? "Jogador improvisado nesta vaga" : undefined}>{nivel === "improvisado" ? "⚠ improvisado" : nivel}</span>
+);
+
 // Selo da posição na cor do setor ("GOL", "ZAG"...)
 export const Pos = ({ pos }) => <span className="pos" style={{ "--pc": corDoSetor(pos) }}>{pos}</span>;
 

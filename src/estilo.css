@@ -160,7 +160,32 @@ img.face{object-fit:cover;object-position:top;background-color:#fff} /* fotos HD
 .xhead .xv b{display:block;font-size:16px;color:var(--ink)}
 .pitch{position:relative;aspect-ratio:68/92;width:100%;max-width:520px;margin:0 auto 18px;border-radius:18px;background:light-dark(#eef2ee,#16201a);overflow:hidden}
 .pitch svg{position:absolute;inset:0;width:100%;height:100%;color:light-dark(#9fb3a4,#3c5546)}
-.slot{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:3px;border:0;background:none;padding:0;width:84px}
+/* cada vaga: o titular (centro da bolinha no ponto x,y da formação) e, embaixo, os mini-cards dos reservas */
+.vaga{position:absolute;transform:translate(-50%,-20px);display:flex;flex-direction:column;align-items:center;gap:2px;width:84px}
+/* com reservas, o campo fica mais alto (e bem mais alto no celular) para as pilhas não se encostarem */
+.pitch.com-banco{aspect-ratio:68/112}
+@media (max-width:560px){.pitch.com-banco{aspect-ratio:68/160}}
+.slot{display:flex;flex-direction:column;align-items:center;gap:3px;border:0;background:none;padding:0;width:100%}
+.slot .lb.boa{color:var(--warn)}
+.slot .lb.improvisado{color:var(--neg)}
+.mini-banco{display:flex;flex-direction:column;align-items:center;gap:2px}
+.mini{display:flex;align-items:center;gap:3px;border:0;background:color-mix(in srgb,var(--sf) 88%,transparent);border-radius:99px;padding:1px 6px 1px 1px;max-width:84px;font-size:10px;line-height:14px;font-weight:600;color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.mini .face{flex:none;width:14px!important;height:14px!important}
+.mini span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* "+" para pôr reserva: bolinha no canto da foto do titular (não ocupa altura na pilha) */
+.mini-add{position:absolute;top:24px;left:calc(50% + 12px);width:18px;height:18px;border-radius:50%;border:1.2px dashed var(--mute);background:var(--sf);color:var(--mute);font-size:12px;line-height:1;display:grid;place-items:center;padding:0;z-index:1}
+.mini-add:hover{color:var(--ink);border-color:var(--ink)}
+/* selo de compatibilidade com a vaga */
+.nivel{display:inline-block;font-size:10.5px;font-weight:700;line-height:1.5;padding:0 6px;border-radius:5px}
+.nivel.ideal{color:var(--pos);background:color-mix(in srgb,var(--pos) 13%,transparent)}
+.nivel.boa{color:var(--warn);background:color-mix(in srgb,var(--warn) 14%,transparent)}
+.nivel.improvisado{color:var(--neg);background:color-mix(in srgb,var(--neg) 12%,transparent)}
+/* reservas agrupados por vaga, abaixo do campo */
+.grupo-res+.grupo-res{border-top:1px solid var(--line)}
+.grupo-tit{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--mute);padding:8px 14px 0}
+.grupo-tit b{color:var(--ink);font-weight:600}
+#resumo-time .neg{color:var(--neg)}
+#resumo-time .res-lista{font-size:12.5px;text-align:right;max-width:50%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .slot .dot{overflow:hidden;width:40px;height:40px;border-radius:50%;background:var(--ac);color:var(--acInk);display:grid;place-items:center;font-size:13px;font-weight:700;box-shadow:0 0 0 2px var(--sf),0 0 0 3.5px var(--pc,transparent),0 2px 6px rgba(0,0,0,.15)}
 .slot.empty .dot{background:var(--sf);color:var(--mute);border:1.5px dashed var(--mute);box-shadow:none}
 .slot .lb{font-size:11.5px;font-weight:600;background:var(--sf);border-radius:6px;padding:1px 6px;max-width:84px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -348,5 +373,5 @@ details.bench[open] summary::after{content:"Ocultar"}
 footer{font-size:12.5px;color:var(--mute);padding:0 0 40px}
 textarea.copy{width:100%;min-height:180px;border:0;border-radius:12px;background:var(--sf2);padding:12px;font:13px/1.45 ui-monospace,monospace;color:var(--ink);margin-top:10px}
 @media (min-width:700px){.ov{align-items:center}.sheet{border-radius:20px;padding-bottom:20px}.grab{display:none}}
-@media (max-width:420px){.facts{grid-template-columns:repeat(2,minmax(0,1fr))}.slot{width:76px}.slot .dot{width:36px;height:36px;font-size:12px}.slot .dot .face{width:36px!important;height:36px!important}.slot .lb{font-size:10.5px;max-width:76px}.tabs button{font-size:13px}}
+@media (max-width:420px){.facts{grid-template-columns:repeat(2,minmax(0,1fr))}.vaga{width:76px;transform:translate(-50%,-18px)}.mini{max-width:76px}.slot .dot{width:36px;height:36px;font-size:12px}.slot .dot .face{width:36px!important;height:36px!important}.slot .lb{font-size:10.5px;max-width:76px}.tabs button{font-size:13px}}
 @media (prefers-reduced-motion:reduce){.ov,.sheet,.toast,.tabs .ind,.tabs button,.add,.row,.inp{transition:none}.row:hover .add{transform:none}}

@@ -819,6 +819,40 @@ test("empréstimos no Botafogo: devolver, comprar, vender e trazer de volta (pla
   expect(Object.values(salvo().plans.T1958.emp)).toContainEqual({ s: "comprar", fee: 3 });
 });
 
+test("aba Time: reservas no campo, banco X/22, promover e resumo (plano antigo sem 'res')", async () => {
+  localStorage.setItem(CHAVE, JSON.stringify({ plans: { T42: { club: "T42", budget: 50, st: {}, ins: [], form: "3-5-2", xi: {}, custom: [] } }, last: "T42" }));
+  render(<App />);
+  clique(await screen.findByRole("button", { name: /Arsenal 27\/28/ }));
+  clique(screen.getByRole("tab", { name: "Time" }));
+  // 3-5-2: as vagas abertas são de ala
+  expect(screen.getByRole("button", { name: /^Ala esquerdo: / })).toBeTruthy();
+  expect(document.querySelector("#reservas h2").textContent).toContain("Banco: 0/22");
+  // "+" embaixo do goleiro: lista com selo de nível, goleiros (ideal) primeiro
+  clique(screen.getByRole("button", { name: "Adicionar reserva de Goleiro" }));
+  const linhasDoPainel = () => noPainel().getAllByRole("button").filter((b) => b.classList.contains("row"));
+  expect(linhasDoPainel().every((l) => l.querySelector(".nivel").textContent === "ideal")).toBe(true); // só goleiros
+  clique(noPainel().getByRole("button", { name: /^Ver outros \d+ jogadores/ }));                        // os improvisados vêm no fim
+  const linhas = linhasDoPainel();
+  expect(linhas[0].querySelector(".nivel").textContent).toBe("ideal");
+  expect(linhas.at(-1).querySelector(".nivel").textContent).toBe("⚠ improvisado");
+  const nome = linhas[0].querySelector(".nm").textContent;
+  clique(linhas[0]);
+  expect(document.querySelector("#reservas h2").textContent).toContain("Banco: 1/22");
+  const mini = screen.getByRole("button", { name: `1º reserva de Goleiro: ${nome}` });
+  expect(salvo().plans.T42.res).toEqual({ 0: [expect.any(String)] });
+  // Promover a titular: troca com o titular do gol
+  const titularAntes = screen.getByRole("button", { name: /^Goleiro: / }).getAttribute("aria-label").replace("Goleiro: ", "");
+  clique(mini);
+  clique(noPainel().getByRole("button", { name: "Promover a titular" }));
+  expect(screen.getByRole("button", { name: /^Goleiro: / }).getAttribute("aria-label")).toBe("Goleiro: " + nome);
+  expect(screen.getByRole("button", { name: `1º reserva de Goleiro: ${titularAntes}` })).toBeTruthy();
+  // Resumo: titulares e reservas
+  clique(screen.getByRole("tab", { name: "Resumo" }));
+  const time = document.querySelector("#resumo-time").textContent;
+  expect(time).toContain(nome);
+  expect(time).toContain("ALA");
+});
+
 test("Esc e clique fora fecham o painel", async () => {
   render(<App />);
   await irParaBrasil();

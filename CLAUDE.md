@@ -54,6 +54,7 @@ Foi inspirado no reconstruindo.thefenomeno.com, mas **não deve copiá-lo**. O f
   - `testes/app.test.jsx`: cliques simulados no site inteiro.
   - `testes/recomendacao.test.js` e `testes/busca.test.js`: a nota de recomendação e a busca por apelido.
   - `testes/emprestimos.test.js`: regras dos empréstimos (Botafogo, T1958).
+  - `testes/time.test.js`: compatibilidade de posição e reservas.
 - Com as ~23 mil fotos, o `npm run dev` às vezes demora para servir as imagens. Para conferir fotos, use `npm run build` e `npm run preview`.
 - `npm run build`: gera a versão final em `dist/` (não vai para o git). `npm run preview` serve o `dist/` para conferir.
 
@@ -70,11 +71,12 @@ React 19 + Vite 6, em JavaScript (sem TypeScript).
   - `Congelado` (em `Painel.jsx`) congela o conteúdo enquanto o painel fecha, para ele sumir sem piscar.
 - `src/logica/`: funções sem tela.
   - `dados.js`: carrega e indexa os dados no objeto `D`.
-  - `constantes.js`: posições, formações e compatibilidade.
+  - `constantes.js`: posições e formações (4-3-3, 4-4-2, 4-2-3-1, 4-1-4-1, 3-5-2, 3-4-3, 3-4-2-1, 5-3-2 e 5-4-1).
+  - `compatibilidade.js`: tabela vaga × posição em três níveis (ideal, boa, improvisado), nomes das vagas e o rótulo "ALA".
   - `dinheiro.js`: moeda, `dinheiro()` e caixa.
   - `cotacao.js`: moeda escolhida e cotação no localStorage.
   - `elenco.js`: plano, elenco, saídas, empréstimos, alertas e texto do resumo.
-  - `escalacao.js`: escalar, completar e encaixar.
+  - `escalacao.js`: escalar, completar e encaixar titulares; regras dos reservas.
   - `mercado.js`: busca (nome, clube e apelido), filtros e ordens.
   - `recomendacao.js`: nota de recomendação 0–100 (`pontuar(jogador, clubeOrigem, clubeDestino, plano)` e `notasDoMercado(plano)`).
   - `afinidade.js`: tabela `AFINIDADE[ligaDestino][ligaOrigem]` (0 a 1), montada a partir de regras por grupo de ligas.
@@ -188,7 +190,30 @@ React 19 + Vite 6, em JavaScript (sem TypeScript).
   - O rodapé mostra a cotação usada e a data.
 - Temporada planejada: "2027" nas ligas de calendário anual (BRA, BRB, ARG, USA) e "27/28" nas demais.
 - Os planos ficam salvos no localStorage (chave `plantel:v2`, formato `{plans:{<clube>: plano}, last}`). **Não mudar os nomes dos campos do plano** (`club, budget, st, ins, form, xi, custom`), senão quem já tem planos salvos os perde.
+  - Campo novo opcional: `res` (reservas), `{ "<índice da vaga>": [id 1º reserva, id 2º reserva] }`. Planos antigos não têm, e o código trata a falta como "sem reservas". Ele só é criado quando alguém vai para o banco.
   - Campo novo opcional: `emp` (escolhas sobre empréstimos). Planos antigos não têm, e todo o código trata a falta como `{}`. O `novoPlano` não cria esse campo; ele só aparece quando a pessoa mexe num empréstimo.
+- Aba Time: titulares, reservas e compatibilidade.
+  - **Compatibilidade** (`compatibilidade.js`): cada vaga tem posições ideal (verde), boa (amarelo) e improvisado (vermelho, com "⚠").
+    - Qualquer combinação fora da tabela também é improvisado.
+    - `compatibilidade(vaga, pos)` devolve `{nivel, ordem}`: 0 = posição principal da vaga, 1 = outra ideal, 2 = boa, 3 = improvisado da tabela, 4 = fora da tabela.
+    - Nas formações com 3 zagueiros, as vagas abertas são `ALE`/`ALD`, mostradas como "ALA". Ideal: LE/ME e LD/MD; boa: ponta, MC e VOL.
+    - Vale para titulares e reservas, para "Escalar sozinho" e para encaixar quem chega.
+    - Escalar sozinho: começa pelas vagas mais difíceis e vai do nível 0 ao 3; nunca escala fora da tabela.
+  - **Lista de escolha** (`PainelPosicao`): selo do nível ao lado de cada jogador, ordenada por nível e depois por nota. Quem está fora da tabela fica atrás do botão "Ver outros".
+  - **Reservas** (`plano.res`):
+    - até 2 por vaga (`MAX_RESERVAS`, banco de até 22);
+    - ninguém é titular e reserva ao mesmo tempo, nem reserva de duas vagas;
+    - só entra quem está no `elencoAtual`, então emprestado fora (sem voltar), vendido, liberado ou devolvido não pode ser reserva;
+    - `limparReservas` (chamado pelo `completarTime`, depois de cada mudança) tira quem não vale mais;
+    - ao trocar de formação, `moverReservas` leva os reservas das vagas que continuam (mesma posição, na mesma ordem: 2º ZAG → 2º ZAG) e libera os outros;
+    - `promover` troca titular e reserva de lugar.
+  - **No campo:**
+    - cada vaga (`.vaga`) tem o titular e, embaixo, os mini-cards dos reservas (`.mini`, foto de 14px e nome curto);
+    - o "+" (`.mini-add`) fica no canto da foto do titular enquanto houver menos de 2 reservas;
+    - com reservas, o campo fica mais alto (`.pitch.com-banco`: 68/112, e 68/160 no celular), as vagas sobem (y × 0,86) e o goleiro desce para 85%, para as pilhas não se encostarem.
+  - **Abaixo do campo:** "Reservas", agrupados por vaga, com "Banco: X/22", e "Fora do time e do banco".
+  - **Resumo:** seção "Time (formação)" com o titular e os reservas de cada vaga (`timeCompleto`), e alerta para titular improvisado.
+  - **Testes:** `testes/time.test.js` e o teste "aba Time" em `app.test.jsx`.
 - Empréstimos (coletados do Transfermarkt em 21/11/2026; dados brutos em `dados-brutos/emprestimos_transfermarkt.json`):
   - **Arquivo:** `public/emprestimos.json`, no formato `{clube: {in: [{nome, nasc, de: {k, n}, ate, contrato}], out: [{nome, pos, idade, para: {k, n}, ate, contrato, valor, em?: {k, nome, nasc}}]}}`.
     - Tem 2.284 recebidos e 3.610 emprestados; 1.830 deles estão em outro clube da base (`em`).

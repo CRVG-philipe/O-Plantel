@@ -23,12 +23,12 @@ import PainelFiltros from "./componentes/paineis/PainelFiltros.jsx";
 import PainelCriar from "./componentes/paineis/PainelCriar.jsx";
 import PainelClube from "./componentes/paineis/PainelClube.jsx";
 import PainelOrcamento from "./componentes/paineis/PainelOrcamento.jsx";
-import PainelPosicao from "./componentes/paineis/PainelPosicao.jsx";
+import PainelPosicao, { PainelReserva } from "./componentes/paineis/PainelPosicao.jsx";
 import PainelExcluirPlano from "./componentes/paineis/PainelExcluirPlano.jsx";
 import PainelEmprestado from "./componentes/paineis/PainelEmprestado.jsx";
 
 const ABAS = { elenco: Elenco, mercado: Mercado, time: Time, resumo: Resumo };
-const PAINEIS = { jogador: PainelJogador, compra: PainelCompra, filtros: PainelFiltros, criar: PainelCriar, clube: PainelClube, orcamento: PainelOrcamento, posicao: PainelPosicao, excluirPlano: PainelExcluirPlano, emprestado: PainelEmprestado };
+const PAINEIS = { jogador: PainelJogador, compra: PainelCompra, filtros: PainelFiltros, criar: PainelCriar, clube: PainelClube, orcamento: PainelOrcamento, posicao: PainelPosicao, excluirPlano: PainelExcluirPlano, emprestado: PainelEmprestado, reserva: PainelReserva };
 
 // Clubes de uma liga em ordem alfabética
 const clubesDa = (lg) => D.CLUBS.filter((c) => c.lg === lg).sort((a, b) => a.n.localeCompare(b.n));

@@ -4,7 +4,9 @@ import { D } from "../logica/dados.js";
 import { NEED, corDoSetor } from "../logica/constantes.js";
 import { Pos } from "./Jogador.jsx";
 import { dinheiro, calcularDinheiro } from "../logica/dinheiro.js";
-import { alertas, comprados, devolvidos, elencoAtual, elencoOriginal, jogador, saidas, textoDoPlano, vendidosFora, voltam } from "../logica/elenco.js";
+import { alertas, comprados, devolvidos, elencoAtual, elencoOriginal, jogador, saidas, textoDoPlano, timeCompleto, vendidosFora, voltam } from "../logica/elenco.js";
+import { compatibilidade, rotuloVaga } from "../logica/compatibilidade.js";
+import { short } from "../logica/formato.js";
 
 const ROTULO_SAIDA = { vende: "venda", empresta: "empréstimo", libera: "liberado" };
 
@@ -85,6 +87,21 @@ export default function Resumo({ app }) {
                 <s style={{ left: (x.min / mx) * 100 + "%" }}></s>
               </div>
               <b className="num" style={{ textAlign: "right" }}>{x.n}/{x.min}</b>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="sec" id="resumo-time">
+        <h2><span>Time ({plano.form})</span><span>titular · reservas</span></h2>
+        <div className="card">
+          {timeCompleto(plano).map(({ i, vaga, titular, reservas }) => (
+            <div className="kv" key={i}>
+              <span className="kv-nome">
+                <span className="pos" style={{ "--pc": corDoSetor(vaga) }}>{rotuloVaga(vaga)}</span>
+                <span className={titular && compatibilidade(vaga, titular.pos).nivel === "improvisado" ? "neg" : ""}>{titular ? titular.n : "vazio"}</span>
+              </span>
+              <span className="mute res-lista">{reservas.length ? reservas.map((p) => short(p.n)).join(", ") : "—"}</span>
             </div>
           ))}
         </div>

@@ -14,6 +14,7 @@
 //           Emprestados a outros clubes: vender (entra o valor) ou voltar (volta ao elenco e conta em tudo).
 import { D } from "./dados.js";
 import { FORMS, NEED } from "./constantes.js";
+import { NOME_VAGA, nivel, rotuloVaga } from "./compatibilidade.js";
 import { short } from "./formato.js";
 import { dinheiro, calcularDinheiro } from "./dinheiro.js";
 
@@ -79,6 +80,11 @@ export function alertas(plano) {
   if (e) a.push(`${e} ${e > 1 ? "jogadores que ficam têm" : "jogador que fica tem"} contrato acabando antes de ${L.plan}.`);
   const vazias = FORMS[plano.form].filter((s, i) => !plano.xi[i]).length;
   if (vazias) a.push(`${vazias} ${vazias > 1 ? "posições do time titular estão vazias" : "posição do time titular está vazia"}.`);
+  // Titular improvisado (vermelho na tabela de compatibilidade)
+  FORMS[plano.form].forEach(([r], i) => {
+    const p = plano.xi[i] && jogador(plano, plano.xi[i]);
+    if (p && nivel(r, p.pos) === "improvisado") a.push(`${p.n} (${p.pos}) está improvisado como ${NOME_VAGA[r].toLowerCase()}.`);
+  });
   return a;
 }
 
@@ -96,5 +102,19 @@ export function textoDoPlano(plano) {
     .concat(devolvidos(plano).map(({ p }) => "− " + p.n + " (devolvido ao " + p.emp.de.n + ")"))
     .concat(vendidosFora(plano).map(({ p, x }) => "− " + p.n + " (venda " + dinheiro(+x.fee || 0) + ", estava emprestado)"))
     .join("\n") || "ninguém";
-  return `${c.n} ${D.LG[c.lg].plan} (planejado no Plantel)\nOrçamento ${dinheiro(plano.budget || 0)} · caixa final ${dinheiro(m.caixa)}\n\nCHEGAM\n${chegam}\n\nSAEM\n${saem}\n\nTIME (${plano.form})\n${xi[0]}; ${xi.slice(1, 5).join(", ")}; ${xi.slice(5).join(", ")}`;
+  const banco = reservasPorVaga(plano).map(({ vaga, reservas }) => rotuloVaga(vaga) + ": " + reservas.map((p) => short(p.n)).join(", ")).join("\n");
+  return `${c.n} ${D.LG[c.lg].plan} (planejado no Plantel)\nOrçamento ${dinheiro(plano.budget || 0)} · caixa final ${dinheiro(m.caixa)}\n\nCHEGAM\n${chegam}\n\nSAEM\n${saem}\n\nTIME (${plano.form})\n${xi[0]}; ${xi.slice(1, 5).join(", ")}; ${xi.slice(5).join(", ")}` +
+    (banco ? `\n\nRESERVAS\n${banco}` : "");
 }
+
+// Titular e reservas de cada vaga, na ordem da formação: [{ i, vaga, titular, reservas: [jogadores] }]
+// (lê o campo "res" do plano direto, para não depender de escalacao.js)
+export function timeCompleto(plano) {
+  return FORMS[plano.form].map(([vaga], i) => ({
+    i, vaga,
+    titular: plano.xi[i] ? jogador(plano, plano.xi[i]) : null,
+    reservas: ((plano.res || {})[i] || []).map((id) => jogador(plano, id)).filter(Boolean),
+  }));
+}
+// Só as vagas que têm reservas
+export const reservasPorVaga = (plano) => timeCompleto(plano).filter((x) => x.reservas.length);

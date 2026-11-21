@@ -6,7 +6,7 @@ export const ORDER = Object.keys(POSN);
 
 // Setor de cada posição, para as cores: gol (amarelo), def (azul), mei (verde), ata (vermelho).
 // As cores ficam no CSS: var(--gol), var(--def), var(--mei), var(--ata).
-export const SETOR = { GOL: "gol", ZAG: "def", LD: "def", LE: "def", VOL: "mei", MC: "mei", MEI: "mei", MD: "mei", ME: "mei", PE: "ata", PD: "ata", SA: "ata", CA: "ata" };
+export const SETOR = { GOL: "gol", ZAG: "def", LD: "def", LE: "def", ALD: "def", ALE: "def", VOL: "mei", MC: "mei", MEI: "mei", MD: "mei", ME: "mei", PE: "ata", PD: "ata", SA: "ata", CA: "ata" };
 export const corDoSetor = (pos) => `var(--${SETOR[pos] || "mei"})`;
 
 // Seções da aba Elenco
@@ -24,12 +24,13 @@ export const FORMS = {
   "4-4-2": [["GOL", 50, 91], ["LD", 84, 71], ["ZAG", 62, 75], ["ZAG", 38, 75], ["LE", 16, 71], ["VOL", 62, 53], ["VOL", 38, 53], ["PD", 85, 39], ["PE", 15, 39], ["CA", 62, 16], ["CA", 38, 16]],
   "4-2-3-1": [["GOL", 50, 91], ["LD", 84, 71], ["ZAG", 62, 75], ["ZAG", 38, 75], ["LE", 16, 71], ["VOL", 62, 57], ["VOL", 38, 57], ["PD", 83, 33], ["MEI", 50, 37], ["PE", 17, 33], ["CA", 50, 14]],
   "4-1-4-1": [["GOL", 50, 91], ["LD", 84, 71], ["ZAG", 62, 75], ["ZAG", 38, 75], ["LE", 16, 71], ["VOL", 50, 59], ["PD", 85, 37], ["MC", 62, 43], ["MC", 38, 43], ["PE", 15, 37], ["CA", 50, 14]],
-  "3-5-2": [["GOL", 50, 91], ["ZAG", 74, 74], ["ZAG", 50, 77], ["ZAG", 26, 74], ["LD", 88, 49], ["VOL", 62, 57], ["VOL", 38, 57], ["LE", 12, 49], ["MEI", 50, 37], ["CA", 62, 16], ["CA", 38, 16]],
-  "3-4-3": [["GOL", 50, 91], ["ZAG", 74, 74], ["ZAG", 50, 77], ["ZAG", 26, 74], ["LD", 88, 49], ["VOL", 62, 53], ["MC", 38, 53], ["LE", 12, 49], ["PD", 80, 21], ["CA", 50, 14], ["PE", 20, 21]],
+  // Com 3 zagueiros, as vagas abertas são de ala (ALD/ALE, mostradas como "ALA"; ver compatibilidade.js)
+  "3-5-2": [["GOL", 50, 91], ["ZAG", 74, 74], ["ZAG", 50, 77], ["ZAG", 26, 74], ["ALD", 88, 49], ["VOL", 62, 57], ["VOL", 38, 57], ["ALE", 12, 49], ["MEI", 50, 37], ["CA", 62, 16], ["CA", 38, 16]],
+  "3-4-3": [["GOL", 50, 91], ["ZAG", 74, 74], ["ZAG", 50, 77], ["ZAG", 26, 74], ["ALD", 88, 49], ["VOL", 62, 53], ["MC", 38, 53], ["ALE", 12, 49], ["PD", 80, 21], ["CA", 50, 14], ["PE", 20, 21]],
+  "3-4-2-1": [["GOL", 50, 91], ["ZAG", 74, 74], ["ZAG", 50, 77], ["ZAG", 26, 74], ["ALD", 88, 51], ["VOL", 62, 55], ["MC", 38, 55], ["ALE", 12, 51], ["MEI", 66, 33], ["MEI", 34, 33], ["CA", 50, 14]],
+  "5-3-2": [["GOL", 50, 91], ["ZAG", 72, 76], ["ZAG", 50, 78], ["ZAG", 28, 76], ["ALD", 89, 63], ["MC", 74, 46], ["VOL", 50, 52], ["MC", 26, 46], ["ALE", 11, 63], ["CA", 62, 16], ["CA", 38, 16]],
+  "5-4-1": [["GOL", 50, 91], ["ZAG", 72, 76], ["ZAG", 50, 78], ["ZAG", 28, 76], ["ALD", 89, 63], ["MD", 82, 38], ["VOL", 60, 48], ["MC", 40, 48], ["ME", 18, 38], ["ALE", 11, 63], ["CA", 50, 14]],
 };
-
-// Quem pode jogar em cada vaga: o primeiro é a posição exata, os outros são "adaptados"
-export const FIT = { GOL: ["GOL"], ZAG: ["ZAG", "VOL"], LD: ["LD", "MD", "ZAG"], LE: ["LE", "ZAG"], VOL: ["VOL", "MC", "ZAG"], MC: ["MC", "VOL", "MEI", "ME", "MD"], MEI: ["MEI", "MC", "SA"], PD: ["PD", "MD", "PE", "SA"], PE: ["PE", "ME", "PD", "SA"], CA: ["CA", "SA"] };
 
 export const MES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 
