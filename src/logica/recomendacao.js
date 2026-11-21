@@ -52,23 +52,23 @@ function contexto(plano, clubeDestino) {
 }
 
 // Patamar de preço: 1 quando o preço fica entre 0,5x e 2x a média de valor do elenco; cai fora disso
-function patamarDePreco(p, ctx) {
-  const r = precoDeCompra(p) / ctx.media;
+function patamarDePreco(preco, ctx) {
+  const r = preco / ctx.media;
   return r < 0.5 ? 0.6 + 0.8 * r : r <= 2 ? 1 : Math.max(0, 1 - Math.log2(r / 2) / 3);
 }
 
 // b) Preço: patamar do clube e caixa
-function notaPreco(p, ctx) {
-  return patamarDePreco(p, ctx) * (precoDeCompra(p) <= ctx.caixa ? 1 : 0.4);
+function notaPreco(preco, patamar, ctx) {
+  return patamar * (preco <= ctx.caixa ? 1 : 0.4);
 }
 
 // e) Qualidade: overall acima da média do elenco. Igual à média = 0,3; +10 ou mais = 1; 5 abaixo ou menos = 0.
 // Multiplicada pelo patamar de preço: só vale para quem é realista para o clube.
-function notaQualidade(p, ctx) {
+function notaQualidade(p, patamar, ctx) {
   if (p.ovr == null || ctx.mediaOvr == null) return 0.3;
   const d = p.ovr - ctx.mediaOvr;
   const q = d >= 10 ? 1 : d <= -5 ? 0 : d < 0 ? 0.3 * (d + 5) / 5 : 0.3 + 0.07 * d;
-  return q * patamarDePreco(p, ctx);
+  return q * patamar;
 }
 
 // c) Idade e contrato
@@ -106,10 +106,11 @@ function notaNecessidade(pos, ctx) {
 export function pontuar(jogador, clubeOrigem, clubeDestino, plano) {
   const ctx = contexto(plano, clubeDestino);
   const origem = afinidade(clubeDestino.lg, clubeOrigem.lg);
-  const preco = notaPreco(jogador, ctx);
+  const valor = precoDeCompra(jogador), patamar = patamarDePreco(valor, ctx); // calculados uma vez só
+  const preco = notaPreco(valor, patamar, ctx);
   const idade = 0.75 * notaIdade(jogador.a, clubeDestino.lg) + 0.25 * notaContrato(jogador.ctr);
   const necessidade = notaNecessidade(jogador.pos, ctx);
-  const qualidade = notaQualidade(jogador, ctx);
+  const qualidade = notaQualidade(jogador, patamar, ctx);
   return Math.round(PESO.origem * origem + PESO.preco * preco + PESO.idade * idade + PESO.necessidade * necessidade + PESO.qualidade * qualidade);
 }
 

@@ -5,7 +5,7 @@ import { D, carregarDados } from "../src/logica/dados.js";
 import { FORMS } from "../src/logica/constantes.js";
 import { compatibilidade, nivel, rotuloVaga } from "../src/logica/compatibilidade.js";
 import { elencoAtual } from "../src/logica/elenco.js";
-import { adicionarReserva, completarTime, escalarSozinho, limparReservas, moverReservas, promover, reservasDa, todosReservas } from "../src/logica/escalacao.js";
+import { adicionarReserva, completarTime, escalarSozinho, limparReservas, moverReservas, promover, reservasDa, todosReservas, trocarComReserva, trocarTitulares } from "../src/logica/escalacao.js";
 
 beforeAll(async () => {
   globalThis.fetch = async (url) => ({ ok: true, json: async () => JSON.parse(fs.readFileSync("public/" + url, "utf8")) });
@@ -112,4 +112,25 @@ test("plano antigo sem 'res' funciona", () => {
   expect(reservasDa(P, 0)).toEqual([]);
   completarTime(P);
   expect(P.res).toBeUndefined();                                  // não cria o campo à toa
+});
+
+test("trocar de posição: dois titulares, titular para vaga vazia e titular com reserva de outra vaga", () => {
+  const P = arsenal();
+  const ld = vagaDe("4-3-3", "LD"), le = vagaDe("4-3-3", "LE"), ca = vagaDe("4-3-3", "CA"), gol = vagaDe("4-3-3", "GOL");
+  const [a, b] = [P.xi[ld], P.xi[le]];
+  trocarTitulares(P, ld, le);
+  expect([P.xi[ld], P.xi[le]]).toEqual([b, a]);
+  // Vaga vazia: o titular só muda de vaga
+  delete P.xi[le];
+  trocarTitulares(P, ld, le);
+  expect(P.xi[le]).toBe(b);
+  expect(P.xi[ld]).toBeUndefined();
+  // Reserva do goleiro entra como centroavante; o centroavante vai para o banco no lugar dele
+  const livre = elencoAtual(P).find((p) => !Object.values(P.xi).includes(p.id));
+  adicionarReserva(P, gol, livre.id);
+  const cent = P.xi[ca];
+  expect(trocarComReserva(P, ca, livre.id)).toBe(true);
+  expect(P.xi[ca]).toBe(livre.id);
+  expect(reservasDa(P, gol)).toEqual([cent]);
+  expect(trocarComReserva(P, ca, "não-é-reserva")).toBe(false);
 });

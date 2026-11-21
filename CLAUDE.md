@@ -46,10 +46,16 @@ Foi inspirado no reconstruindo.thefenomeno.com, mas **não deve copiá-lo**. O f
     - Tudo é arredondado para € 0,05 mi, com mínimo de € 0,05 mi.
     - Em 21/11/2026, os estimados da Série C ficaram entre € 0,05 e 0,3 mi.
 - Cada liga tem `div` (1, 2 ou 3): a divisão dentro do país. A tela de divisão ordena por ele.
-- Overall e atributos (gerados em 21/11/2026): `public/overall.json`, no formato `{clube: {"nome|nascimento": [overall, estimado, atributos]}}`. Todos os 23.613 jogadores têm overall; 15.295 têm atributos.
-  - **Gerado por** `python dados-brutos/overall/overall.py`, que lê `players_all.json` e `attrs.json` da mesma pasta e grava `public/overall.json`.
-    - Mistura valor de mercado, idade, posição, nota do Sofascore (pesada pelos jogos e pela força da liga) e atributos, e transforma em percentil: overall de 45 a 91.
+- Overall e atributos (versão 2, gerada em 21/11/2026): `public/overall.json`, no formato `{clube: {"nome|nascimento": [overall, estimado, atributos]}}`. Todos os 23.613 jogadores têm overall; 15.295 têm atributos.
+  - **Gerado por** `python dados-brutos/overall/overall.py` (na raiz, sem argumentos). Ele lê `players_all.json` e `attrs.json` da mesma pasta e grava `public/overall.json`.
+    - Também grava `dados-brutos/overall/overall_debug.json` (mercado, desempenho e final de cada jogador), só para conferência.
     - O `data.json` não muda.
+  - **Regra (v2):** mistura um overall de mercado (valor, idade e posição) com um de desempenho (nota, gols/assistências, atributos e força da liga), na escala de 40 a 92 (hoje vai de 45 a 91).
+    - O peso do desempenho cresce com os jogos (`jogos / (jogos + 12)`), até 80%. Quem tem menos de 5 jogos fica só com o mercado.
+  - **Ajustes manuais:** `public/overall-ajustes.json`, no formato `{clube: {"nome|nascimento": overall}}`, começa vazio (`{}`).
+    - Quando um jogador tem ajuste, o número substitui o do `overall.json`; os atributos e o "~" continuam os mesmos.
+    - O script não mexe nesse arquivo, então o ajuste continua valendo quando o `overall.json` é gerado de novo. Para corrigir alguém, acrescente a linha nele: não precisa rodar nada.
+    - Se o arquivo falhar, o site segue só com o `overall.json`.
   - `estimado` = 1 quando o jogador não tem valor de mercado: o site mostra "~" antes do número.
   - `atributos` = `null` ou `{tipo, v}`, com 5 números de 0 a 100:
     - tipo "L" (linha): Ataque, Técnica, Tática, Defesa, Criatividade;
@@ -231,6 +237,11 @@ React 19 + Vite 6, em JavaScript (sem TypeScript).
     - cada vaga (`.vaga`) tem o titular e, embaixo, os mini-cards dos reservas (`.mini`, foto de 14px e nome curto);
     - o "+" (`.mini-add`) fica no canto da foto do titular enquanto houver menos de 2 reservas;
     - com reservas, o campo fica mais alto (`.pitch.com-banco`: 68/112, e 68/160 no celular), as vagas sobem (y × 0,86) e o goleiro desce para 85%, para as pilhas não se encostarem.
+  - **Trocar de posição** (estado `sel` no `Time.jsx`):
+    - o 1º toque num titular seleciona (`.slot.sel`, anel na cor do clube) e mostra a `.troca-bar` com "Ver lista" e "Cancelar"; Esc também cancela;
+    - o 2º toque em outro titular troca os dois (`trocarTitulares`); numa vaga vazia, só move o selecionado;
+    - o 2º toque num reserva põe esse reserva no lugar do selecionado, e o titular vai para o banco no lugar dele (`trocarComReserva`);
+    - tocar duas vezes no mesmo abre a lista (`PainelPosicao`); vaga vazia sem seleção abre a lista direto.
   - **Abaixo do campo:** "Reservas", agrupados por vaga, com "Banco: X/22", e "Fora do time e do banco".
   - **Resumo:** seção "Time (formação)" com o titular e os reservas de cada vaga (`timeCompleto`), e alerta para titular improvisado.
   - **Testes:** `testes/time.test.js` e o teste "aba Time" em `app.test.jsx`.

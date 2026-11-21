@@ -23,8 +23,8 @@ test("o overall do Mbappé é 91, com os 5 atributos de jogador de linha", () =>
   expect(m.atr.v).toHaveLength(5);
 });
 
-test("todo jogador da base tem overall entre 45 e 91; o estimado é marcado", () => {
-  expect(D.ALL.every((p) => p.ovr >= 45 && p.ovr <= 91)).toBe(true);
+test("todo jogador da base tem overall (o script limita entre 40 e 92); o estimado é marcado", () => {
+  expect(D.ALL.every((p) => p.ovr >= 40 && p.ovr <= 92)).toBe(true);
   expect(D.ALL.some((p) => p.ovrEst)).toBe(true);
   // Atributos: null ou { tipo, 5 números de 0 a 100 }; goleiro tem tipo "G"
   for (const p of D.ALL) {
@@ -60,6 +60,28 @@ test("Mercado: ordem 'Overall' põe o maior overall primeiro", () => {
   const l = buscarJogadores(P, "", 0, { ...FILTROS_PADRAO, fit: false, sort: "o" });
   expect(l[0].ovr).toBe(91);
   for (let i = 1; i < 200; i++) expect(l[i - 1].ovr).toBeGreaterThanOrEqual(l[i].ovr);
+});
+
+test("ajuste manual (overall-ajustes.json) troca só o número do overall; os atributos continuam", async () => {
+  const lerPublic = (url) => JSON.parse(fs.readFileSync("public/" + url, "utf8"));
+  expect(lerPublic("overall-ajustes.json")).toEqual({}); // começa vazio
+  const mbappe = () => achar("Kylian Mbappé", "1998-12-20");
+  const atr = mbappe().atr, haaland = achar("Erling Haaland").ovr;
+  const carregarCom = async (ajustes) => {
+    globalThis.fetch = async (url) => {
+      if (url === "overall-ajustes.json") { if (!ajustes) throw new Error("fora do ar"); return { ok: true, json: async () => ajustes }; }
+      return { ok: true, json: async () => lerPublic(url) };
+    };
+    await carregarDados();
+  };
+  await carregarCom({ T2829: { "Kylian Mbappé|1998-12-20": 80 } });
+  expect(mbappe().ovr).toBe(80);
+  expect(mbappe().atr).toEqual(atr);
+  expect(achar("Erling Haaland").ovr).toBe(haaland); // quem não tem ajuste não muda
+  // Arquivo de ajustes fora do ar: segue com o número do overall.json
+  await carregarCom(null);
+  expect(mbappe().ovr).toBe(91);
+  await carregarCom({}); // volta ao normal para os outros testes
 });
 
 test("recomendação: overall bem acima da média do elenco ganha pontos, desde que o preço caiba no patamar", () => {

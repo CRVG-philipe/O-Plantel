@@ -31,6 +31,7 @@ beforeEach(() => {
     }
     if (String(url).includes("apelidos")) return { ok: true, json: async () => structuredClone(APELIDOS) };
     if (String(url).includes("emprestimos")) return { ok: true, json: async () => structuredClone(EMPRESTIMOS) };
+    if (String(url).includes("overall-ajustes")) return { ok: true, json: async () => ({}) };
     if (String(url).includes("overall")) return { ok: true, json: async () => structuredClone(OVERALL) };
     if (String(url).includes("valores-estimados")) {
       if (semEstimados) throw new Error("fora do ar");
@@ -302,7 +303,8 @@ test("fluxo completo: clube, vender, contratar, filtros, escalação, resumo, re
   expect(salvo().plans.T42.form).toBe("4-4-2");
   expect(document.querySelectorAll(".slot").length).toBe(11);
   const golAntes = document.querySelector(".slot .lb").textContent;
-  clique(screen.getByRole("button", { name: /^Goleiro: / }));
+  clique(screen.getByRole("button", { name: /^Goleiro: / }));  // 1º toque: seleciona
+  clique(screen.getByRole("button", { name: /^Goleiro: / }));  // 2º toque no mesmo: abre a lista
   const outro = noPainel().getAllByRole("button").find((b) => b.classList.contains("row") && !b.textContent.includes("atual"));
   clique(outro);
   expect(document.querySelector(".slot .lb").textContent).not.toBe(golAntes);
@@ -757,7 +759,7 @@ test("Mercado: recomendados com selo, 'só quem cabe' ligado e lembrado, busca p
   await abrirMercado();
   expect(document.querySelector("#fOpen").textContent).toBe("Filtros");
   expect(total()).toBeGreaterThan(soOsQueCabem);
-});
+}, 20000); // recalcula as notas do Mercado algumas vezes: 20 s de limite em vez de 5
 
 test("empréstimos no Botafogo: devolver, comprar, vender e trazer de volta (plano antigo sem o campo novo)", async () => {
   // Plano salvo no formato antigo (sem "emp"), com € 20 mi
@@ -913,4 +915,45 @@ test("overall e atributos: selo nas listas, ficha com e sem atributos, força do
   clique(noPainel().getByRole("button", { name: "Aplicar" }));
   expect(document.querySelector(".ordem").textContent).toContain("Overall");
   expect(document.querySelector("#mList .row .ovr").textContent).toBe("91");
+});
+test("aba Time: tocar em um jogador e depois em outro troca os dois de posição", async () => {
+  localStorage.setItem(CHAVE, JSON.stringify({ plans: { T42: { club: "T42", budget: 50, st: {}, ins: [], form: "4-3-3", xi: {}, custom: [] } }, last: "T42" }));
+  render(<App />);
+  clique(await screen.findByRole("button", { name: /Arsenal 27\/28/ }));
+  clique(screen.getByRole("tab", { name: "Time" }));
+  const vaga = (nome) => screen.getByRole("button", { name: new RegExp("^" + nome + ": ") });
+  const quem = (nome) => vaga(nome).getAttribute("aria-label").replace(/^[^:]+: /, "").replace(" (improvisado)", "");
+  const xi = () => salvo().plans.T42.xi;
+  const antes = { ...xi() };
+  const ld = quem("Lateral direito"), le = quem("Lateral esquerdo");
+  // 1º toque: seleciona (sem abrir painel) e mostra a barra
+  clique(vaga("Lateral direito"));
+  expect(painel()).toBeNull();
+  expect(vaga("Lateral direito").getAttribute("aria-pressed")).toBe("true");
+  expect(document.querySelector(".troca-bar").textContent).toContain("selecionado");
+  // 2º toque em outro: os dois trocam
+  clique(vaga("Lateral esquerdo"));
+  expect(quem("Lateral direito")).toBe(le);
+  expect(quem("Lateral esquerdo")).toBe(ld);
+  expect(aviso()).toContain("trocaram de posição");
+  expect(document.querySelector(".troca-bar")).toBeNull();
+  expect(Object.values(xi()).sort()).toEqual(Object.values(antes).sort()); // os mesmos 11, só em vagas trocadas
+  // Cancelar desfaz a seleção sem mudar nada
+  clique(vaga("Goleiro"));
+  clique(screen.getByRole("button", { name: "Cancelar" }));
+  expect(document.querySelector(".troca-bar")).toBeNull();
+  expect(xi()).toEqual(salvo().plans.T42.xi);
+  // Com um reserva: titular selecionado + toque no reserva = o reserva entra no lugar
+  clique(screen.getByRole("button", { name: "Adicionar reserva de Centroavante" }));
+  const linha = noPainel().getAllByRole("button").find((b) => b.classList.contains("row"));
+  const reserva = linha.querySelector(".nm").textContent;
+  clique(linha);
+  const ca = quem("Centroavante");
+  clique(vaga("Centroavante"));
+  clique(screen.getByRole("button", { name: `1º reserva de Centroavante: ${reserva}` }));
+  expect(quem("Centroavante")).toBe(reserva);
+  expect(screen.getByRole("button", { name: `1º reserva de Centroavante: ${ca}` })).toBeTruthy();
+  // Sem seleção, tocar no reserva abre o painel dele, como antes
+  clique(screen.getByRole("button", { name: `1º reserva de Centroavante: ${ca}` }));
+  expect(noPainel().getByRole("button", { name: "Promover a titular" })).toBeTruthy();
 });

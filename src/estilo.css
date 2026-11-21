@@ -215,6 +215,16 @@ img.face{object-fit:cover;object-position:top;background-color:#fff} /* fotos HD
 .slot.empty .dot{background:var(--sf);color:var(--mute);border:1.5px dashed var(--mute);box-shadow:none}
 .slot .lb{font-size:11.5px;font-weight:600;background:var(--sf);border-radius:6px;padding:1px 6px;max-width:84px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .slot .lb.w{color:var(--warn)}
+/* trocar de posição: o selecionado ganha um anel na cor do clube que pulsa; os outros ficam como alvo */
+.slot.sel .dot{box-shadow:0 0 0 2px var(--sf),0 0 0 4.5px var(--clubVis),0 4px 12px rgba(0,0,0,.25);animation:sel-pulsa 1.2s ease-in-out infinite}
+.slot.sel .lb{background:var(--clubVis);color:var(--clubVisInk)}
+.pitch.trocando .slot:not(.sel) .dot{outline:1.5px dashed color-mix(in srgb,var(--ink) 35%,transparent);outline-offset:3px}
+.pitch.trocando .mini{outline:1px dashed color-mix(in srgb,var(--ink) 30%,transparent)}
+@keyframes sel-pulsa{50%{transform:scale(1.08)}}
+.troca-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:space-between;background:var(--sf);border-radius:12px;box-shadow:0 0 0 1px var(--line);padding:8px 10px 8px 14px;margin:-4px 0 14px;font-size:13.5px}
+.troca-acts{display:flex;gap:6px;margin-left:auto}
+.troca-acts .btn{min-height:34px;padding:0 12px;font-size:13px}
+@media (prefers-reduced-motion:reduce){.slot.sel .dot{animation:none}}
 details.bench summary{cursor:pointer;list-style:none;font-size:13px;font-weight:600;color:var(--mute);margin:0 4px 8px;min-height:32px;display:flex;align-items:center}
 details.bench summary::-webkit-details-marker{display:none}
 details.bench summary::after{content:"Mostrar";margin-left:auto;color:var(--clubVis)}

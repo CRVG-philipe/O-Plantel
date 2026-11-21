@@ -125,6 +125,29 @@ export function promover(plano, i, id) {
   if (!nova.length) delete plano.res[i];
 }
 
+// Troca os titulares das vagas i e j de lugar. Se uma das vagas está vazia, o outro só muda de vaga.
+export function trocarTitulares(plano, i, j) {
+  if (i === j) return;
+  const a = plano.xi[i], b = plano.xi[j];
+  if (b) plano.xi[i] = b; else delete plano.xi[i];
+  if (a) plano.xi[j] = a; else delete plano.xi[j];
+}
+
+// Troca o titular da vaga i com um reserva (de qualquer vaga): o reserva vira titular da vaga i e o titular
+// fica no lugar dele no banco. Devolve false se o id não é reserva.
+export function trocarComReserva(plano, i, id) {
+  for (const k in plano.res || {}) {
+    const pos = plano.res[k].indexOf(id);
+    if (pos < 0) continue;
+    const titular = plano.xi[i];
+    plano.xi[i] = id;
+    if (titular) plano.res[k][pos] = titular;
+    else { plano.res[k].splice(pos, 1); if (!plano.res[k].length) delete plano.res[k]; }
+    return true;
+  }
+  return false;
+}
+
 // Ao trocar de formação: cada vaga que continua existindo (mesma posição, na mesma ordem: 2º ZAG → 2º ZAG)
 // leva seus reservas; os das vagas que sumiram ficam livres.
 export function moverReservas(plano, formAntiga, formNova) {

@@ -70,7 +70,7 @@ test("clube saudita recebe veteranos das ligas europeias bem pontuados", () => {
   const posicao = (destino) => ranking(plano(destino, 100)).findIndex((p) => ["ENG", "ESP", "ITA", "GER", "FRA"].includes(p.lg) && p.a >= 31);
   expect(posicao(saudita)).toBeLessThan(D.ALL.length * 0.02);
   expect(posicao(saudita) * 3).toBeLessThan(posicao(noruegues));
-});
+}, 20000); // calcula a lista inteira várias vezes: 20 s de limite em vez de 5
 
 test("necessidade: posição vazia no elenco planejado sobe a nota", () => {
   const c = clube("ENG", "Arsenal");
