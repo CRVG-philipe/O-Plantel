@@ -54,17 +54,19 @@ function PainelProprio({ app, p, id }) {
   );
 }
 
-// Jogador que o clube pegou emprestado: manter (padrão), devolver ao dono ou comprar pelo valor de mercado
+// Jogador que o clube pegou emprestado: manter (padrão), devolver ao dono ou comprar.
+// O valor da compra começa no valor de mercado e pode ser editado (guardado em euro, digitado na moeda escolhida).
 function PainelRecebido({ app, p }) {
   const atual = situacaoEmp(app.plano, p.id);
   const [s, setS] = useState(atual.s);
-  const preco = atual.s === "comprar" ? +atual.fee || 0 : p.v;
+  const precoEur = atual.s === "comprar" ? +atual.fee || 0 : p.v;
+  const [valor, setValor] = useState(() => paraCampo(precoEur));
   const { de, ate, contrato } = p.emp;
 
   const opcoes = [
     ["manter", "Manter emprestado", `Continua no elenco até ${ctrTxt(ate)}, sem custo.`],
     ["devolver", "Devolver", `Volta para o ${de.n}. Sai do elenco, sem dinheiro.`],
-    ["comprar", "Comprar", `Paga ${dinheiro(preco)} ao ${de.n} e ele vira jogador do clube.`],
+    ["comprar", "Comprar", `Paga ao ${de.n} (valor de mercado: ${dinheiro(p.v)}) e ele vira jogador do clube.`],
   ];
 
   const salvar = () => {
@@ -72,7 +74,7 @@ function PainelRecebido({ app, p }) {
       P.emp = P.emp || {};
       delete P.st[p.id];
       if (s === "manter") delete P.emp[p.id];
-      else P.emp[p.id] = { s, fee: s === "comprar" ? preco : 0 };
+      else P.emp[p.id] = { s, fee: s === "comprar" ? lerCampo(valor, precoEur) : 0 };
     });
     app.fecharPainel();
   };
@@ -84,6 +86,11 @@ function PainelRecebido({ app, p }) {
       <p className="note">Emprestado pelo {de.n} até {ctrTxt(ate)}{contrato ? ` · contrato com o ${de.n} até ${ctrTxt(contrato)}` : ""}.</p>
       <Estatisticas p={p} />
       {opcoes.map(([k, t, d]) => <Opcao key={k} marcado={s === k} titulo={t} detalhe={d} onClick={() => setS(k)} />)}
+      {s === "comprar" && (
+        <label className="field">Valor da compra ({simbolo()} milhões)
+          <input id="fee" className="num" type="number" min="0" step="0.1" inputMode="decimal" value={valor} onChange={(e) => setValor(e.target.value)} autoFocus={noComputador()} />
+        </label>
+      )}
       <button className="btn pri" id="ok" style={{ width: "100%" }} onClick={salvar}>Salvar</button>
     </>
   );

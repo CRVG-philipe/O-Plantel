@@ -807,6 +807,16 @@ test("empréstimos no Botafogo: devolver, comprar, vender e trazer de volta (pla
   expect(document.querySelector("#voltam").textContent).toContain("Artur");
   expect(document.querySelector("#comprados").textContent).toContain("Arthur Chaves");
   expect(document.querySelector("#devolvidos")).toBeNull();
+  // O valor da compra pode ser editado: o campo começa no valor salvo e o caixa usa o valor digitado
+  clique(screen.getByRole("tab", { name: "Elenco" }));
+  clique(linhaDe("Arthur Chaves"));
+  const campo = noPainel().getByLabelText(/Valor da compra/);
+  expect(campo.value).toBe(String(arthurV));
+  fireEvent.change(campo, { target: { value: "3" } });
+  clique(noPainel().getByRole("button", { name: "Salvar" }));
+  expect(caixa()).toBe(dinheiro(20 - 3));
+  expect(document.querySelector(".row .pill.in").textContent).toBe("Comprado " + dinheiro(3));
+  expect(Object.values(salvo().plans.T1958.emp)).toContainEqual({ s: "comprar", fee: 3 });
 });
 
 test("Esc e clique fora fecham o painel", async () => {
