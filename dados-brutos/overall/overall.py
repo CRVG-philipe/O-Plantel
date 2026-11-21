@@ -1,102 +1,117 @@
-"""Overall v2: mistura mercado (valor+idade) e desempenho (nota, jogos, gols/assist., atributos, força da liga).
-Peso do desempenho cresce com os jogos: w = min(0.8, jogos/(jogos+12)).
-Entrada: players_all.json, attrs.json  Saída: overall.json (+ relatório de diferenças)"""
-import json, math, statistics as stt, datetime as dt, collections, os, sys, bisect
-BASE = sys.argv[1] if len(sys.argv) > 1 else 'dados-brutos/overall/'
-OUT = sys.argv[2] if len(sys.argv) > 2 else 'public/overall.json'
-P = json.load(open(BASE + ('players_all_fix.json' if os.path.exists(BASE + 'players_all_fix.json') else 'players_all.json'), encoding='utf-8'))
-A = json.load(open(BASE + 'attrs.json', encoding='utf-8')) if os.path.exists(BASE + 'attrs.json') else {}
+"""Calcula overall (45-92) e atributos de cada jogador.
+Entrada: raw/players_all.json [k, lg, nome, pos, nasc, valor€mi, stats[j,g,a,nota]|None, sofaId]
+         raw/attrs.json {sofaId: [posSofa, a1..a5]} (opcional)
+Saída:   overall.json {k: {"nome|nasc": [ovr, estimado(0/1), atributos|null]}}
+"""
+import json, math, statistics as stt, datetime as dt, collections, os, sys
+
+P = json.load(open('dados-brutos/overall/players_all.json', encoding='utf-8'))
+A = json.load(open('dados-brutos/overall/attrs.json', encoding='utf-8')) if os.path.exists('dados-brutos/overall/attrs.json') else {}
+corr = 'nao-usar'
+if os.path.exists(corr):
+    fx = {(c['k'], c['nome'], c['nascimento']): c for c in json.load(open(corr, encoding='utf-8'))}
+    for x in P:
+        c = fx.get((x[0], x[2], x[4]))
+        if c: x[6] = c['stats']; x[7] = c['sofascore']
+
 HOJE = dt.date(2026, 11, 21)
 def idade(n):
     try: return (HOJE - dt.date.fromisoformat(n)).days / 365.25
     except: return 26
-def setor(p): return 'G' if p == 'GOL' else 'D' if p in ('ZAG','LE','LD') else 'M' if p in ('VOL','MC','MEI','ME','MD') else 'F'
+def setor(pos):
+    return 'G' if pos == 'GOL' else 'D' if pos in ('ZAG', 'LE', 'LD') else 'M' if pos in ('VOL', 'MC', 'MEI', 'ME', 'MD') else 'F'
 
+# força da liga = média do log do valor dos 15 mais caros de cada clube
 club_vals = collections.defaultdict(list); club_lg = {}
-for k, lg, *_r in P: club_lg[k] = lg
-for x in P:
-    if x[5]: club_vals[x[0]].append(x[5])
-lg_s = collections.defaultdict(list)
+for k, lg, nome, pos, nasc, v, s, sid in P:
+    club_lg[k] = lg
+    if v: club_vals[k].append(v)
+lg_str = collections.defaultdict(list)
 for k, vs in club_vals.items():
-    lg_s[club_lg[k]].append(stt.mean(math.log10(v + .02) for v in sorted(vs, reverse=True)[:15]))
-LG = {l: stt.mean(v) for l, v in lg_s.items()}
+    top = sorted(vs, reverse=True)[:15]
+    lg_str[club_lg[k]].append(stt.mean(math.log10(v + 0.02) for v in top))
+LG = {lg: stt.mean(v) for lg, v in lg_str.items()}
+lg_max = max(LG.values())
+
+def fator_idade(a):
+    if a < 20: return 1.7
+    if a < 22: return 1.35
+    if a < 24: return 1.12
+    if a < 30: return 1.0
+    if a < 32: return 0.8
+    if a < 34: return 0.6
+    return 0.45
+
+# valor imputado para quem não tem valor: quantil 20% do valor da liga
 lg_vals = collections.defaultdict(list)
 for x in P:
     if x[5]: lg_vals[x[1]].append(x[5])
-def q(v, p): v = sorted(v); return v[int(p * (len(v) - 1))] if v else .1
-def fator_idade(a):
-    return 1.7 if a < 20 else 1.35 if a < 22 else 1.12 if a < 24 else 1.0 if a < 30 else .8 if a < 32 else .6 if a < 34 else .45
-PESOS = {'F': [.35,.25,.10,.05,.25], 'M': [.15,.25,.20,.15,.25], 'D': [.05,.15,.30,.40,.10], 'G': [.35,.20,.15,.15,.15]}
-ALVO = [(0,45),(.05,51),(.2,57),(.5,63),(.8,69),(.95,75),(.99,81),(.998,86),(1,91)]
-def alvo(p):
-    for (p0,o0),(p1,o1) in zip(ALVO, ALVO[1:]):
-        if p <= p1: return o0 + (o1-o0)*(p-p0)/(p1-p0)
-    return 91
+def q(v, p):
+    v = sorted(v); return v[int(p * (len(v) - 1))] if v else 0.1
 
-R = []
+PESOS = {
+    'F': [0.35, 0.25, 0.10, 0.05, 0.25],   # attacking technical tactical defending creativity
+    'M': [0.15, 0.25, 0.20, 0.15, 0.25],
+    'D': [0.05, 0.15, 0.30, 0.40, 0.10],
+    'G': [0.35, 0.20, 0.15, 0.15, 0.15],   # saves anticipation distribution aerial tactical
+}
+
+rows = []
 for x in P:
     k, lg, nome, pos, nasc, v, s, sid = x
-    sec = setor(pos); a = idade(nasc); est = 0
-    if not v: est = 1; v = q(lg_vals.get(lg, []), .2) or .05
-    va = v / fator_idade(a) * (1.6 if sec == 'G' else 1.15 if sec == 'D' else 1)
-    m = math.log10(va + .02)
-    at = A.get(str(sid)) if sid else None
-    R.append(dict(x=x, sec=sec, est=est, m=m, s=s, at=at, idade=a))
-
-# z dos atributos dentro de (liga, setor)
-grp = collections.defaultdict(list)
-for r in R:
-    if r['at']:
-        w = PESOS['G' if r['at'][0] == 'G' else r['sec']]
-        r['az'] = sum(wi*ai for wi, ai in zip(w, r['at'][1:])); grp[(r['x'][1], r['sec'])].append(r['az'])
-for r in R:
-    g = grp.get((r['x'][1], r['sec']), [])
-    r['z'] = (r['az'] - stt.mean(g)) / (stt.pstdev(g) or 1) if r.get('az') is not None and len(g) > 8 else 0
-
-# mercado -> overall por percentil (inclui pequeno ajuste de nota como antes)
-for r in R:
-    s = r['s']; mk = r['m']
+    a = idade(nasc); sec = setor(pos)
+    est = 0
+    if not v:
+        est = 1
+        v = q(lg_vals.get(lg, []), 0.2) or 0.05
+    va = v / fator_idade(a)
+    if sec == 'G': va *= 1.6
+    elif sec == 'D': va *= 1.15
+    score = math.log10(va + 0.02)
+    # nota Sofascore, pesada pela confiabilidade (jogos) e pela força da liga
     if s and s[0] and s[3]:
-        mk += .3 * (s[3] - 6.85) * s[0] / (s[0] + 12)
-    r['mk'] = mk + .08 * r['z']
-ordm = sorted(R, key=lambda r: r['mk'])
-for i, r in enumerate(ordm): r['ovr_m'] = alvo(i / (len(R) - 1))
+        rel = s[0] / (s[0] + 12)
+        score += 0.55 * (s[3] - 6.85) * rel * (0.6 + 0.4 * (LG.get(lg, 0) / lg_max))
+    elif s is not None and s[0] == 0:
+        score -= 0.05
+    at = A.get(str(sid)) if sid else None
+    rows.append([x, score, at, sec, est])
 
-# desempenho (só para quem tem nota e >= 5 jogos)
-lgmax = max(LG.values()); lgmin = min(LG.values())
-# nota média por setor (titulares) para comparar goleiro com goleiro, zagueiro com zagueiro...
-sec_nt = collections.defaultdict(list); sec_ct = collections.defaultdict(list)
-for r in R:
-    s = r['s']
-    if s and s[0] >= 15 and s[3]:
-        sec_nt[r['sec']].append(s[3]); sec_ct[r['sec']].append((s[1] + .7 * s[2]) / s[0])
-NT = {k: stt.mean(v) for k, v in sec_nt.items()}; CT = {k: stt.mean(v) for k, v in sec_ct.items()}
-for r in R:
-    s = r['s']; r['pf'] = None
-    if s and s[0] >= 5 and s[3]:
-        jg, gl, asi, nt = s[:4]
-        contrib = (gl + .7 * asi) / jg - CT[r['sec']]
-        bonus = {'F': .35, 'M': .6, 'D': 1.0, 'G': 0}[r['sec']] * contrib
-        forca = (LG.get(r['x'][1], lgmin) - lgmin) / (lgmax - lgmin)
-        r['pf'] = (nt - NT[r['sec']]) * 1.0 + bonus + 1.6 * forca + .12 * r['z']
-# alinha a escala do desempenho com a do mercado entre os titulares (>=15 jogos)
-base = [r for r in R if r['pf'] is not None and r['s'][0] >= 15]
-pfs = sorted(r['pf'] for r in base); oms = sorted(r['ovr_m'] for r in base)
-def map_pf(v):
-    i = bisect.bisect_left(pfs, v); i = min(max(i, 0), len(pfs) - 1)
-    return oms[i]
-for r in R:
-    if r['pf'] is None: r['ovr'] = r['ovr_m']; r['w'] = 0; continue
-    r['ovr_p'] = map_pf(r['pf'])
-    jg = r['s'][0]; w = min(.8, jg / (jg + 12)); r['w'] = w
-    if r['ovr_p'] < r['ovr_m']:          # desempenho abaixo do mercado: pesa menos (nota baixa em pouco tempo é ruído; goleiro de time grande trabalha pouco)
-        w *= .25 if r['sec'] == 'G' else .4
-    r['w'] = w
-    r['ovr'] = w * r['ovr_p'] + (1 - w) * r['ovr_m']
+# atributos: z-score dentro de (liga, setor), soma pequena ao score
+grp = collections.defaultdict(list)
+for r in rows:
+    if r[2]:
+        w = PESOS['G' if r[2][0] == 'G' else r[3]]
+        r.append(sum(wi * ai for wi, ai in zip(w, r[2][1:])))
+        grp[(r[0][1], r[3])].append(r[-1])
+    else:
+        r.append(None)
+for r in rows:
+    if r[5] is not None and len(grp[(r[0][1], r[3])]) > 8:
+        g = grp[(r[0][1], r[3])]; m, sd = stt.mean(g), stt.pstdev(g) or 1
+        r[1] += 0.12 * (r[5] - m) / sd
 
-out = collections.defaultdict(dict)
-for r in R:
-    x = r['x']; at = r['at']
-    out[x[0]][x[2] + '|' + x[4]] = [max(40, min(92, round(r['ovr']))), r['est'], {'tipo': 'G' if at[0] == 'G' else 'L', 'v': at[1:]} if at else None]
-json.dump(out, open(OUT, 'w', encoding='utf-8'), ensure_ascii=False, separators=(',', ':'))
-json.dump([[r['x'][0], r['x'][1], r['x'][2], r['x'][3], round(r['idade']), r['x'][5], r['s'], round(r['ovr_m']), round(r.get('ovr_p') or 0), round(r['ovr'])] for r in R], open(BASE + 'overall_debug.json', 'w', encoding='utf-8'), ensure_ascii=False)
+# percentil -> overall
+alvo = [(0, 45), (0.05, 51), (0.2, 57), (0.5, 63), (0.8, 69), (0.95, 75), (0.99, 81), (0.998, 86), (1, 91)]
+ordem = sorted(range(len(rows)), key=lambda i: rows[i][1])
+n = len(rows); out = collections.defaultdict(dict)
+for rank, i in enumerate(ordem):
+    p = rank / (n - 1)
+    for (p0, o0), (p1, o1) in zip(alvo, alvo[1:]):
+        if p <= p1:
+            ovr = round(o0 + (o1 - o0) * (p - p0) / (p1 - p0)); break
+    x, score, at, sec, est = rows[i][:5]
+    attr = None
+    if at:
+        attr = {'tipo': 'G' if at[0] == 'G' else 'L', 'v': at[1:]}
+    out[x[0]][x[2] + '|' + x[4]] = [ovr, est, attr]
+json.dump(out, open('public/overall.json', 'w', encoding='utf-8'), ensure_ascii=False, separators=(',', ':'))
+
+# relatório
+flat = [(v[0], k, nm) for k, d in out.items() for nm, v in d.items()]
+flat.sort(reverse=True)
+print('top', [(o, nm.split('|')[0]) for o, k, nm in flat[:15]])
+for lg in ['ENG', 'BRA', 'BRB', 'BRC', 'SAU', 'JPN']:
+    vs = sorted([v[0] for x, (k, d) in [(0, kv) for kv in out.items()] for nm, v in d.items() if club_lg[k] == lg])
+    print(lg, 'mediana', vs[len(vs) // 2], 'p90', vs[int(len(vs) * .9)], 'max', vs[-1])
+print('com atributos', sum(1 for r in rows if r[2]), 'de', len(rows))

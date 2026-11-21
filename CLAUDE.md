@@ -46,12 +46,14 @@ Foi inspirado no reconstruindo.thefenomeno.com, mas **não deve copiá-lo**. O f
     - Tudo é arredondado para € 0,05 mi, com mínimo de € 0,05 mi.
     - Em 21/11/2026, os estimados da Série C ficaram entre € 0,05 e 0,3 mi.
 - Cada liga tem `div` (1, 2 ou 3): a divisão dentro do país. A tela de divisão ordena por ele.
-- Overall e atributos (versão 2, gerada em 21/11/2026): `public/overall.json`, no formato `{clube: {"nome|nascimento": [overall, estimado, atributos]}}`. Todos os 23.613 jogadores têm overall; 15.295 têm atributos.
+- Overall e atributos (versão 1, gerada em 21/11/2026): `public/overall.json`, no formato `{clube: {"nome|nascimento": [overall, estimado, atributos]}}`. Todos os 23.613 jogadores têm overall, de 45 a 91; 15.295 têm atributos.
   - **Gerado por** `python dados-brutos/overall/overall.py` (na raiz, sem argumentos). Ele lê `players_all.json` e `attrs.json` da mesma pasta e grava `public/overall.json`.
-    - Também grava `dados-brutos/overall/overall_debug.json` (mercado, desempenho e final de cada jogador), só para conferência.
     - O `data.json` não muda.
-  - **Regra (v2):** mistura um overall de mercado (valor, idade e posição) com um de desempenho (nota, gols/assistências, atributos e força da liga), na escala de 40 a 92 (hoje vai de 45 a 91).
-    - O peso do desempenho cresce com os jogos (`jogos / (jogos + 12)`), até 80%. Quem tem menos de 5 jogos fica só com o mercado.
+  - **Regra (v1), baseada principalmente no valor de mercado:**
+    - O valor é corrigido pela idade (jovem vale mais pelo potencial, veterano menos) e pelo setor (goleiro e defensor valem menos no mercado, então sobem). Quem não tem valor usa o percentil 20 da liga e fica "estimado".
+    - Somam-se, em escala logarítmica, dois ajustes menores: a nota do Sofascore (pesada por `jogos / (jogos + 12)` e pela força da liga) e os atributos comparados com a mesma liga e setor.
+    - Por fim, o percentil entre todos os jogadores vira o overall, de 45 a 91.
+  - **Histórico:** em 21/11/2026 houve uma versão 2 (mercado + desempenho, commit `ff8191ed`), revertida para esta.
   - **Ajustes manuais:** `public/overall-ajustes.json`, no formato `{clube: {"nome|nascimento": overall}}`, começa vazio (`{}`).
     - Quando um jogador tem ajuste, o número substitui o do `overall.json`; os atributos e o "~" continuam os mesmos.
     - O script não mexe nesse arquivo, então o ajuste continua valendo quando o `overall.json` é gerado de novo. Para corrigir alguém, acrescente a linha nele: não precisa rodar nada.
