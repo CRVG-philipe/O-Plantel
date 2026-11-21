@@ -8,7 +8,7 @@ import { jogador, recebido, situacao, situacaoEmp } from "../../logica/elenco.js
 import { dinheiro, lerCampo, paraCampo, simbolo } from "../../logica/dinheiro.js";
 import { Cabecalho, noComputador } from "../Painel.jsx";
 import { Foto } from "../Imagens.jsx";
-import { Fatos, Estatisticas, Opcao } from "./comum.jsx";
+import { Atributos, Fatos, Estatisticas, Opcao } from "./comum.jsx";
 
 export default function PainelJogador({ app, id }) {
   const p = jogador(app.plano, id);
@@ -42,6 +42,7 @@ function PainelProprio({ app, p, id }) {
     <>
       <Cabecalho icone={<Foto p={p} z={56} />} titulo={p.n} sub={POSN[p.pos] + " · " + D.CL[p.club].n} onFechar={app.fecharPainel} />
       <Fatos p={p} />
+      <Atributos p={p} />
       <Estatisticas p={p} />
       {opcoes.map(([k, t, d]) => <Opcao key={k} marcado={s === k} titulo={t} detalhe={d} onClick={() => setS(k)} />)}
       {s === "vende" && (
@@ -83,6 +84,7 @@ function PainelRecebido({ app, p }) {
     <>
       <Cabecalho icone={<Foto p={p} z={56} />} titulo={p.n} sub={POSN[p.pos] + " · emprestado pelo " + de.n} onFechar={app.fecharPainel} />
       <Fatos p={p} />
+      <Atributos p={p} />
       <p className="note">Emprestado pelo {de.n} até {ctrTxt(ate)}{contrato ? ` · contrato com o ${de.n} até ${ctrTxt(contrato)}` : ""}.</p>
       <Estatisticas p={p} />
       {opcoes.map(([k, t, d]) => <Opcao key={k} marcado={s === k} titulo={t} detalhe={d} onClick={() => setS(k)} />)}

@@ -7,6 +7,7 @@ import { norm } from "./formato.js";
 //   D.LEAGUES lista de ligas         D.LG[k]   liga pela chave (ex.: "BRA")
 //   D.ALL     todos os jogadores     D.BYID[id] jogador pelo id (ex.: "T42-3")
 //   D.APELIDOS apelido → nome do jogador, os dois já preparados para a busca ("gabigol" → "gabriel barbosa")
+//   Cada jogador pode ter p.ovr (overall), p.ovrEst (overall estimado) e p.atr (atributos), de overall.json
 //   D.EMP     empréstimos por clube: { "<clube>": { in: [ids recebidos], out: [{ id, para: {k, n}, ate, contrato }] } }
 export const D = { DATA: null, CLUBS: [], LEAGUES: [], LG: {}, CL: {}, ALL: [], BYID: {}, APELIDOS: {}, EMP: {} };
 
@@ -25,6 +26,16 @@ async function carregarApelidos() {
 async function carregarEstimados() {
   try {
     return await fetch("valores-estimados.json").then((r) => r.json());
+  } catch (e) {
+    return {};
+  }
+}
+
+// Overall e atributos (public/overall.json, gerado por dados-brutos/overall/overall.py):
+// { "<clube>": { "<nome>|<nascimento>": [overall, estimado (0/1), atributos | null] } }. Se falhar, segue sem eles.
+async function carregarOverall() {
+  try {
+    return await fetch("overall.json").then((r) => r.json());
   } catch (e) {
     return {};
   }
@@ -97,7 +108,7 @@ function montarEmprestimos(E) {
 }
 
 export async function carregarDados() {
-  const [DATA, APELIDOS, ESTIMADOS, EMPRESTIMOS] = await Promise.all([fetch("data.json").then((r) => r.json()), carregarApelidos(), carregarEstimados(), carregarEmprestimos()]);
+  const [DATA, APELIDOS, ESTIMADOS, EMPRESTIMOS, OVERALL] = await Promise.all([fetch("data.json").then((r) => r.json()), carregarApelidos(), carregarEstimados(), carregarEmprestimos(), carregarOverall()]);
   Object.assign(D, { DATA, APELIDOS, LG: {}, CL: {}, ALL: [], BYID: {}, EMP: {} }); // começa do zero
   D.CLUBS = DATA.clubs;
   D.LEAGUES = DATA.leagues;
@@ -125,6 +136,9 @@ export async function carregarDados() {
       // Valor: o real do Transfermarkt sempre tem prioridade; sem ele (0), o estimado, marcado com "vEst"
       const est = v > 0 ? undefined : ESTIMADOS?.[c.k]?.[n + "|" + dob];
       const p = { id: c.k + "-" + i, num, n, nn: norm(n), nasc: dob, pos, ctr, v: est > 0 ? est : v, vEst: est > 0, nat, a, st, sp, hd, lg: c.lg, club: c.k, end26: !!ctr && ctr <= lim };
+      // Overall (45–91), se é estimado (jogador sem valor de mercado) e atributos ({ tipo: "L"|"G", v: [5 números] } ou null)
+      const o = OVERALL?.[c.k]?.[n + "|" + dob];
+      if (o) { p.ovr = o[0]; p.ovrEst = !!o[1]; p.atr = o[2] || null; }
       D.ALL.push(p);
       D.BYID[p.id] = p;
     });

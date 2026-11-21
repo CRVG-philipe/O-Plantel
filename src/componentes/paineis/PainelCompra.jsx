@@ -8,7 +8,7 @@ import { encaixarNoTime } from "../../logica/escalacao.js";
 import { dinheiro, lerCampo, paraCampo, precoDeCompra, PRECO_MINIMO, simbolo } from "../../logica/dinheiro.js";
 import { Cabecalho, noComputador } from "../Painel.jsx";
 import { Foto } from "../Imagens.jsx";
-import { Fatos, Estatisticas, Opcao } from "./comum.jsx";
+import { Atributos, Fatos, Estatisticas, Opcao } from "./comum.jsx";
 
 export default function PainelCompra({ app, id }) {
   const p = jogador(app.plano, id);
@@ -51,6 +51,7 @@ export default function PainelCompra({ app, id }) {
     <>
       <Cabecalho icone={<Foto p={p} z={56} />} titulo={p.n} sub={POSN[p.pos] + (D.CL[p.club] ? " · " + D.CL[p.club].n : "")} onFechar={app.fecharPainel} />
       <Fatos p={p} />
+      <Atributos p={p} />
       {p.club !== "NOVO" && <Estatisticas p={p} />}
       {opcoes.map(([k, t, d]) => <Opcao key={k} marcado={tipo === k} titulo={t} detalhe={d} onClick={() => escolherTipo(k)} />)}
       {tipo !== "livre" && (

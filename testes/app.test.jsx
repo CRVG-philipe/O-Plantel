@@ -11,6 +11,7 @@ const DATA = JSON.parse(fs.readFileSync("public/data.json", "utf8"));
 const APELIDOS = JSON.parse(fs.readFileSync("public/apelidos.json", "utf8"));
 const ESTIMADOS = JSON.parse(fs.readFileSync("public/valores-estimados.json", "utf8"));
 const EMPRESTIMOS = JSON.parse(fs.readFileSync("public/emprestimos.json", "utf8"));
+const OVERALL = JSON.parse(fs.readFileSync("public/overall.json", "utf8"));
 let semEstimados = false; // true = simula o valores-estimados.json fora do ar
 const CHAVE = "plantel:v2";
 // Cotação que a "API de mentira" devolve nos testes
@@ -30,6 +31,7 @@ beforeEach(() => {
     }
     if (String(url).includes("apelidos")) return { ok: true, json: async () => structuredClone(APELIDOS) };
     if (String(url).includes("emprestimos")) return { ok: true, json: async () => structuredClone(EMPRESTIMOS) };
+    if (String(url).includes("overall")) return { ok: true, json: async () => structuredClone(OVERALL) };
     if (String(url).includes("valores-estimados")) {
       if (semEstimados) throw new Error("fora do ar");
       return { ok: true, json: async () => structuredClone(ESTIMADOS) };
@@ -864,4 +866,51 @@ test("Esc e clique fora fecham o painel", async () => {
   expect(noPainel().getByText("Orçamento")).toBeTruthy();
   clique(document.querySelector(".ov"));
   expect(painel()).toBeNull();
+});
+
+test("overall e atributos: selo nas listas, ficha com e sem atributos, força do time e ordem Overall", async () => {
+  localStorage.setItem(CHAVE, JSON.stringify({ plans: { T42: { club: "T42", budget: 50, st: {}, ins: [], form: "4-3-3", xi: {}, custom: [] } }, last: "T42" }));
+  render(<App />);
+  clique(await screen.findByRole("button", { name: /Arsenal 27\/28/ }));
+  const arsenal = DATA.clubs.find((c) => c.k === "T42");
+  const ovrDe = (p) => OVERALL.T42[p[1] + "|" + p[3]][0];
+  const linhaDe = (nome) => [...document.querySelectorAll("#p-elenco .row")].find((l) => l.querySelector(".nm").textContent === nome);
+  // Elenco: selo do overall ao lado da foto, com a cor da faixa
+  const comAtr = arsenal.p.find((p) => OVERALL.T42[p[1] + "|" + p[3]][2]?.tipo === "L" && arsenal.p.filter((x) => x[1] === p[1]).length === 1);
+  const selo = linhaDe(comAtr[1]).querySelector(".av + .ovr");
+  expect(selo.textContent).toBe(String(ovrDe(comAtr)));
+  const o = ovrDe(comAtr);
+  expect(selo.classList.contains(o >= 85 ? "o85" : o >= 78 ? "o78" : o >= 70 ? "o70" : o >= 60 ? "o60" : "o45")).toBe(true);
+  // Ficha com atributos: 5 barras e o radar
+  clique(linhaDe(comAtr[1]));
+  expect(painel().querySelectorAll("#atributos .atr-linha")).toHaveLength(5);
+  expect(painel().querySelector("#atributos svg.radar")).not.toBeNull();
+  expect(noPainel().getByText("Técnica")).toBeTruthy();
+  fireEvent.keyDown(document, { key: "Escape" });
+  // Ficha sem atributos (Max Dowman): só o overall e o aviso, sem quebrar
+  const dowman = arsenal.p.find((p) => p[1] === "Max Dowman");
+  expect(OVERALL.T42[dowman[1] + "|" + dowman[3]][2]).toBeNull();
+  clique(linhaDe("Max Dowman"));
+  expect(painel().querySelector("#atributos .ovr").textContent).toBe(String(ovrDe(dowman)));
+  expect(noPainel().getByText("atributos indisponíveis")).toBeTruthy();
+  expect(painel().querySelector("#atributos .atr-linha")).toBeNull();
+  fireEvent.keyDown(document, { key: "Escape" });
+  // Aba Time: força = média dos 11 titulares salvos no plano
+  clique(screen.getByRole("tab", { name: "Time" }));
+  const xi = Object.values(salvo().plans.T42.xi);
+  expect(xi).toHaveLength(11);
+  const media = xi.reduce((s, id) => s + ovrDe(arsenal.p[+id.split("-")[1]]), 0) / 11;
+  expect(document.querySelector("#forca b").textContent).toBe(media.toFixed(1).replace(".", ","));
+  // Resumo: antes → depois
+  clique(screen.getByRole("tab", { name: "Resumo" }));
+  expect(document.querySelector("#forca-resumo").textContent).toContain(media.toFixed(1).replace(".", ",") + " → ");
+  // Mercado: ordem "Overall" põe o 91 no topo (com "só quem cabe" desligado)
+  clique(screen.getByRole("tab", { name: "Mercado" }));
+  clique(document.querySelector("#fOpen"));
+  fireEvent.change(painel().querySelector("#fs"), { target: { value: "o" } });
+  const cabe = noPainel().getByRole("button", { name: "Só quem cabe no caixa" });
+  if (cabe.getAttribute("aria-pressed") === "true") clique(cabe);
+  clique(noPainel().getByRole("button", { name: "Aplicar" }));
+  expect(document.querySelector(".ordem").textContent).toContain("Overall");
+  expect(document.querySelector("#mList .row .ovr").textContent).toBe("91");
 });

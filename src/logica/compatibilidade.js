@@ -11,13 +11,15 @@ export const COMPAT = {
   LD: { ideal: ["LD"], boa: ["MD", "PD"], improvisado: ["ZAG", "VOL"] },
   ALE: { ideal: ["LE", "ME"], boa: ["PE", "MC", "VOL"], improvisado: ["MEI"] },
   ALD: { ideal: ["LD", "MD"], boa: ["PD", "MC", "VOL"], improvisado: ["MEI"] },
-  VOL: { ideal: ["VOL"], boa: ["MC", "ZAG"], improvisado: ["MEI", "LE", "LD"] },
+  // O MC é ideal também de volante e de meia ofensivo
+  VOL: { ideal: ["VOL", "MC"], boa: ["ZAG"], improvisado: ["MEI", "LE", "LD"] },
   MC: { ideal: ["MC", "VOL"], boa: ["MEI", "ME", "MD"], improvisado: ["PE", "PD"] },
-  MEI: { ideal: ["MEI"], boa: ["MC", "SA", "ME", "MD"], improvisado: ["PE", "PD"] },
-  ME: { ideal: ["ME"], boa: ["PE", "LE", "MEI"], improvisado: [] },
-  MD: { ideal: ["MD"], boa: ["PD", "LD", "MEI"], improvisado: [] },
-  PE: { ideal: ["PE"], boa: ["ME", "SA"], improvisado: ["LE", "CA", "MEI"] },
-  PD: { ideal: ["PD"], boa: ["MD", "SA"], improvisado: ["LD", "CA", "MEI"] },
+  MEI: { ideal: ["MEI", "MC"], boa: ["SA", "ME", "MD"], improvisado: ["PE", "PD"] },
+  // Os pontas (PE e PD) são ideais nos dois lados: nas pontas e nas meias pelos lados
+  ME: { ideal: ["ME", "PE", "PD"], boa: ["LE", "MEI"], improvisado: [] },
+  MD: { ideal: ["MD", "PD", "PE"], boa: ["LD", "MEI"], improvisado: [] },
+  PE: { ideal: ["PE", "PD"], boa: ["ME", "SA"], improvisado: ["LE", "CA", "MEI"] },
+  PD: { ideal: ["PD", "PE"], boa: ["MD", "SA"], improvisado: ["LD", "CA", "MEI"] },
   SA: { ideal: ["SA"], boa: ["CA", "MEI"], improvisado: ["PE", "PD"] },
   CA: { ideal: ["CA"], boa: ["SA"], improvisado: ["PE", "PD"] },
 };

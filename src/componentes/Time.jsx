@@ -2,11 +2,14 @@
 // reservas agrupados por vaga e o resto do elenco.
 import { FORMS, ORDER, corDoSetor } from "../logica/constantes.js";
 import { compatibilidade, NOME_VAGA, rotuloVaga } from "../logica/compatibilidade.js";
-import { Avatar, Bandeira, Nota, Pos, SeloNivel } from "./Jogador.jsx";
+import { Avatar, Ovr, Bandeira, Nota, Pos, SeloNivel } from "./Jogador.jsx";
 import { short } from "../logica/formato.js";
 import { dinheiro } from "../logica/dinheiro.js";
 import { elencoAtual, jogador } from "../logica/elenco.js";
-import { escalarSozinho, MAX_RESERVAS, moverReservas, reservasDa, todosReservas } from "../logica/escalacao.js";
+import { escalarSozinho, forcaDoTime, MAX_RESERVAS, moverReservas, reservasDa, todosReservas } from "../logica/escalacao.js";
+
+// Força com uma casa decimal, com vírgula ("78,4")
+export const fmtForca = (m) => m.toFixed(1).replace(".", ",");
 import { Foto } from "./Imagens.jsx";
 
 export default function Time({ app }) {
@@ -17,6 +20,7 @@ export default function Time({ app }) {
   const valorTime = Object.values(plano.xi).reduce((s, id) => s + (jogador(plano, id)?.v || 0), 0);
   const outros = sq.filter((p) => !titulares.has(p.id) && !noBanco.has(p.id)).sort((a, b) => ORDER.indexOf(a.pos) - ORDER.indexOf(b.pos) || b.v - a.v);
   const comBanco = noBanco.size > 0;
+  const forca = forcaDoTime(plano); // média de overall dos titulares
 
   const trocarFormacao = (f) => app.mudar((P) => { moverReservas(P, P.form, f); P.form = f; escalarSozinho(P); });
   const escalar = () => { app.mudar(escalarSozinho); app.aviso("Time escalado pelos mais valiosos"); };
@@ -28,7 +32,12 @@ export default function Time({ app }) {
           {Object.keys(FORMS).map((f) => <option key={f}>{f}</option>)}
         </select>
         <button className="btn" id="auto" style={{ minHeight: 40 }} onClick={escalar}>Escalar sozinho</button>
-        <div className="xv">Valor do time<b className="num">{dinheiro(valorTime)}</b></div>
+        <div className="xvs">
+          <div className="xv" id="forca" title={forca ? `Média de overall de ${forca.n} titulares` : undefined}>
+            Força do time<b className="num">{forca ? fmtForca(forca.media) : "—"}</b>
+          </div>
+          <div className="xv">Valor do time<b className="num">{dinheiro(valorTime)}</b></div>
+        </div>
       </div>
       <div className={"pitch" + (comBanco ? " com-banco" : "")}>
         <svg viewBox="0 0 68 92" preserveAspectRatio="none" aria-hidden="true">
@@ -85,7 +94,7 @@ export default function Time({ app }) {
                   const p = jogador(plano, id);
                   return (
                     <button className="row" key={id} style={{ minHeight: 48 }} onClick={() => app.abrirPainel("reserva", { i, id })}>
-                      <Avatar p={p} z={34} />
+                      <Avatar p={p} z={34} /><Ovr p={p} />
                       <div className="mid">
                         <div className="nm">{p.n}<Bandeira nat={p.nat} /></div>
                         <div className="sub">{k + 1}º reserva · {p.pos} · <SeloNivel nivel={compatibilidade(r, p.pos).nivel} /></div>
@@ -105,7 +114,7 @@ export default function Time({ app }) {
         <div className="card">
           {outros.length ? outros.map((p) => (
             <div className="row" key={p.id} style={{ minHeight: 48 }}>
-              <Avatar p={p} z={34} />
+              <Avatar p={p} z={34} /><Ovr p={p} />
               <div className="mid"><div className="nm">{p.n}<Bandeira nat={p.nat} /></div></div>
               <Nota st={p.st} className="so-largo" />
               <div className="rt"><Pos pos={p.pos} /></div>

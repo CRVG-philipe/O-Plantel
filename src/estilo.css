@@ -121,6 +121,31 @@ img.face{object-fit:cover;object-position:top;background-color:#fff} /* fotos HD
 .legenda{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;color:var(--mute2);font-size:12px;padding:6px 0 10px}
 .legenda i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px}
 .kv-nome{display:flex;align-items:center;min-width:0}
+/* overall: selo quadradinho ao lado da foto. 85+ dourado, 78–84 verde, 70–77 azul, 60–69 cinza, <60 bronze */
+.ovr{display:inline-grid;place-items:center;flex:none;min-width:28px;height:28px;padding:0 4px;border-radius:7px;font-size:12.5px;font-weight:800;letter-spacing:-.02em;
+  font-variant-numeric:tabular-nums;color:#fff;background:var(--oc,#8a8f98);box-shadow:inset 0 -2px 0 rgba(0,0,0,.14)}
+.o85{--oc:linear-gradient(160deg,#f3d36b,#c9961a);color:#3b2a00}.o78{--oc:#16a05f}.o70{--oc:#2f7ff0}.o60{--oc:#868b94}.o45{--oc:#9a6236}
+.ovr.sem{background:var(--sf2);color:var(--mute2);box-shadow:none}
+.row .av+.ovr{margin-left:-4px}
+.kv-nome .ovr{min-width:24px;height:22px;font-size:11px;border-radius:6px;margin-right:6px}
+.ovr.grande{min-width:58px;height:58px;font-size:24px;border-radius:14px}
+/* ficha: barras dos 5 atributos (mesma paleta do overall) e radar */
+.atr{background:var(--sf2);border-radius:14px;padding:12px;margin-bottom:16px}
+.atr-corpo{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.atr-barras{flex:1;min-width:180px;display:grid;gap:5px}
+.atr-linha{display:grid;grid-template-columns:96px 1fr 26px;align-items:center;gap:8px;font-size:12.5px}
+.atr-linha span{color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.atr-linha b{text-align:right;font-size:13px}
+.atr-trilho{height:7px;border-radius:7px;background:var(--line);overflow:hidden}
+.atr-trilho i{display:block;height:100%;border-radius:7px;background:var(--oc)}
+.atr-sem{font-size:14px}
+.radar{width:104px;height:104px;flex:none}
+.radar-grade{fill:none;stroke:color-mix(in srgb,var(--mute) 40%,transparent);stroke-width:.7}
+.radar-dados{fill:color-mix(in srgb,var(--clubVis) 22%,transparent);stroke:var(--clubVis);stroke-width:1.6;stroke-linejoin:round}
+@media (max-width:420px){.radar{display:none}}
+/* força do time (média de overall dos titulares) */
+#forca-resumo .sobe{color:var(--pos)}#forca-resumo .desce{color:var(--neg)}
+.xhead{flex-wrap:wrap}.xhead .xvs{margin-left:auto;display:flex;gap:18px}.xhead .xvs .xv{margin-left:0}
 .hint{font-size:13px;color:var(--mute);margin:-4px 4px 14px}
 /* mercado */
 /* busca fixa com vidro fosco (a partir de 561px; no celular rola junto, para sobrar espaço para a lista) */

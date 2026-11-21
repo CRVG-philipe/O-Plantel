@@ -30,6 +30,7 @@ const ORDENAR = {
   va: () => (a, b) => a.v - b.v,
   a: () => (a, b) => a.a - b.a || b.v - a.v,
   n: () => (a, b) => nota(b) - nota(a) || b.v - a.v,
+  o: () => (a, b) => (b.ovr ?? 0) - (a.ovr ?? 0) || b.v - a.v, // maior overall primeiro
 };
 
 // Jogadores de outros clubes que passam na busca, no botão de posição e nos filtros.

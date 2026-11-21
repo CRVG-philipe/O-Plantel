@@ -8,7 +8,7 @@ import { compatibilidade, NOME_VAGA, rotuloVaga } from "../../logica/compatibili
 import { elencoAtual, jogador } from "../../logica/elenco.js";
 import { adicionarReserva, promover, removerReserva, reservasDa, todosReservas } from "../../logica/escalacao.js";
 import { Cabecalho } from "../Painel.jsx";
-import { Avatar, Nota, SeloNivel, Valor } from "../Jogador.jsx";
+import { Avatar, Ovr, Nota, SeloNivel, Valor } from "../Jogador.jsx";
 
 const notaDe = (p) => (p.st && p.st[0] ? p.st[3] || 0 : 0);
 
@@ -50,7 +50,7 @@ export default function PainelPosicao({ app, i, reserva = false }) {
           const c = compatibilidade(r, p.pos);
           return (
             <button className="row" key={p.id} style={{ minHeight: 52 }} onClick={() => escolher(p.id)}>
-              <Avatar p={p} z={38} />
+              <Avatar p={p} z={38} /><Ovr p={p} />
               <div className="mid">
                 <div className="nm">{p.n}{p.id === atual && <> <span className="pill in">atual</span></>}</div>
                 <div className="sub">

@@ -6,7 +6,7 @@ import { Cabecalho } from "../Painel.jsx";
 import { Opcao } from "./comum.jsx";
 
 const IDADES = [[99, "Qualquer idade"], [21, "Até 21 anos"], [23, "Até 23 anos"], [26, "Até 26 anos"], [29, "Até 29 anos"]];
-const ORDENS = [["rec", "Recomendados"], ["vd", "Maior valor"], ["va", "Menor valor"], ["a", "Mais jovens"], ["n", "Melhor nota"]];
+const ORDENS = [["rec", "Recomendados"], ["vd", "Maior valor"], ["va", "Menor valor"], ["a", "Mais jovens"], ["n", "Melhor nota"], ["o", "Overall"]];
 
 export default function PainelFiltros({ app }) {
   const [t, setT] = useState({ ...app.filtros }); // rascunho dos filtros

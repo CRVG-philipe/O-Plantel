@@ -2,11 +2,13 @@
 import { useEffect, useRef, useState } from "react";
 import { D } from "../logica/dados.js";
 import { NEED, corDoSetor } from "../logica/constantes.js";
-import { Pos } from "./Jogador.jsx";
+import { Ovr, Pos } from "./Jogador.jsx";
 import { dinheiro, calcularDinheiro } from "../logica/dinheiro.js";
 import { alertas, comprados, devolvidos, elencoAtual, elencoOriginal, jogador, saidas, textoDoPlano, timeCompleto, vendidosFora, voltam } from "../logica/elenco.js";
 import { compatibilidade, rotuloVaga } from "../logica/compatibilidade.js";
 import { short } from "../logica/formato.js";
+import { forcaAntes, forcaDoTime } from "../logica/escalacao.js";
+import { fmtForca } from "./Time.jsx";
 
 const ROTULO_SAIDA = { vende: "venda", empresta: "empréstimo", libera: "liberado" };
 
@@ -19,7 +21,7 @@ function ListaEmprestimo({ id, titulo, lista, valor }) {
       <div className="card">
         {lista.map((m) => (
           <div className="kv" key={m.p.id}>
-            <span className="kv-nome"><Pos pos={m.p.pos} /><span>{m.p.n}</span></span>
+            <span className="kv-nome"><Ovr p={m.p} /><Pos pos={m.p.pos} /><span>{m.p.n}</span></span>
             <span className="num">{valor(m)}</span>
           </div>
         ))}
@@ -35,6 +37,8 @@ export default function Resumo({ app }) {
   const vt = voltam(plano), dv = devolvidos(plano), cp = comprados(plano), vf = vendidosFora(plano); // empréstimos
   const prof = NEED.map(([l, ps, min]) => ({ l, min, ps, n: sq.filter((p) => ps.includes(p.pos)).length }));
   const mx = Math.max(6, ...prof.map((x) => x.n));
+  // Força do time: antes (elenco original escalado sozinho) e depois (titulares do plano)
+  const fa = forcaAntes(plano), fd = forcaDoTime(plano), dif = fa && fd ? Math.round((fd.media - fa.media) * 10) / 10 : 0;
 
   // "Copiar resumo": tenta copiar; se o navegador não deixar, mostra o texto numa caixa
   const [textoManual, setTextoManual] = useState(null);
@@ -72,6 +76,9 @@ export default function Resumo({ app }) {
           <div className="kv"><span>Jogadores</span><span className="num">{sq.length}</span></div>
           <div className="kv"><span>Valor de mercado</span><span className="num">{dinheiro(sq.reduce((s, p) => s + p.v, 0))} <span className="mute">(era {dinheiro(own.reduce((s, p) => s + p.v, 0))})</span></span></div>
           <div className="kv"><span>Idade média em 2027</span><span className="num">{(sq.reduce((s, p) => s + p.a, 0) / (sq.length || 1)).toFixed(1).replace(".", ",")} anos</span></div>
+          <div className="kv" id="forca-resumo"><span>Força do time <span className="mute">(média de overall dos titulares)</span></span>
+            <span className="num">{fa ? fmtForca(fa.media) : "—"} → <b>{fd ? fmtForca(fd.media) : "—"}</b>{fa && fd && <span className={dif > 0 ? "sobe" : dif < 0 ? "desce" : "mute"}> ({dif > 0 ? "+" : dif < 0 ? "−" : "±"}{fmtForca(Math.abs(dif))})</span>}</span>
+          </div>
           <div className="kv"><span>Estrangeiros</span><span className="num">{sq.filter((p) => p.nat && p.nat !== L.nat).length}</span></div>
         </div>
       </div>
@@ -98,7 +105,7 @@ export default function Resumo({ app }) {
           {timeCompleto(plano).map(({ i, vaga, titular, reservas }) => (
             <div className="kv" key={i}>
               <span className="kv-nome">
-                <span className="pos" style={{ "--pc": corDoSetor(vaga) }}>{rotuloVaga(vaga)}</span>
+                <span className="pos" style={{ "--pc": corDoSetor(vaga) }}>{rotuloVaga(vaga)}</span>{titular && <Ovr p={titular} />}
                 <span className={titular && compatibilidade(vaga, titular.pos).nivel === "improvisado" ? "neg" : ""}>{titular ? titular.n : "vazio"}</span>
               </span>
               <span className="mute res-lista">{reservas.length ? reservas.map((p) => short(p.n)).join(", ") : "—"}</span>
@@ -114,7 +121,7 @@ export default function Resumo({ app }) {
             const p = jogador(plano, mv.id);
             return (
               <div className="kv" key={mv.id}>
-                <span className="kv-nome"><Pos pos={p.pos} /><span>{p.n}</span></span>
+                <span className="kv-nome"><Ovr p={p} /><Pos pos={p.pos} /><span>{p.n}</span></span>
                 <span className="num">{mv.type === "emprestimo" ? "empréstimo" : mv.fee ? dinheiro(mv.fee) : "grátis"}</span>
               </div>
             );
@@ -128,13 +135,13 @@ export default function Resumo({ app }) {
           {o.length + vf.length ? <>
             {o.map(({ p, x }) => (
               <div className="kv" key={p.id}>
-                <span className="kv-nome"><Pos pos={p.pos} /><span>{p.n}</span></span>
+                <span className="kv-nome"><Ovr p={p} /><Pos pos={p.pos} /><span>{p.n}</span></span>
                 <span className="num">{x.s === "vende" ? dinheiro(+x.fee || 0) : ROTULO_SAIDA[x.s]}</span>
               </div>
             ))}
             {vf.map(({ p, x }) => (
               <div className="kv" key={p.id}>
-                <span className="kv-nome"><Pos pos={p.pos} /><span>{p.n}</span></span>
+                <span className="kv-nome"><Ovr p={p} /><Pos pos={p.pos} /><span>{p.n}</span></span>
                 <span className="num">{dinheiro(+x.fee || 0)} <span className="mute">(estava emprestado)</span></span>
               </div>
             ))}

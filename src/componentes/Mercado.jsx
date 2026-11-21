@@ -6,9 +6,9 @@ import { ctrTxt } from "../logica/formato.js";
 import { dinheiro, calcularDinheiro, precoDeCompra } from "../logica/dinheiro.js";
 import { buscarJogadores, contarFiltros } from "../logica/mercado.js";
 import { notasDoMercado } from "../logica/recomendacao.js";
-import { Avatar, Bandeira, MiniStats, Nota, Pos, Valor } from "./Jogador.jsx";
+import { Avatar, Ovr, Bandeira, MiniStats, Nota, Pos, Valor } from "./Jogador.jsx";
 
-const ORDEM = { rec: "Recomendados", vd: "Valor ↓", va: "Valor ↑", a: "Idade ↑", n: "Nota ↓" };
+const ORDEM = { rec: "Recomendados", vd: "Valor ↓", va: "Valor ↑", a: "Idade ↑", n: "Nota ↓", o: "Overall ↓" };
 const N_SELO = 10; // os 10 primeiros da lista em "Recomendados" ganham o selo
 export const LEGENDA = [["gol", "Goleiro"], ["def", "Defesa"], ["mei", "Meio"], ["ata", "Ataque"]];
 
@@ -66,7 +66,7 @@ export default function Mercado({ app }) {
                 const preco = precoDeCompra(p), cabe = preco <= caixa;
                 return (
                   <button className={"row" + (cabe ? "" : " too")} key={p.id} onClick={() => app.abrirJogador(p.id)}>
-                    <Avatar p={p} z={46} clube={p.club} />
+                    <Avatar p={p} z={46} clube={p.club} /><Ovr p={p} />
                     <div className="mid">
                       <div className="nm">{p.n}<Bandeira nat={p.nat} /></div>
                       <div className="sub meta">

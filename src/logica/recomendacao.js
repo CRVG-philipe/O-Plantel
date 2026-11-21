@@ -1,11 +1,13 @@
 // Nota de recomendação (0 a 100) de um jogador de outro clube para o clube do plano.
 // É a ordem padrão do Mercado ("Recomendados"). Quatro partes:
-//   a) Origem (40%): a liga dele costuma vender para a liga do clube? (tabela AFINIDADE, em afinidade.js)
-//   b) Preço realista (30%): o valor combina com o patamar do clube (média do elenco) e cabe no caixa?
+//   a) Origem (35%): a liga dele costuma vender para a liga do clube? (tabela AFINIDADE, em afinidade.js)
+//   b) Preço realista (25%): o valor combina com o patamar do clube (média do elenco) e cabe no caixa?
 //      Ideal: entre 0,5x e 2x a média do elenco. Muito acima disso pesa contra (a Série C não vê Haaland no topo).
 //   c) Idade e contrato (15%): 20–29 anos é o ideal; acima de 31 só vale em ligas de veteranos.
 //      Contrato acabando em até 12 meses ganha bônus (mais barato e mais realista).
-//   d) Necessidade (15%): posições com poucos jogadores no elenco planejado (quem fica + quem chega) valem mais.
+//   d) Necessidade (10%): posições com poucos jogadores no elenco planejado (quem fica + quem chega) valem mais.
+//   e) Qualidade (15%): overall bem acima da média do elenco do clube ganha pontos, mas só na medida em que o preço
+//      cabe no patamar do clube (a estrela cara demais não sobe por ser boa).
 import { D } from "./dados.js";
 import { NEED } from "./constantes.js";
 import { calcularDinheiro, precoDeCompra, PRECO_MINIMO } from "./dinheiro.js";
@@ -15,7 +17,7 @@ import { afinidade } from "./afinidade.js";
 // Ligas onde jogador acima de 31 anos ainda é contratação comum
 export const LIGAS_DE_VETERANOS = ["SAU", "QAT", "UAE", "TUR", "MEX", "USA", "BRA"];
 
-const PESO = { origem: 40, preco: 30, idade: 15, necessidade: 15 };
+const PESO = { origem: 35, preco: 25, idade: 15, necessidade: 10, qualidade: 15 };
 
 // Média de valor dos jogadores com valor (> 0) de uma lista; null se ninguém tiver valor
 function mediaDeValor(lista) {
@@ -41,17 +43,32 @@ function contexto(plano, clubeDestino) {
     const n = elenco.filter((p) => ps.includes(p.pos)).length;
     ps.forEach((pos) => { grupos[pos] = { n, min }; });
   });
-  c = { k: clubeDestino.k, caixa: calcularDinheiro(plano).caixa, media, grupos };
+  // Overall médio do elenco original do clube (quem tem overall)
+  const ovrs = original.map((p) => p.ovr).filter((o) => o != null);
+  const mediaOvr = ovrs.length ? ovrs.reduce((s, o) => s + o, 0) / ovrs.length : null;
+  c = { k: clubeDestino.k, caixa: calcularDinheiro(plano).caixa, media, grupos, mediaOvr };
   CACHE.set(plano, c);
   return c;
 }
 
+// Patamar de preço: 1 quando o preço fica entre 0,5x e 2x a média de valor do elenco; cai fora disso
+function patamarDePreco(p, ctx) {
+  const r = precoDeCompra(p) / ctx.media;
+  return r < 0.5 ? 0.6 + 0.8 * r : r <= 2 ? 1 : Math.max(0, 1 - Math.log2(r / 2) / 3);
+}
+
 // b) Preço: patamar do clube e caixa
 function notaPreco(p, ctx) {
-  const preco = precoDeCompra(p);
-  const r = preco / ctx.media;
-  const patamar = r < 0.5 ? 0.6 + 0.8 * r : r <= 2 ? 1 : Math.max(0, 1 - Math.log2(r / 2) / 3);
-  return patamar * (preco <= ctx.caixa ? 1 : 0.4);
+  return patamarDePreco(p, ctx) * (precoDeCompra(p) <= ctx.caixa ? 1 : 0.4);
+}
+
+// e) Qualidade: overall acima da média do elenco. Igual à média = 0,3; +10 ou mais = 1; 5 abaixo ou menos = 0.
+// Multiplicada pelo patamar de preço: só vale para quem é realista para o clube.
+function notaQualidade(p, ctx) {
+  if (p.ovr == null || ctx.mediaOvr == null) return 0.3;
+  const d = p.ovr - ctx.mediaOvr;
+  const q = d >= 10 ? 1 : d <= -5 ? 0 : d < 0 ? 0.3 * (d + 5) / 5 : 0.3 + 0.07 * d;
+  return q * patamarDePreco(p, ctx);
 }
 
 // c) Idade e contrato
@@ -92,7 +109,8 @@ export function pontuar(jogador, clubeOrigem, clubeDestino, plano) {
   const preco = notaPreco(jogador, ctx);
   const idade = 0.75 * notaIdade(jogador.a, clubeDestino.lg) + 0.25 * notaContrato(jogador.ctr);
   const necessidade = notaNecessidade(jogador.pos, ctx);
-  return Math.round(PESO.origem * origem + PESO.preco * preco + PESO.idade * idade + PESO.necessidade * necessidade);
+  const qualidade = notaQualidade(jogador, ctx);
+  return Math.round(PESO.origem * origem + PESO.preco * preco + PESO.idade * idade + PESO.necessidade * necessidade + PESO.qualidade * qualidade);
 }
 
 // Notas de todos os jogadores de outros clubes para o plano: Map id → nota

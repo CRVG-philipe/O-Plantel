@@ -68,6 +68,22 @@ export function encaixarNoTime(plano, p) {
   if (w !== null) plano.xi[w] = p.id;
 }
 
+// ---------- Força do time ----------
+// Média de overall dos titulares (só conta quem tem overall). Devolve { media (1 casa), n } ou null sem ninguém.
+export function forcaDoTime(plano) {
+  const ovrs = Object.values(plano.xi).map((id) => jogador(plano, id)?.ovr).filter((o) => o != null);
+  if (!ovrs.length) return null;
+  return { media: Math.round((ovrs.reduce((s, o) => s + o, 0) / ovrs.length) * 10) / 10, n: ovrs.length };
+}
+
+// Força "antes do plano": o elenco original (sem vendas, contratações nem empréstimos mexidos),
+// escalado sozinho na mesma formação do plano
+export function forcaAntes(plano) {
+  const P = { club: plano.club, budget: plano.budget, st: {}, ins: [], form: plano.form, xi: {}, custom: [] };
+  escalarSozinho(P);
+  return forcaDoTime(P);
+}
+
 // ---------- Reservas ----------
 export const reservasDa = (plano, i) => (plano.res || {})[i] || [];
 export const todosReservas = (plano) => Object.values(plano.res || {}).flat();

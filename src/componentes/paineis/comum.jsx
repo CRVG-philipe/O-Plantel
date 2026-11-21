@@ -1,7 +1,60 @@
 // Pedaços usados por mais de um painel.
 import { D } from "../../logica/dados.js";
 import { ctrTxt, dec } from "../../logica/formato.js";
-import { classeNota, Valor } from "../Jogador.jsx";
+import { classeNota, classeOvr, Ovr, Valor } from "../Jogador.jsx";
+
+// Nomes dos 5 atributos, na ordem do overall.json
+export const NOMES_ATRIBUTOS = {
+  L: ["Ataque", "Técnica", "Tática", "Defesa", "Criatividade"],
+  G: ["Defesas", "Antecipação", "Saída de bola", "Jogo aéreo", "Tática"],
+};
+
+// Radar (pentágono) pequeno em SVG: cada ponta é um atributo, de 0 (centro) a 100 (borda)
+function Radar({ v, nomes }) {
+  const R = 38, C = 50;
+  const ponto = (i, raio) => {
+    const ang = -Math.PI / 2 + (i * 2 * Math.PI) / 5;
+    return [C + raio * Math.cos(ang), C + raio * Math.sin(ang)];
+  };
+  const forma = (raio) => [0, 1, 2, 3, 4].map((i) => ponto(i, raio).map((x) => x.toFixed(1)).join(",")).join(" ");
+  const dados = v.map((x, i) => ponto(i, (R * Math.max(0, Math.min(100, x))) / 100).map((n) => n.toFixed(1)).join(",")).join(" ");
+  return (
+    <svg className="radar" viewBox="0 0 100 100" role="img" aria-label={"Radar: " + nomes.map((n, i) => `${n} ${v[i]}`).join(", ")}>
+      {[1, 0.66, 0.33].map((f) => <polygon key={f} points={forma(R * f)} className="radar-grade" />)}
+      {[0, 1, 2, 3, 4].map((i) => { const [x, y] = ponto(i, R); return <line key={i} x1={C} y1={C} x2={x} y2={y} className="radar-grade" />; })}
+      <polygon points={dados} className="radar-dados" />
+    </svg>
+  );
+}
+
+// Overall e os 5 atributos (barras + radar). Sem atributos: só o overall e "atributos indisponíveis".
+// Sem overall (jogador criado ou fora da base): não aparece.
+export function Atributos({ p }) {
+  if (p.ovr == null) return null;
+  const nomes = p.atr && NOMES_ATRIBUTOS[p.atr.tipo];
+  return (
+    <div className="atr" id="atributos">
+      <div className="sth">Overall e atributos{p.ovrEst && <span>overall estimado</span>}</div>
+      <div className="atr-corpo">
+        <Ovr p={p} grande />
+        {nomes ? (
+          <>
+            <div className="atr-barras">
+              {nomes.map((nome, i) => (
+                <div className="atr-linha" key={nome}>
+                  <span>{nome}</span>
+                  <div className="atr-trilho"><i className={classeOvr(p.atr.v[i])} style={{ width: Math.max(0, Math.min(100, p.atr.v[i])) + "%" }}></i></div>
+                  <b className="num">{p.atr.v[i]}</b>
+                </div>
+              ))}
+            </div>
+            <Radar v={p.atr.v} nomes={nomes} />
+          </>
+        ) : <div className="mute atr-sem">atributos indisponíveis</div>}
+      </div>
+    </div>
+  );
+}
 
 // Quatro quadradinhos: idade, país, fim do contrato, valor
 export function Fatos({ p }) {

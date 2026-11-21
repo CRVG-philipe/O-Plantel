@@ -46,6 +46,23 @@ Foi inspirado no reconstruindo.thefenomeno.com, mas **não deve copiá-lo**. O f
     - Tudo é arredondado para € 0,05 mi, com mínimo de € 0,05 mi.
     - Em 21/11/2026, os estimados da Série C ficaram entre € 0,05 e 0,3 mi.
 - Cada liga tem `div` (1, 2 ou 3): a divisão dentro do país. A tela de divisão ordena por ele.
+- Overall e atributos (gerados em 21/11/2026): `public/overall.json`, no formato `{clube: {"nome|nascimento": [overall, estimado, atributos]}}`. Todos os 23.613 jogadores têm overall; 15.295 têm atributos.
+  - **Gerado por** `python dados-brutos/overall/overall.py`, que lê `players_all.json` e `attrs.json` da mesma pasta e grava `public/overall.json`.
+    - Mistura valor de mercado, idade, posição, nota do Sofascore (pesada pelos jogos e pela força da liga) e atributos, e transforma em percentil: overall de 45 a 91.
+    - O `data.json` não muda.
+  - `estimado` = 1 quando o jogador não tem valor de mercado: o site mostra "~" antes do número.
+  - `atributos` = `null` ou `{tipo, v}`, com 5 números de 0 a 100:
+    - tipo "L" (linha): Ataque, Técnica, Tática, Defesa, Criatividade;
+    - tipo "G" (goleiro): Defesas, Antecipação, Saída de bola, Jogo aéreo, Tática.
+  - **Ao carregar** (`dados.js`): `p.ovr`, `p.ovrEst` e `p.atr`. Jogador criado ou "avulso" fica sem overall.
+  - **Selo** `Ovr` (`Jogador.jsx`): um quadradinho ao lado da foto em Elenco, Mercado, Time, Resumo e na escolha da vaga.
+    - Cores (`classeOvr`): 85+ dourado, 78–84 verde, 70–77 azul, 60–69 cinza, abaixo de 60 bronze.
+    - Sem overall: aparece "–".
+  - **Ficha** (`Atributos`, em `paineis/comum.jsx`): as 5 barras, na mesma paleta, e um radar em SVG, que some com até 420px.
+    - Sem atributos: só o overall e o texto "atributos indisponíveis".
+  - **Força do time:**
+    - `forcaDoTime(plano)` (`escalacao.js`) = média de overall dos titulares. Aparece na aba Time (`#forca`).
+    - `forcaAntes(plano)` = o elenco original escalado sozinho na mesma formação. O Resumo mostra "antes → depois" (`#forca-resumo`).
 
 ## Comandos (na raiz do projeto)
 - `npm install`: instala as dependências (só na primeira vez ou quando o package.json mudar).
@@ -55,6 +72,7 @@ Foi inspirado no reconstruindo.thefenomeno.com, mas **não deve copiá-lo**. O f
   - `testes/recomendacao.test.js` e `testes/busca.test.js`: a nota de recomendação e a busca por apelido.
   - `testes/emprestimos.test.js`: regras dos empréstimos (Botafogo, T1958).
   - `testes/time.test.js`: compatibilidade de posição e reservas.
+  - `testes/overall.test.js`: overall (Mbappé = 91), força do time, ordem Overall e o overall na recomendação.
 - Com as ~23 mil fotos, o `npm run dev` às vezes demora para servir as imagens. Para conferir fotos, use `npm run build` e `npm run preview`.
 - `npm run build`: gera a versão final em `dist/` (não vai para o git). `npm run preview` serve o `dist/` para conferir.
 
@@ -157,12 +175,13 @@ React 19 + Vite 6, em JavaScript (sem TypeScript).
   - **Padrões** (`FILTROS_PADRAO`): ordem "Recomendados" e "Só quem cabe no caixa" ligado.
     - Se a pessoa mudar o "só quem cabe", a escolha fica em `plantel:caixa` ("1" ou "0"), separada dos planos.
     - O contador do botão Filtros conta esse filtro, então o padrão mostra "Filtros 1".
-  - **Outras ordens:** maior valor, menor valor, mais jovens e melhor nota.
-  - **Recomendados:** nota de 0 a 100, com quatro partes.
-    - Origem, 40%: `AFINIDADE`.
-    - Preço realista, 30%: preço ÷ média de valor do elenco (Série C usa a média da liga), ideal entre 0,5x e 2x; quem não cabe no caixa vale 40%.
+  - **Outras ordens:** maior valor, menor valor, mais jovens, melhor nota e Overall (`o`).
+  - **Recomendados:** nota de 0 a 100, com cinco partes.
+    - Origem, 35%: `AFINIDADE`.
+    - Preço realista, 25%: preço ÷ média de valor do elenco (Série C usa a média da liga), ideal entre 0,5x e 2x; quem não cabe no caixa vale 40%.
     - Idade e contrato, 15%: 20–29 anos ideal; 31+ só em `LIGAS_DE_VETERANOS`; contrato acabando em até 12 meses ganha bônus.
-    - Necessidade, 15%: posição abaixo do mínimo de `NEED` no elenco planejado; essa parte é suave de propósito, para uma posição não tomar a lista.
+    - Necessidade, 10%: posição abaixo do mínimo de `NEED` no elenco planejado; essa parte é suave de propósito, para uma posição não tomar a lista.
+    - Qualidade, 15%: overall acima da média do elenco original do clube (+10 ou mais = nota cheia), multiplicada pelo patamar de preço. Assim, a estrela cara demais para o clube não sobe por ser boa.
   - **Cálculo das notas:** recalculadas só quando o plano muda (`useMemo` no `Mercado`), não a cada tecla.
   - **Selo "★ Recomendado":** nos 10 primeiros, só na ordem Recomendados e com a busca vazia.
   - **Busca:** `norm` tira acento, ponto e apóstrofo, troca hífen por espaço e ø/æ/ß/ł por letras simples ("pepe" acha "Pepê", "vini jr." acha "Vinicius Junior").
@@ -195,6 +214,7 @@ React 19 + Vite 6, em JavaScript (sem TypeScript).
 - Aba Time: titulares, reservas e compatibilidade.
   - **Compatibilidade** (`compatibilidade.js`): cada vaga tem posições ideal (verde), boa (amarelo) e improvisado (vermelho, com "⚠").
     - Qualquer combinação fora da tabela também é improvisado.
+    - Pontas (PE e PD) são ideais nas duas pontas e nas meias pelos lados (ME e MD). O MC é ideal também de VOL e de MEI.
     - `compatibilidade(vaga, pos)` devolve `{nivel, ordem}`: 0 = posição principal da vaga, 1 = outra ideal, 2 = boa, 3 = improvisado da tabela, 4 = fora da tabela.
     - Nas formações com 3 zagueiros, as vagas abertas são `ALE`/`ALD`, mostradas como "ALA". Ideal: LE/ME e LD/MD; boa: ponta, MC e VOL.
     - Vale para titulares e reservas, para "Escalar sozinho" e para encaixar quem chega.
@@ -250,7 +270,7 @@ React 19 + Vite 6, em JavaScript (sem TypeScript).
 
 ## Feito
 - 20/11/2026: migração para React + Vite (a versão antiga sem framework está na tag git `antes-do-react`), publicada na Vercel. Escudos em alta resolução.
-- 21/11/2026: fotos HD dos jogadores (95%, em WebP 150×150, qualidade 82) e estatísticas das 36 ligas novas.
+- 21/11/2026: fotos HD dos jogadores (95%, em WebP 150×150, qualidade 82) e estatísticas das 36 ligas novas. Overall e atributos (`overall.json`).
 
 ## Cuidados
 - Fotos novas em `public/img/players/`: rodar `python dados-brutos/converter_fotos_webp.py` antes do commit.

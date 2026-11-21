@@ -6,7 +6,7 @@ import { emprestadosFora, situacaoEmp } from "../../logica/elenco.js";
 import { dinheiro } from "../../logica/dinheiro.js";
 import { Cabecalho } from "../Painel.jsx";
 import { Foto } from "../Imagens.jsx";
-import { Fatos, Estatisticas, Opcao } from "./comum.jsx";
+import { Atributos, Fatos, Estatisticas, Opcao } from "./comum.jsx";
 
 export default function PainelEmprestado({ app, id }) {
   const item = emprestadosFora(app.plano).find((o) => o.id === id);
@@ -35,6 +35,7 @@ export default function PainelEmprestado({ app, id }) {
     <>
       <Cabecalho icone={<Foto p={p} z={56} />} titulo={p.n} sub={POSN[p.pos] + " · emprestado ao " + onde} onFechar={app.fecharPainel} />
       <Fatos p={p} />
+      <Atributos p={p} />
       <p className="note">Emprestado ao {onde} até {ctrTxt(item.ate)}{item.contrato ? ` · contrato com o clube até ${ctrTxt(item.contrato)}` : ""}.</p>
       {!p.avulso && <Estatisticas p={p} />}
       {opcoes.map(([k, t, d]) => <Opcao key={k} marcado={s === k} titulo={t} detalhe={d} onClick={() => setS(k)} />)}

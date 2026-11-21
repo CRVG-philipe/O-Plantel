@@ -39,6 +39,12 @@ test("CA na vaga de zagueiro é improvisado; o resto segue a tabela", () => {
   expect(nivel("MC", "VOL")).toBe("ideal");
   expect(nivel("LE", "PE")).toBe("boa");
   expect(nivel("CA", "SA")).toBe("boa");
+  // Pontas jogam nos dois lados e nas meias pelos lados; MC joga de VOL e de MEI
+  for (const v of ["PE", "PD", "ME", "MD"]) for (const pos of ["PE", "PD"]) expect(nivel(v, pos)).toBe("ideal");
+  expect(nivel("VOL", "MC")).toBe("ideal");
+  expect(nivel("MEI", "MC")).toBe("ideal");
+  // A posição principal da vaga vem primeiro: na PD, o PD antes do PE
+  expect(compatibilidade("PD", "PD").ordem).toBeLessThan(compatibilidade("PD", "PE").ordem);
   // Improvisado da tabela vem antes do improvisado "qualquer coisa"
   expect(compatibilidade("PE", "LE").ordem).toBeLessThan(compatibilidade("PE", "GOL").ordem);
 });

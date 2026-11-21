@@ -35,6 +35,22 @@ export const SeloNivel = ({ nivel }) => (
   <span className={"nivel " + nivel} title={nivel === "improvisado" ? "Jogador improvisado nesta vaga" : undefined}>{nivel === "improvisado" ? "⚠ improvisado" : nivel}</span>
 );
 
+// Faixa de cor do overall (vale também para as barras de atributos):
+// 85+ dourado, 78–84 verde, 70–77 azul, 60–69 cinza, abaixo de 60 bronze
+export const classeOvr = (o) => (o >= 85 ? "o85" : o >= 78 ? "o78" : o >= 70 ? "o70" : o >= 60 ? "o60" : "o45");
+
+// Selo quadradinho do overall, ao lado da foto. "~" na frente quando é estimado (jogador sem valor de mercado).
+// Sem overall (jogador criado ou fora da base): selo vazio "–", para a lista continuar alinhada.
+export function Ovr({ p, grande = false }) {
+  const g = grande ? " grande" : "";
+  if (p.ovr == null) return <span className={"ovr sem" + g} title="Overall indisponível">–</span>;
+  return (
+    <span className={`ovr ${classeOvr(p.ovr)}${g}`} title={p.ovrEst ? "Overall estimado (jogador sem valor de mercado)" : "Overall"}>
+      {p.ovrEst ? "~" : ""}{p.ovr}
+    </span>
+  );
+}
+
 // Selo da posição na cor do setor ("GOL", "ZAG"...)
 export const Pos = ({ pos }) => <span className="pos" style={{ "--pc": corDoSetor(pos) }}>{pos}</span>;
 
