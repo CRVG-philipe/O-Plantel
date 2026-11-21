@@ -1,0 +1,457 @@
+[
+ {
+  "k": "T1684",
+  "nome": "Usman Simbakoli",
+  "nascimento": "2001-12-12",
+  "hd": 1046671,
+  "sofascore": 1046671,
+  "stats": [
+   8,
+   0,
+   0,
+   6.44
+  ]
+ },
+ {
+  "k": "T1958",
+  "nome": "Danilo",
+  "nascimento": "1999-04-07",
+  "hd": 940647,
+  "sofascore": 940647,
+  "stats": [
+   11,
+   1,
+   1,
+   6.57
+  ]
+ },
+ {
+  "k": "T1958",
+  "nome": "Kaio",
+  "nascimento": "1995-09-18",
+  "hd": 990193,
+  "sofascore": 990193,
+  "stats": [
+   1,
+   0,
+   0,
+   6.1
+  ]
+ },
+ {
+  "k": "T1958",
+  "nome": "Danilo",
+  "nascimento": "2001-04-29",
+  "hd": 1064039,
+  "sofascore": 1064039,
+  "stats": [
+   41,
+   12,
+   2,
+   7.17
+  ]
+ },
+ {
+  "k": "T1980",
+  "nome": "Marcos Paulo",
+  "nascimento": "2003-01-18",
+  "hd": 1170913,
+  "sofascore": 1170913,
+  "stats": [
+   46,
+   3,
+   3,
+   7.05
+  ]
+ },
+ {
+  "k": "T1980",
+  "nome": "Marcos Paulo",
+  "nascimento": "2001-02-01",
+  "hd": 962027,
+  "sofascore": 962027,
+  "stats": [
+   44,
+   7,
+   2,
+   6.81
+  ]
+ },
+ {
+  "k": "T39634",
+  "nome": "Moraes",
+  "nascimento": "1997-10-03",
+  "hd": 877139,
+  "sofascore": 877139,
+  "stats": [
+   48,
+   4,
+   0,
+   6.75
+  ]
+ },
+ {
+  "k": "T39634",
+  "nome": "Dudu Mosconi",
+  "nascimento": "2006-06-19",
+  "hd": 1802226,
+  "sofascore": 1802226,
+  "stats": [
+   8,
+   1,
+   3,
+   6.78
+  ]
+ },
+ {
+  "k": "T39634",
+  "nome": "Ángel Torres",
+  "nascimento": "2000-04-06",
+  "hd": 2055877,
+  "sofascore": 2055877,
+  "stats": [
+   5,
+   0,
+   0,
+   6.66
+  ]
+ },
+ {
+  "k": "T167228",
+  "nome": "Majed Kanabah",
+  "nascimento": "1992-07-01",
+  "hd": 828444,
+  "sofascore": 828444,
+  "stats": [
+   12,
+   0,
+   0,
+   6.77
+  ]
+ },
+ {
+  "k": "T167228",
+  "nome": "Mansour Hamzi",
+  "nascimento": "1992-01-17",
+  "hd": 818581,
+  "sofascore": 818581,
+  "stats": [
+   6,
+   0,
+   1,
+   6.67
+  ]
+ },
+ {
+  "k": "T34313",
+  "nome": "Mohamed Al-Thani",
+  "nascimento": "1997-01-22",
+  "hd": 954643,
+  "sofascore": 954643,
+  "stats": [
+   12,
+   0,
+   0,
+   6.54
+  ]
+ },
+ {
+  "k": "T168086",
+  "nome": "Ahmed Al-Shamrani",
+  "nascimento": "2002-03-13",
+  "hd": 0,
+  "sofascore": 1068350,
+  "stats": [
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "k": "T2510",
+  "nome": "Sayed Abu Farkhi",
+  "nascimento": "2006-05-11",
+  "hd": 1426367,
+  "sofascore": 1426367,
+  "stats": [
+   11,
+   2,
+   0,
+   6.45
+  ]
+ },
+ {
+  "k": "T1161",
+  "nome": "Johan Bakke",
+  "nascimento": "2004-05-01",
+  "hd": 999189,
+  "sofascore": 999189,
+  "stats": [
+   8,
+   0,
+   0,
+   6.49
+  ]
+ },
+ {
+  "k": "T667",
+  "nome": "Storm Strand-Kolbjørnsen",
+  "nascimento": "2004-03-05",
+  "hd": 1150048,
+  "sofascore": 1150048,
+  "stats": [
+   4,
+   0,
+   0,
+   7.05
+  ]
+ },
+ {
+  "k": "T1292",
+  "nome": "Mouekeinga Kone",
+  "nascimento": "2007-07-02",
+  "hd": 2347826,
+  "sofascore": 2347826,
+  "stats": [
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "k": "T2049",
+  "nome": "Evan Eghosa Aisowieren",
+  "nascimento": "2005-08-20",
+  "hd": 1520806,
+  "sofascore": 1520806,
+  "stats": [
+   15,
+   5,
+   0,
+   6.82
+  ]
+ },
+ {
+  "k": "T2526",
+  "nome": "Simon Spari",
+  "nascimento": "2002-06-16",
+  "hd": 1133370,
+  "sofascore": 1133370,
+  "stats": [
+   4,
+   0,
+   0,
+   6.98
+  ]
+ },
+ {
+  "k": "T1642",
+  "nome": "Yvan Djemba Mbappé",
+  "nascimento": "2005-04-14",
+  "hd": 1893824,
+  "sofascore": 1893824,
+  "stats": [
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "k": "T1654",
+  "nome": "Darly N'Landu",
+  "nascimento": "2000-07-14",
+  "hd": 859031,
+  "sofascore": 859031,
+  "stats": [
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "k": "T48244",
+  "nome": "Antony Vásquez",
+  "nascimento": "2002-07-29",
+  "hd": 1139958,
+  "sofascore": 1139958,
+  "stats": [
+   36,
+   8,
+   0,
+   6.62
+  ]
+ },
+ {
+  "k": "T89370",
+  "nome": "Faber Gil",
+  "nascimento": "1995-03-14",
+  "hd": 831377,
+  "sofascore": 831377,
+  "stats": [
+   10,
+   0,
+   0,
+   6.79
+  ]
+ },
+ {
+  "k": "T3229",
+  "nome": "Erico Cuello",
+  "nascimento": "2005-05-25",
+  "hd": 1510328,
+  "sofascore": 1510328,
+  "stats": [
+   20,
+   1,
+   0,
+   6.58
+  ]
+ },
+ {
+  "k": "T21884",
+  "nome": "João Pedro",
+  "nascimento": "2000-04-20",
+  "hd": 1016884,
+  "sofascore": 1016884,
+  "stats": [
+   27,
+   7,
+   0,
+   6.82
+  ]
+ },
+ {
+  "k": "T35285",
+  "nome": "Denilson",
+  "nascimento": "2003-07-26",
+  "hd": 1466780,
+  "sofascore": 1466780,
+  "stats": [
+   6,
+   0,
+   0,
+   6.66
+  ]
+ },
+ {
+  "k": "T1807",
+  "nome": "Sebastian Ohlsson",
+  "nascimento": "1992-12-31",
+  "hd": 370608,
+  "sofascore": 370608,
+  "stats": [
+   12,
+   0,
+   0,
+   6.58
+  ]
+ },
+ {
+  "k": "T1807",
+  "nome": "Sebastian Ohlsson",
+  "nascimento": "1993-05-26",
+  "hd": 276367,
+  "sofascore": 276367,
+  "stats": [
+   24,
+   1,
+   0,
+   6.8
+  ]
+ },
+ {
+  "k": "T1807",
+  "nome": "Nahom Girmai Netabay",
+  "nascimento": "1994-08-28",
+  "hd": 919994,
+  "sofascore": 919994,
+  "stats": [
+   28,
+   3,
+   4,
+   6.88
+  ]
+ },
+ {
+  "k": "T3147",
+  "nome": "Kento Hashimoto",
+  "nascimento": "1999-12-08",
+  "hd": 1036233,
+  "sofascore": 1036233,
+  "stats": [
+   7,
+   0,
+   1,
+   6.9
+  ]
+ },
+ {
+  "k": "T3147",
+  "nome": "Kento Hashimoto",
+  "nascimento": "1993-08-16",
+  "hd": 152002,
+  "sofascore": 152002,
+  "stats": [
+   7,
+   1,
+   0,
+   6.91
+  ]
+ },
+ {
+  "k": "T221240",
+  "nome": "Guobo Liu",
+  "nascimento": "1999-11-27",
+  "hd": 922388,
+  "sofascore": 922388,
+  "stats": [
+   5,
+   0,
+   0,
+   6.6
+  ]
+ },
+ {
+  "k": "T34695",
+  "nome": "Wenjie Song",
+  "nascimento": "1990-12-25",
+  "hd": 833481,
+  "sofascore": 833481,
+  "stats": [
+   21,
+   3,
+   4,
+   6.79
+  ]
+ },
+ {
+  "k": "T44444",
+  "nome": "Jasem Al-Hail",
+  "nascimento": "1992-02-29",
+  "hd": 992936,
+  "sofascore": 992936,
+  "stats": [
+   10,
+   0,
+   0,
+   6.77
+  ]
+ },
+ {
+  "k": "T8090",
+  "nome": "Ali Khaseif",
+  "nascimento": "1987-06-09",
+  "hd": 54942,
+  "sofascore": 54942,
+  "stats": [
+   4,
+   0,
+   0,
+   7.45
+  ]
+ }
+]

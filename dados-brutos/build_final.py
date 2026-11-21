@@ -88,6 +88,23 @@ for arq,arq_bruto in STATS_ARQS:
 sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
 from marcar_fotos_hd import marcar,relatorio
 marcar(clubs)
+
+# ---- Correções pontuais de foto e estatísticas (por último, para valer sobre tudo) ----
+#   correcoes_jogadores.json: [{k, nome, nascimento, hd, stats}]. O jogador é achado por clube + nome + nascimento,
+#   para não confundir dois jogadores de mesmo nome no mesmo clube (ex.: os dois "Danilo" do Botafogo).
+CORRECOES='dados-brutos/correcoes_jogadores.json'
+if os.path.exists(CORRECOES):
+    HD_P=tem('public/img/players')  # de novo: podem ter chegado fotos
+    corrigidos=0;faltando=[]
+    for it in ler(CORRECOES):
+        c=por_k.get(it['k'])
+        achados=[p for p in c['p'] if p[1]==it['nome'] and p[3]==it['nascimento']] if c else []
+        if len(achados)!=1: faltando.append(f"{it['k']} {it['nome']} {it['nascimento']} ({len(achados)} achados)"); continue
+        p=achados[0]
+        if it.get('stats') is not None: p[8]=it['stats']
+        p[9]=it['hd'] if it.get('hd') in HD_P else 0
+        corrigidos+=1
+    print(CORRECOES,'| corrigidos:',corrigidos,'| não encontrados:',len(faltando),*faltando)
 json.dump({'leagues':leagues,'clubs':clubs,'updated':'20/11/2026'},open('public/data.json','w',encoding='utf-8'),ensure_ascii=False,separators=(',',':'))
 print(os.path.getsize('public/data.json')//1024,'KB', 'stats' if st else 'no stats')
 print('fotos HD:',sum(1 for c in clubs for p in c['p'] if p[9]),'de',sum(len(c['p']) for c in clubs),'| escudos HD:',sum(1 for c in clubs if c['hd']),'de',len(clubs))

@@ -21,13 +21,13 @@ Foi inspirado no reconstruindo.thefenomeno.com, mas **não deve copiá-lo**. O f
   - América do Sul: COL, URU, CHI, PAR, ECU, PER.
   - Europa: SWE, POL, CZE, CRO, SRB, UKR, ROU, RUS.
   - Ásia e Oriente Médio: JPN, KOR, CHN, QAT, UAE.
-- Fotos HD dos jogadores (coletadas em 21/11/2026): 22.463 dos 23.613 (95%) têm foto em `public/img/players/<id>.webp`.
+- Fotos HD dos jogadores (coletadas em 21/11/2026): 22.489 dos 23.613 (95%) têm foto em `public/img/players/<id>.webp`.
   - Quem não tem usa o sprite antigo (só nas 10 ligas originais) ou as iniciais.
 - Estatísticas:
   - As duas rodadas e os jogadores de ARG e SAU que faltavam ganharam estatísticas coletadas em 21/11/2026:
     - bloco 1: rodada 1, mais ARG e SAU (8.438 jogadores);
     - bloco 2: rodada 2 (9.247 jogadores).
-  - Ainda faltam 699 jogadores (`stats` null), 282 deles da Série C. O site mostra "Estatísticas indisponíveis".
+  - Ainda faltam 672 jogadores (`stats` null), 282 deles da Série C. O site mostra "Estatísticas indisponíveis".
   - `[0,0,0,0]` = não entrou em campo (não é "sem estatísticas"): mostra "0 jogos", sem a nota e com as médias por jogo "—".
 - Muitos têm valor 0 (sem valor no Transfermarkt): 876 dos 905 da Série C e dezenas por liga asiática.
   - `valorJogador()` mostra "—" no lugar de "€ 0".
@@ -109,6 +109,13 @@ React 19 + Vite 6, em JavaScript (sem TypeScript).
     - `estatisticas_blocoN.json`: `{stats: {<clube>: {<nome exato>: [jogos, gols, assist, nota]}}}`. O `build_final.py` grava no campo `stats` de quem tem o mesmo nome no clube e mostra quantos foram atualizados e quantos nomes não foram encontrados. Na 1ª vez: 8.438 e 0 no bloco 1, e 9.247 e 0 no bloco 2;
     - `stats_sofascore_blocoN.json`: os dados brutos por ID Sofascore, `[jogos, gols, assist, nota, nº de competições]`.
   - Nome repetido no mesmo clube: o nome não diz de quem são os números, então o script usa o ID de `ids_sofascore_novas*.json` com os dados brutos. Isso aconteceu 4 vezes no bloco 2 (Brusque, Ferroviária, Degerfors e FC Tokyo). O primeiro "João Pedro" do Brusque não tem ID e ficou sem estatísticas.
+  - `correcoes_jogadores.json`: `[{k, nome, nascimento, hd, stats}]`, correções pontuais de foto e estatísticas, aplicadas por último no `build_final.py`.
+    - O jogador é achado por clube + nome + nascimento: é o jeito seguro de separar dois jogadores de mesmo nome.
+    - Na 1ª vez (21/11/2026): 35 corrigidos, 0 não encontrados. Entre eles estão os dois "Danilo" do Botafogo, que não tinham ID.
+    - Para corrigir mais jogadores, acrescente itens nesse arquivo e rode o `build_final.py`.
+  - Nomes repetidos no mesmo clube hoje: Botafogo (Danilo), Juventude (Marcos Paulo), Brusque (João Pedro), Ferroviária (Denilson), Degerfors (Sebastian Ohlsson) e FC Tokyo (Kento Hashimoto).
+    - `fotos-ids.json` e `estatisticas_blocoN.json` só têm o nome, sem nascimento. Por isso o desempate nesses scripts é pelo ID Sofascore da posição no elenco.
+    - A correção definitiva vai no `correcoes_jogadores.json`.
   - Para um bloco novo, acrescentar o par de arquivos em `STATS_ARQS`, no `build_final.py`.
   - `tm_new.json`, `sofa_new.json` e `build_new.py`: dados brutos e o script que gerou as ligas novas. Ficam só como referência: o script usa caminhos `raw/` da coleta original e não precisa rodar.
   - Para gerar: `python dados-brutos/build_all.py` e depois `python dados-brutos/build_final.py` (rodar na raiz do projeto).
@@ -166,8 +173,8 @@ React 19 + Vite 6, em JavaScript (sem TypeScript).
 
 ## Pendências (em ordem sugerida)
 1. Completar as estatísticas e fotos que faltam.
-   - Estatísticas: os blocos 1 e 2 foram feitos em 21/11/2026; restam 699 jogadores, 282 deles da Série C.
-   - Fotos HD (coletadas em 21/11/2026): faltam 1.150 jogadores, 325 deles da Série C. Quando chegarem mais, rodar `python dados-brutos/marcar_fotos_hd.py`.
+   - Estatísticas: os blocos 1 e 2 foram feitos em 21/11/2026; restam 672 jogadores, 282 deles da Série C.
+   - Fotos HD (coletadas em 21/11/2026): faltam 1.124 jogadores, 325 deles da Série C. Quando chegarem mais, rodar `python dados-brutos/marcar_fotos_hd.py`.
    - Os sprites `p_*.webp` ficam como reserva por enquanto: 11 jogadores sem foto HD ainda usam o sprite. Quando não houver mais nenhum, apagar os sprites e o código de sprite em `Foto` (`src/componentes/Imagens.jsx`).
 2. Script de atualização periódica dos dados (Transfermarkt e Sofascore).
 3. Simulação da temporada, link compartilhável do plano e modo "desafio diário" (para depois).
