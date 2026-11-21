@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { D } from "../logica/dados.js";
 import { dinheiro, calcularDinheiro, simbolo } from "../logica/dinheiro.js";
-import { elencoAtual, saidas } from "../logica/elenco.js";
+import { elencoAtual, nChegam, nSaem } from "../logica/elenco.js";
 import { Escudo } from "./Imagens.jsx";
 import SeletorMoeda from "./SeletorMoeda.jsx";
 import BotaoTema from "./BotaoTema.jsx";
@@ -79,7 +79,7 @@ function ResumoEAbas({ app }) {
         </button>
         <button className="stat stat-mov" onClick={() => app.irPara("resumo")}>
           <span className="ic" aria-hidden="true"><IconeTroca /></span>
-          <b className="num"><span className="up">+{plano.ins.length}</span> <span className="dn">−{saidas(plano).length}</span></b>
+          <b className="num"><span className="up">+{nChegam(plano)}</span> <span className="dn">−{nSaem(plano)}</span></b>
           <span className="l">Chegam · saem</span>
         </button>
       </div>

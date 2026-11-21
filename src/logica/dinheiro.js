@@ -53,11 +53,17 @@ export const paraCampo = (vEur) => {
 export const lerCampo = (texto, eurOriginal) =>
   eurOriginal != null && texto === paraCampo(eurOriginal) ? eurOriginal : paraEuro(Math.max(0, +texto || 0));
 
-// Caixa = orçamento inicial + vendas − contratações (tudo em euro)
+// Caixa = orçamento inicial + vendas − contratações (tudo em euro).
+// Empréstimos: vender um emprestado entra como venda; comprar um recebido, como contratação.
 export function calcularDinheiro(plano) {
   let vendas = 0, compras = 0;
   for (const id in plano.st) if (plano.st[id].s === "vende") vendas += +plano.st[id].fee || 0;
   for (const m of plano.ins) compras += +m.fee || 0;
+  for (const id in plano.emp || {}) {
+    const x = plano.emp[id];
+    if (x.s === "vender") vendas += +x.fee || 0;
+    if (x.s === "comprar") compras += +x.fee || 0;
+  }
   return { vendas, compras, caixa: (plano.budget || 0) + vendas - compras };
 }
 

@@ -79,6 +79,7 @@ export default function Mercado({ app }) {
                     <div className="rt vl">
                       <div className="v num"><Valor p={p} /></div>
                       <div className={"s" + (cabe ? "" : " falta")}>{cabe ? "cabe no caixa" : "faltam " + dinheiro(preco - caixa)}</div>
+                      {p.emp && <span className="selo-emp" title={`Emprestado até ${ctrTxt(p.emp.ate)}`}>Emprestado · dono: {p.emp.de.n}</span>}
                       {i < comSelo && <span className="selo-rec" title={`Nota de recomendação: ${notas.get(p.id)} de 100`}>★ Recomendado</span>}
                     </div>
                     <span className="add" aria-hidden="true">+</span>

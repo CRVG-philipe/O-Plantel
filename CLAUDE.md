@@ -53,6 +53,8 @@ Foi inspirado no reconstruindo.thefenomeno.com, mas **não deve copiá-lo**. O f
 - `npm test`: testes automáticos (vitest + jsdom). Rodar depois de qualquer mudança.
   - `testes/app.test.jsx`: cliques simulados no site inteiro.
   - `testes/recomendacao.test.js` e `testes/busca.test.js`: a nota de recomendação e a busca por apelido.
+  - `testes/emprestimos.test.js`: regras dos empréstimos (Botafogo, T1958).
+- Com as ~23 mil fotos, o `npm run dev` às vezes demora para servir as imagens. Para conferir fotos, use `npm run build` e `npm run preview`.
 - `npm run build`: gera a versão final em `dist/` (não vai para o git). `npm run preview` serve o `dist/` para conferir.
 
 ## Estrutura
@@ -71,7 +73,7 @@ React 19 + Vite 6, em JavaScript (sem TypeScript).
   - `constantes.js`: posições, formações e compatibilidade.
   - `dinheiro.js`: moeda, `dinheiro()` e caixa.
   - `cotacao.js`: moeda escolhida e cotação no localStorage.
-  - `elenco.js`: plano, elenco, saídas, alertas e texto do resumo.
+  - `elenco.js`: plano, elenco, saídas, empréstimos, alertas e texto do resumo.
   - `escalacao.js`: escalar, completar e encaixar.
   - `mercado.js`: busca (nome, clube e apelido), filtros e ordens.
   - `recomendacao.js`: nota de recomendação 0–100 (`pontuar(jogador, clubeOrigem, clubeDestino, plano)` e `notasDoMercado(plano)`).
@@ -186,6 +188,32 @@ React 19 + Vite 6, em JavaScript (sem TypeScript).
   - O rodapé mostra a cotação usada e a data.
 - Temporada planejada: "2027" nas ligas de calendário anual (BRA, BRB, ARG, USA) e "27/28" nas demais.
 - Os planos ficam salvos no localStorage (chave `plantel:v2`, formato `{plans:{<clube>: plano}, last}`). **Não mudar os nomes dos campos do plano** (`club, budget, st, ins, form, xi, custom`), senão quem já tem planos salvos os perde.
+  - Campo novo opcional: `emp` (escolhas sobre empréstimos). Planos antigos não têm, e todo o código trata a falta como `{}`. O `novoPlano` não cria esse campo; ele só aparece quando a pessoa mexe num empréstimo.
+- Empréstimos (coletados do Transfermarkt em 21/11/2026; dados brutos em `dados-brutos/emprestimos_transfermarkt.json`):
+  - **Arquivo:** `public/emprestimos.json`, no formato `{clube: {in: [{nome, nasc, de: {k, n}, ate, contrato}], out: [{nome, pos, idade, para: {k, n}, ate, contrato, valor, em?: {k, nome, nasc}}]}}`.
+    - Tem 2.284 recebidos e 3.610 emprestados; 1.830 deles estão em outro clube da base (`em`).
+    - `ate` é o fim do empréstimo; `contrato` é o contrato com o clube dono.
+  - **Ao carregar** (`montarEmprestimos`, em `dados.js`):
+    - Cada jogador emprestado ganha `p.emp = {de: {k, n}, ate, contrato}`, e `D.EMP[clube] = {in: [ids], out: [{id, para, ate, contrato}]}`.
+    - Quem está num clube fora da base vira jogador "avulso" (`p.avulso`, id `<clube>-e<i>`, posição convertida por `POS_TM`). Ele fica só no `D.BYID`, não no Mercado.
+    - 29 jogadores estavam no elenco do dono e também no clube onde estão. A cópia do dono sai do `D.ALL`, para cada um aparecer uma vez só.
+    - Os "in" de um clube que faltam no "out" do dono entram na lista do dono, e vice-versa.
+  - **Escolhas** (`plano.emp[id] = {s, fee}`; sem escolha = manter emprestado):
+    - Recebidos: `devolver` sai do elenco, sem dinheiro; `comprar` paga o valor de mercado e o jogador fica.
+    - Emprestados a outros clubes: `vender` soma o valor ao caixa; `voltar` faz o jogador entrar no elenco e contar em tudo.
+  - **Funções em `elenco.js`:**
+    - `situacaoEmp`, `recebido`, `emprestadosFora` e `ehEmprestadoFora`;
+    - `voltam`, `devolvidos`, `comprados` e `vendidosFora`;
+    - `nChegam` e `nSaem` (card do topo).
+  - **Regras:**
+    - `elencoAtual` = quem fica (menos os devolvidos) + quem chega + quem volta. Quem está emprestado a outro clube não conta no total, na idade, na escalação nem na necessidade da recomendação.
+    - `calcularDinheiro` soma as vendas de emprestados e desconta as compras de recebidos.
+  - **Na tela:**
+    - Elenco: recebidos com a linha "Emprestado · <dono> até <mês/ano>" (`.emp-linha`) e o `PainelRecebido` (dentro de `PainelJogador.jsx`), com manter, devolver ou comprar.
+    - Seção "Emprestados a outros clubes (N)" (`#emprestados`), com o `PainelEmprestado`: manter, vender ou trazer de volta. Quem volta aparece no setor dele, com "Volta de empréstimo".
+    - Mercado: os emprestados do próprio clube não aparecem; os de outros clubes mostram o selo "Emprestado · dono: <clube>" (`.selo-emp`).
+    - Resumo: chegam, saem (com os emprestados vendidos), voltam de empréstimo, devolvidos e comprados (`#voltam`, `#devolvidos`, `#comprados`).
+  - **Testes:** `testes/emprestimos.test.js` (regras) e o teste "empréstimos no Botafogo" em `app.test.jsx` (tela).
 
 ## Pendências (em ordem sugerida)
 1. Completar as estatísticas e fotos que faltam.

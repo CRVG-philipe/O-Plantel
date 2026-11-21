@@ -8,6 +8,10 @@
 //   form    formação ("4-3-3")
 //   xi      time titular: { "<vaga>": "<id do jogador>" }
 //   custom  jogadores criados pelo usuário
+//   emp     (campo novo, pode faltar em planos antigos) escolhas sobre empréstimos:
+//           { "<id>": { s: "devolver"|"comprar"|"vender"|"voltar", fee } }; sem escolha = continua emprestado.
+//           Recebidos por empréstimo: devolver (sai, sem dinheiro) ou comprar (paga o valor, fica).
+//           Emprestados a outros clubes: vender (entra o valor) ou voltar (volta ao elenco e conta em tudo).
 import { D } from "./dados.js";
 import { FORMS, NEED } from "./constantes.js";
 import { short } from "./formato.js";
@@ -25,18 +29,42 @@ export function jogador(plano, id) {
 // Situação de um jogador do clube ("fica" se não foi mexido)
 export const situacao = (plano, id) => plano.st[id] || { s: "fica" };
 
+// ---------- Empréstimos ----------
+// Escolha sobre um empréstimo ("manter" se não foi mexido). Planos antigos não têm o campo "emp".
+export const situacaoEmp = (plano, id) => (plano.emp || {})[id] || { s: "manter" };
+// Recebido por empréstimo: está no elenco do clube, mas o dono é outro
+export const recebido = (plano, p) => !!(p && p.emp && p.club === plano.club && p.emp.de.k !== plano.club);
+// Emprestados a outros clubes: [{ p, para: {k, n}, ate, contrato }]
+export const emprestadosFora = (plano) =>
+  (D.EMP[plano.club]?.out || []).map((o) => ({ ...o, p: D.BYID[o.id] })).filter((o) => o.p);
+// Ids dos emprestados a outros clubes (para saber qual painel abrir)
+export const ehEmprestadoFora = (plano, id) => (D.EMP[plano.club]?.out || []).some((o) => o.id === id);
+// Listas para o resumo e o topo
+const comEscolha = (plano, s) => Object.entries(plano.emp || {}).filter(([, x]) => x.s === s).map(([id, x]) => ({ p: D.BYID[id], x })).filter((m) => m.p);
+export const voltam = (plano) => comEscolha(plano, "voltar");
+export const devolvidos = (plano) => comEscolha(plano, "devolver");
+export const comprados = (plano) => comEscolha(plano, "comprar");
+export const vendidosFora = (plano) => comEscolha(plano, "vender");
+
 // Elenco original do clube (antes de qualquer mudança)
 export const elencoOriginal = (plano) => D.ALL.filter((p) => p.club === plano.club);
 
-// Elenco planejado: quem fica + quem chega
+// Elenco planejado: quem fica (sem os recebidos devolvidos) + quem chega + quem volta de empréstimo.
+// Quem está emprestado a outro clube não conta (nem no total, nem na idade, nem na escalação), a menos que volte.
 export function elencoAtual(plano) {
-  return D.ALL.filter((p) => p.club === plano.club && situacao(plano, p.id).s === "fica").concat(plano.ins.map((m) => jogador(plano, m.id)));
+  return D.ALL.filter((p) => p.club === plano.club && situacao(plano, p.id).s === "fica" && situacaoEmp(plano, p.id).s !== "devolver")
+    .concat(plano.ins.map((m) => jogador(plano, m.id)))
+    .concat(voltam(plano).map((m) => m.p));
 }
 
 // Quem sai: [{ p: jogador, x: { s, fee } }]
 export function saidas(plano) {
   return Object.entries(plano.st).filter(([, x]) => x.s !== "fica").map(([id, x]) => ({ p: D.BYID[id], x }));
 }
+
+// Contagem do card "chegam · saem" do topo
+export const nChegam = (plano) => plano.ins.length + voltam(plano).length;
+export const nSaem = (plano) => saidas(plano).length + devolvidos(plano).length + vendidosFora(plano).length;
 
 // Pontos de atenção da aba Resumo
 export function alertas(plano) {
@@ -61,7 +89,12 @@ export function textoDoPlano(plano) {
   const chegam = plano.ins.map((mv) => {
     const p = jogador(plano, mv.id);
     return "+ " + p.n + " (" + p.pos + ") " + (mv.type === "emprestimo" ? "empréstimo" : mv.fee ? dinheiro(mv.fee) : "grátis");
-  }).join("\n") || "ninguém";
-  const saem = o.map(({ p, x }) => "− " + p.n + " (" + { vende: "venda " + dinheiro(+x.fee || 0), empresta: "empréstimo", libera: "liberado" }[x.s] + ")").join("\n") || "ninguém";
+  }).concat(voltam(plano).map(({ p }) => "+ " + p.n + " (" + p.pos + ") volta de empréstimo"))
+    .concat(comprados(plano).map(({ p, x }) => "= " + p.n + " (" + p.pos + ") comprado " + dinheiro(+x.fee || 0)))
+    .join("\n") || "ninguém";
+  const saem = o.map(({ p, x }) => "− " + p.n + " (" + { vende: "venda " + dinheiro(+x.fee || 0), empresta: "empréstimo", libera: "liberado" }[x.s] + ")")
+    .concat(devolvidos(plano).map(({ p }) => "− " + p.n + " (devolvido ao " + p.emp.de.n + ")"))
+    .concat(vendidosFora(plano).map(({ p, x }) => "− " + p.n + " (venda " + dinheiro(+x.fee || 0) + ", estava emprestado)"))
+    .join("\n") || "ninguém";
   return `${c.n} ${D.LG[c.lg].plan} (planejado no Plantel)\nOrçamento ${dinheiro(plano.budget || 0)} · caixa final ${dinheiro(m.caixa)}\n\nCHEGAM\n${chegam}\n\nSAEM\n${saem}\n\nTIME (${plano.form})\n${xi[0]}; ${xi.slice(1, 5).join(", ")}; ${xi.slice(5).join(", ")}`;
 }

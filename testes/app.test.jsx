@@ -10,6 +10,7 @@ import { corDeFundo } from "../src/logica/formato.js";
 const DATA = JSON.parse(fs.readFileSync("public/data.json", "utf8"));
 const APELIDOS = JSON.parse(fs.readFileSync("public/apelidos.json", "utf8"));
 const ESTIMADOS = JSON.parse(fs.readFileSync("public/valores-estimados.json", "utf8"));
+const EMPRESTIMOS = JSON.parse(fs.readFileSync("public/emprestimos.json", "utf8"));
 let semEstimados = false; // true = simula o valores-estimados.json fora do ar
 const CHAVE = "plantel:v2";
 // Cotação que a "API de mentira" devolve nos testes
@@ -28,6 +29,7 @@ beforeEach(() => {
       return { ok: true, json: async () => structuredClone(COTACAO_TESTE) };
     }
     if (String(url).includes("apelidos")) return { ok: true, json: async () => structuredClone(APELIDOS) };
+    if (String(url).includes("emprestimos")) return { ok: true, json: async () => structuredClone(EMPRESTIMOS) };
     if (String(url).includes("valores-estimados")) {
       if (semEstimados) throw new Error("fora do ar");
       return { ok: true, json: async () => structuredClone(ESTIMADOS) };
@@ -753,6 +755,58 @@ test("Mercado: recomendados com selo, 'só quem cabe' ligado e lembrado, busca p
   await abrirMercado();
   expect(document.querySelector("#fOpen").textContent).toBe("Filtros");
   expect(total()).toBeGreaterThan(soOsQueCabem);
+});
+
+test("empréstimos no Botafogo: devolver, comprar, vender e trazer de volta (plano antigo sem o campo novo)", async () => {
+  // Plano salvo no formato antigo (sem "emp"), com € 20 mi
+  localStorage.setItem(CHAVE, JSON.stringify({ plans: { T1958: { club: "T1958", budget: 20, st: {}, ins: [], form: "4-3-3", xi: {}, custom: [] } }, last: "T1958" }));
+  render(<App />);
+  clique(await screen.findByRole("button", { name: /Botafogo 2027/ }));
+  const jogadores = () => +document.querySelector("#sum .stat:nth-child(2) b").textContent;
+  const linhaDe = (nome) => [...document.querySelectorAll("#p-elenco .row")].find((l) => l.querySelector(".nm").textContent === nome);
+  const n0 = jogadores();
+  expect(caixa()).toBe("€ 20 mi");
+  // Arthur Chaves: recebido por empréstimo, com o selo do dono e o fim do empréstimo
+  expect(linhaDe("Arthur Chaves").querySelector(".emp-linha").textContent).toBe("Emprestado · TSG Hoffenheim até dez/27");
+  // Seção dos emprestados a outros clubes, que não contam no total
+  const secao = document.querySelector("#emprestados");
+  expect(secao.querySelector("h2").textContent).toMatch(/^Emprestados a outros clubes \(\d+\)/);
+  expect(linhaDe("Artur").textContent).toContain("no São Paulo");
+  // Devolver o Arthur Chaves: sai do elenco, caixa igual
+  clique(linhaDe("Arthur Chaves"));
+  expect(noPainel().getByRole("button", { name: /^Manter emprestado/ }).getAttribute("aria-pressed")).toBe("true");
+  clique(noPainel().getByRole("button", { name: /^Devolver/ }));
+  clique(noPainel().getByRole("button", { name: "Salvar" }));
+  expect(jogadores()).toBe(n0 - 1);
+  expect(caixa()).toBe("€ 20 mi");
+  expect(linhaDe("Arthur Chaves").textContent).toContain("Devolvido");
+  expect(salvo().plans.T1958.emp).toEqual({ [`T1958-${DATA.clubs.find((c) => c.k === "T1958").p.findIndex((r) => r[1] === "Arthur Chaves")}`]: { s: "devolver", fee: 0 } });
+  // Mudar para comprar: volta a contar e desconta o valor
+  const arthurV = DATA.clubs.find((c) => c.k === "T1958").p.find((r) => r[1] === "Arthur Chaves")[5];
+  clique(linhaDe("Arthur Chaves"));
+  clique(noPainel().getByRole("button", { name: /^Comprar/ }));
+  clique(noPainel().getByRole("button", { name: "Salvar" }));
+  expect(jogadores()).toBe(n0);
+  expect(caixa()).toBe(dinheiro(20 - arthurV));
+  // Vender o Artur (emprestado ao São Paulo): entra o valor, total igual
+  const arturV = DATA.clubs.find((c) => c.k === "T1981").p.find((r) => r[1] === "Artur" && r[3] === "1998-02-15")[5];
+  clique(linhaDe("Artur"));
+  clique(noPainel().getByRole("button", { name: /^Vender/ }));
+  clique(noPainel().getByRole("button", { name: "Salvar" }));
+  expect(caixa()).toBe(dinheiro(20 - arthurV + arturV));
+  expect(jogadores()).toBe(n0);
+  // Trazer de volta: entra no elenco e conta no total
+  clique(linhaDe("Artur"));
+  clique(noPainel().getByRole("button", { name: /^Trazer de volta/ }));
+  clique(noPainel().getByRole("button", { name: "Salvar" }));
+  expect(jogadores()).toBe(n0 + 1);
+  expect(caixa()).toBe(dinheiro(20 - arthurV));
+  expect(linhaDe("Artur").textContent).toContain("Volta de empréstimo");
+  // Resumo: listas separadas
+  clique(screen.getByRole("tab", { name: "Resumo" }));
+  expect(document.querySelector("#voltam").textContent).toContain("Artur");
+  expect(document.querySelector("#comprados").textContent).toContain("Arthur Chaves");
+  expect(document.querySelector("#devolvidos")).toBeNull();
 });
 
 test("Esc e clique fora fecham o painel", async () => {

@@ -40,6 +40,7 @@ export function buscarJogadores(plano, busca, chip, F, notas) {
   const porApelido = nomesPorApelido(q);
   const l = D.ALL.filter((p) =>
     p.club !== plano.club && !jaVem.has(p.id) &&
+    p.emp?.de.k !== plano.club && // emprestado pelo próprio clube: já está na seção "Emprestados a outros clubes"
     (!ps || ps.includes(p.pos)) &&
     (!F.lg || p.lg === F.lg) &&
     (!F.club || p.club === F.club) &&

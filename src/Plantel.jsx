@@ -4,7 +4,7 @@ import { D } from "./logica/dados.js";
 import { FILTROS_PADRAO, PAISES } from "./logica/constantes.js";
 import { lum } from "./logica/formato.js";
 import { lerFiltroCaixa, lerPlanos, salvarFiltroCaixa, salvarPlanos } from "./logica/armazenamento.js";
-import { jogador, novoPlano } from "./logica/elenco.js";
+import { ehEmprestadoFora, jogador, novoPlano } from "./logica/elenco.js";
 import { escalarSozinho, completarTime } from "./logica/escalacao.js";
 import { usarMoeda } from "./logica/dinheiro.js";
 import { buscarCotacao, lerCotacaoSalva, lerMoeda, salvarMoeda } from "./logica/cotacao.js";
@@ -25,9 +25,10 @@ import PainelClube from "./componentes/paineis/PainelClube.jsx";
 import PainelOrcamento from "./componentes/paineis/PainelOrcamento.jsx";
 import PainelPosicao from "./componentes/paineis/PainelPosicao.jsx";
 import PainelExcluirPlano from "./componentes/paineis/PainelExcluirPlano.jsx";
+import PainelEmprestado from "./componentes/paineis/PainelEmprestado.jsx";
 
 const ABAS = { elenco: Elenco, mercado: Mercado, time: Time, resumo: Resumo };
-const PAINEIS = { jogador: PainelJogador, compra: PainelCompra, filtros: PainelFiltros, criar: PainelCriar, clube: PainelClube, orcamento: PainelOrcamento, posicao: PainelPosicao, excluirPlano: PainelExcluirPlano };
+const PAINEIS = { jogador: PainelJogador, compra: PainelCompra, filtros: PainelFiltros, criar: PainelCriar, clube: PainelClube, orcamento: PainelOrcamento, posicao: PainelPosicao, excluirPlano: PainelExcluirPlano, emprestado: PainelEmprestado };
 
 // Clubes de uma liga em ordem alfabética
 const clubesDa = (lg) => D.CLUBS.filter((c) => c.lg === lg).sort((a, b) => a.n.localeCompare(b.n));
@@ -155,8 +156,10 @@ export default function Plantel() {
     abrirPainel("orcamento", { primeiro: true });
   }
 
-  // Jogador do próprio elenco abre "vender/emprestar"; de fora (ou contratado) abre "contratar"
+  // Jogador do próprio elenco abre "vender/emprestar" (ou, se veio emprestado, "manter/devolver/comprar");
+  // emprestado a outro clube abre "manter/vender/trazer de volta"; de fora (ou contratado) abre "contratar"
   function abrirJogador(id) {
+    if (ehEmprestadoFora(plano, id)) return abrirPainel("emprestado", { id });
     abrirPainel(jogador(plano, id).club !== plano.club ? "compra" : "jogador", { id });
   }
 

@@ -4,14 +4,33 @@ import { D } from "../logica/dados.js";
 import { NEED, corDoSetor } from "../logica/constantes.js";
 import { Pos } from "./Jogador.jsx";
 import { dinheiro, calcularDinheiro } from "../logica/dinheiro.js";
-import { alertas, elencoAtual, elencoOriginal, jogador, saidas, textoDoPlano } from "../logica/elenco.js";
+import { alertas, comprados, devolvidos, elencoAtual, elencoOriginal, jogador, saidas, textoDoPlano, vendidosFora, voltam } from "../logica/elenco.js";
 
 const ROTULO_SAIDA = { vende: "venda", empresta: "empréstimo", libera: "liberado" };
+
+// Lista de uma escolha de empréstimo (voltam, devolvidos, comprados); vazia, não aparece
+function ListaEmprestimo({ id, titulo, lista, valor }) {
+  if (!lista.length) return null;
+  return (
+    <div className="sec" id={id}>
+      <h2><span>{titulo}</span><span>{lista.length}</span></h2>
+      <div className="card">
+        {lista.map((m) => (
+          <div className="kv" key={m.p.id}>
+            <span className="kv-nome"><Pos pos={m.p.pos} /><span>{m.p.n}</span></span>
+            <span className="num">{valor(m)}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default function Resumo({ app }) {
   const { plano } = app;
   const m = calcularDinheiro(plano), sq = elencoAtual(plano), o = saidas(plano), al = alertas(plano), own = elencoOriginal(plano);
   const L = D.LG[D.CL[plano.club].lg];
+  const vt = voltam(plano), dv = devolvidos(plano), cp = comprados(plano), vf = vendidosFora(plano); // empréstimos
   const prof = NEED.map(([l, ps, min]) => ({ l, min, ps, n: sq.filter((p) => ps.includes(p.pos)).length }));
   const mx = Math.max(6, ...prof.map((x) => x.n));
 
@@ -87,16 +106,29 @@ export default function Resumo({ app }) {
       </div>
 
       <div className="sec">
-        <h2><span>Saem</span><span>{o.length}</span></h2>
+        <h2><span>Saem</span><span>{o.length + vf.length}</span></h2>
         <div className="card">
-          {o.length ? o.map(({ p, x }) => (
-            <div className="kv" key={p.id}>
-              <span className="kv-nome"><Pos pos={p.pos} /><span>{p.n}</span></span>
-              <span className="num">{x.s === "vende" ? dinheiro(+x.fee || 0) : ROTULO_SAIDA[x.s]}</span>
-            </div>
-          )) : <div className="empty" style={{ padding: 16 }}>Ninguém saiu.</div>}
+          {o.length + vf.length ? <>
+            {o.map(({ p, x }) => (
+              <div className="kv" key={p.id}>
+                <span className="kv-nome"><Pos pos={p.pos} /><span>{p.n}</span></span>
+                <span className="num">{x.s === "vende" ? dinheiro(+x.fee || 0) : ROTULO_SAIDA[x.s]}</span>
+              </div>
+            ))}
+            {vf.map(({ p, x }) => (
+              <div className="kv" key={p.id}>
+                <span className="kv-nome"><Pos pos={p.pos} /><span>{p.n}</span></span>
+                <span className="num">{dinheiro(+x.fee || 0)} <span className="mute">(estava emprestado)</span></span>
+              </div>
+            ))}
+          </> : <div className="empty" style={{ padding: 16 }}>Ninguém saiu.</div>}
         </div>
       </div>
+
+      {/* Empréstimos: só aparecem as listas que têm alguém */}
+      <ListaEmprestimo id="voltam" titulo="Voltam de empréstimo" lista={vt} valor={({ p }) => "volta"} />
+      <ListaEmprestimo id="devolvidos" titulo="Devolvidos" lista={dv} valor={({ p }) => "ao " + p.emp.de.n} />
+      <ListaEmprestimo id="comprados" titulo="Comprados (estavam emprestados)" lista={cp} valor={({ x }) => dinheiro(+x.fee || 0)} />
 
       <div className="acts">
         <button className="btn pri" id="copy" onClick={copiar}>Copiar resumo</button>
