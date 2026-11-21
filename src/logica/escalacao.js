@@ -25,11 +25,15 @@ const COMPARAR = {
   o: (a, b) => (b.ovr ?? 0) - (a.ovr ?? 0) || b.v - a.v,
 };
 
-// Em qual passada o jogador entra na vaga: a "ordem" de compatibilidade, com uma exceção no meio-campo.
-// VOL ↔ MC e MEI ↔ MC disputam a vaga de igual para igual com o dono da posição (passada 0):
-// ganha quem tiver mais valor (ou overall). Nas outras vagas, a posição de origem vem primeiro.
-const MEIO = { VOL: ["MC"], MC: ["VOL", "MEI"], MEI: ["MC"] };
-export const passada = (vaga, pos) => (MEIO[vaga]?.includes(pos) ? 0 : compatibilidade(vaga, pos).ordem);
+// Em qual passada o jogador entra na vaga: a "ordem" de compatibilidade, com exceções no meio e no ataque,
+// onde quem é da mesma "família" disputa a vaga de igual para igual com o dono da posição (passada 0) e
+// ganha quem tiver mais valor (ou overall):
+//   meio: VOL ↔ MC e MEI ↔ MC;
+//   ataque: PE, PD, SA e CA disputam qualquer vaga do ataque.
+// Nas outras vagas, a posição de origem vem primeiro. No fim, arrumarPosicoes põe cada um o mais perto possível da sua.
+const ATAQUE = ["PE", "PD", "SA", "CA"];
+const MESMA_FAMILIA = { VOL: ["MC"], MC: ["VOL", "MEI"], MEI: ["MC"], PE: ATAQUE, PD: ATAQUE, SA: ATAQUE, CA: ATAQUE };
+export const passada = (vaga, pos) => (MESMA_FAMILIA[vaga]?.includes(pos) ? 0 : compatibilidade(vaga, pos).ordem);
 
 // O melhor (pelo critério) que serve na vaga nessa passada
 function melhorPara(sq, usados, vaga, ordem, criterio = "v") {

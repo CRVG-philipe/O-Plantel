@@ -65,7 +65,7 @@ Foi inspirado no reconstruindo.thefenomeno.com, mas **não deve copiá-lo**. O f
     - As cinco grandes ligas e as demais (36 no total) não mudam.
     - Os parâmetros encontrados ficam em `dados-brutos/overall/balanceamento-parametros.json` (só para consulta).
     - **Para mudar o nível de uma liga:** edite os alvos no `ALVO`, no topo do `balancear.py`, e rode de novo (só o passo 2).
-  - **Ajustes manuais:** `public/overall-ajustes.json` guarda os ajustes feitos à mão, no formato `{clube: {"nome|nascimento": overall}}`. Em 21/11/2026 tinha 20 ajustes de jogadores do Brasileirão (ex.: Fábio, do Fluminense, 78; Thiago Mendes, do Vasco, 79).
+  - **Ajustes manuais:** `public/overall-ajustes.json` guarda os ajustes feitos à mão, no formato `{clube: {"nome|nascimento": overall}}`. Em 21/11/2026 tinha 21 ajustes: 20 de jogadores do Brasileirão (ex.: Fábio, do Fluminense, 78; Thiago Mendes, do Vasco, 79) e o Richarlison (Tottenham, `T33`), 80.
     - **Editar à mão.** Quando um jogador tem ajuste, o número substitui o do `overall.json`; os atributos continuam os mesmos.
     - O ajuste vale em tudo: selo, ficha, força do time, ordem "Overall", "Escalar por overall" e recomendação (todos leem `p.ovr`).
     - Vale por cima do balanceamento. Nenhum script mexe nesse arquivo: ele **não é apagado** quando o `balancear.py` (ou o `overall.py`) roda. Para corrigir alguém, acrescente a linha nele: não precisa rodar nada.
@@ -242,12 +242,14 @@ React 19 + Vite 6, em JavaScript (sem TypeScript).
   - **Compatibilidade** (`compatibilidade.js`): cada vaga tem posições ideal (verde), boa (amarelo) e improvisado (vermelho, com "⚠").
     - Qualquer combinação fora da tabela também é improvisado.
     - Pontas (PE e PD) são ideais nas duas pontas e nas meias pelos lados (ME e MD). O MC é ideal também de VOL e de MEI, e o VOL e o MEI são ideais de MC.
-    - Atacantes (PE, PD, SA e CA) são ideais em qualquer vaga do ataque (PE, PD, SA e CA). A posição de origem continua com ordem 0, então o "Escalar sozinho" ainda põe cada um na sua posição primeiro.
+    - Atacantes (PE, PD, SA e CA) são ideais em qualquer vaga do ataque (PE, PD, SA e CA). No "Escalar sozinho", os atacantes disputam qualquer vaga do ataque (ver "Disputa por vaga", abaixo).
     - `compatibilidade(vaga, pos)` devolve `{nivel, ordem}`: 0 = posição principal da vaga, 1 = outra ideal, 2 = boa, 3 = improvisado da tabela, 4 = fora da tabela.
     - Nas formações com 3 zagueiros, as vagas abertas são `ALE`/`ALD`, mostradas como "ALA". Ideal: LE/ME e LD/MD; boa: ponta, MC e VOL.
     - Vale para titulares e reservas, para "Escalar sozinho" e para encaixar quem chega.
     - Escalar sozinho: começa pelas vagas mais difíceis e vai do nível 0 ao 3; nunca escala fora da tabela.
-    - **Meio-campo** (`passada`, em `escalacao.js`): VOL ↔ MC e MEI ↔ MC disputam a vaga de igual para igual com o dono da posição, e ganha quem tiver mais valor ou overall. Exemplo: dois volantes melhores que os MC jogam um de VOL e o outro de MC. VOL ↔ MEI não vale.
+    - **Disputa por vaga** (`passada` e `MESMA_FAMILIA`, em `escalacao.js`): quem é da mesma "família" disputa a vaga de igual para igual com o dono da posição, e ganha quem tiver mais valor ou overall.
+      - Meio: VOL ↔ MC e MEI ↔ MC. Exemplo: dois volantes melhores que os MC jogam um de VOL e o outro de MC. VOL ↔ MEI não vale.
+      - Ataque: PE, PD, SA e CA disputam qualquer vaga do ataque (PE, PD, SA e CA). Exemplo: três centroavantes melhores que os pontas jogam os três, um de CA e dois nas pontas. ME e MD não são vagas de ataque.
       - No fim, `arrumarPosicoes` troca dois titulares de vaga quando os dois ficam mais perto da posição de origem (um VOL na vaga de MC e um MC na de VOL voltam cada um para a sua). Ninguém entra nem sai do time nessa etapa.
     - **Critério** (`escalarSozinho(plano, criterio)`): "v" = maior valor de mercado (padrão; desempate pelo overall) ou "o" = maior overall (desempate pelo valor; quem não tem overall fica por último).
       - Na aba Time, o grupo "Escalar por: Valor | Overall" (`#auto-v`, `#auto-o`) escala na hora e marca o escolhido.

@@ -53,17 +53,21 @@ test("CA na vaga de zagueiro é improvisado; o resto segue a tabela", () => {
 });
 
 test("escalar sozinho pelo valor ou pelo overall", () => {
-  const gol = vagaDe("4-3-3", "GOL"), ca = vagaDe("4-3-3", "CA");
-  const doElenco = (P, pos) => elencoAtual(P).filter((p) => p.pos === pos);
+  const gol = vagaDe("4-3-3", "GOL");
+  const ataque = FORMS["4-3-3"].map((v, i) => i).filter((i) => ["PE", "PD", "SA", "CA"].includes(FORMS["4-3-3"][i][0]));
+  const doElenco = (P, ...pos) => elencoAtual(P).filter((p) => pos.includes(p.pos));
   const porValor = arsenal();
   const porOverall = { ...arsenal(), xi: {} };
   escalarSozinho(porOverall, "o");
-  // No gol e no centroavante entra o melhor da posição pelo critério escolhido
-  for (const [i, pos] of [[gol, "GOL"], [ca, "CA"]]) {
-    const ps = doElenco(porValor, pos);
-    expect(D.BYID[porValor.xi[i]].v).toBe(Math.max(...ps.map((p) => p.v)));
-    expect(D.BYID[porOverall.xi[i]].ovr).toBe(Math.max(...ps.map((p) => p.ovr)));
-  }
+  // No gol entra o melhor goleiro pelo critério escolhido
+  const gols = doElenco(porValor, "GOL");
+  expect(D.BYID[porValor.xi[gol]].v).toBe(Math.max(...gols.map((p) => p.v)));
+  expect(D.BYID[porOverall.xi[gol]].ovr).toBe(Math.max(...gols.map((p) => p.ovr)));
+  // No ataque jogam os 3 melhores atacantes (PE, PD, SA ou CA), seja qual for a posição de cada um
+  const atacantes = doElenco(porValor, "PE", "PD", "SA", "CA");
+  const top3 = (campo) => atacantes.map((p) => p[campo]).sort((a, b) => b - a).slice(0, 3);
+  expect(ataque.map((i) => D.BYID[porValor.xi[i]].v).sort((a, b) => b - a)).toEqual(top3("v"));
+  expect(ataque.map((i) => D.BYID[porOverall.xi[i]].ovr).sort((a, b) => b - a)).toEqual(top3("ovr"));
   expect(Object.keys(porOverall.xi)).toHaveLength(11);
   // Pelo overall, a força do time não fica abaixo da escalação pelo valor neste elenco
   expect(forcaDoTime(porOverall).media).toBeGreaterThanOrEqual(forcaDoTime(porValor).media);
@@ -77,7 +81,9 @@ test("escalar sozinho: VOL ↔ MC e MEI ↔ MC disputam a vaga pelo valor ou pel
   expect(passada("MC", "MEI")).toBe(0);
   expect(passada("MEI", "MC")).toBe(0);
   expect(passada("VOL", "MEI")).toBeGreaterThan(0); // VOL ↔ MEI não
-  expect(passada("CA", "PE")).toBeGreaterThan(0);   // no ataque, a posição de origem continua primeiro
+  // No ataque, PE, PD, SA e CA disputam qualquer vaga do ataque
+  for (const v of ["PE", "PD", "SA", "CA"]) for (const pos of ["PE", "PD", "SA", "CA"]) expect(passada(v, pos)).toBe(0);
+  expect(passada("ME", "PE")).toBeGreaterThan(0); // meia pelo lado não é vaga de ataque
   expect(nivel("MC", "MEI")).toBe("ideal");
   const vaga = (r) => vagaDe("4-3-3", r);
   const novo = (id, pos, v, ovr) => ({ id, n: id, pos, a: 25, v, ovr, nat: "", club: "NOVO", num: "", ctr: "" });
@@ -104,8 +110,17 @@ test("escalar sozinho: VOL ↔ MC e MEI ↔ MC disputam a vaga pelo valor ou pel
   const Q = com(novo("C1", "MC", 500), novo("C2", "MC", 450), novo("C3", "MC", 400));
   escalarSozinho(Q, "v");
   expect(["C1", "C2", "C3"].every((id) => Object.values(Q.xi).includes(id))).toBe(true);
+  // Três centroavantes valiosíssimos: os três jogam no ataque (um de CA e dois nas pontas), na frente dos pontas do elenco
+  const A = com(novo("A1", "CA", 500), novo("A2", "CA", 450), novo("A3", "CA", 400));
+  escalarSozinho(A, "v");
+  expect([A.xi[vaga("PE")], A.xi[vaga("CA")], A.xi[vaga("PD")]].sort()).toEqual(["A1", "A2", "A3"]);
+  // Dois pontas-direitas valiosíssimos: os dois jogam (um de PD e o outro em outra vaga do ataque)
+  const B = com(novo("D1", "PD", 500), novo("D2", "PD", 450));
+  escalarSozinho(B, "v");
+  expect(Object.values(B.xi)).toEqual(expect.arrayContaining(["D1", "D2"]));
+  expect(["D1", "D2"]).toContain(B.xi[vaga("PD")]);
   // Ninguém fica fora da sua posição quando dá para trocar: nenhum par de titulares ficaria melhor trocado
-  for (const X of [P, M, O, Q]) {
+  for (const X of [P, M, O, Q, A, B]) {
     const sl = FORMS[X.form], ord = (i, id) => compatibilidade(sl[i][0], (D.BYID[id] || X.custom.find((c) => c.id === id)).pos).ordem;
     for (const i in X.xi) for (const j in X.xi) expect(ord(i, X.xi[j]) + ord(j, X.xi[i])).toBeGreaterThanOrEqual(ord(i, X.xi[i]) + ord(j, X.xi[j]));
   }
@@ -148,7 +163,7 @@ test("vendido, liberado ou emprestado fora não fica no banco; trocar de formaç
   const livres = elencoAtual(P).filter((p) => !Object.values(P.xi).includes(p.id));
   const gol = 0, ce = vagaDe("4-3-3", "CA");
   adicionarReserva(P, gol, livres.find((p) => p.pos === "GOL").id);
-  adicionarReserva(P, ce, livres.find((p) => p.pos === "CA" || p.pos === "SA").id);
+  adicionarReserva(P, ce, livres.find((p) => p.pos !== "GOL").id); // qualquer um de linha que ficou fora do time
   const reservaGol = reservasDa(P, gol)[0];
   // Vender o reserva do gol: some do banco
   const Q = structuredClone(P);

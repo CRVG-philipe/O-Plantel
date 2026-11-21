@@ -86,6 +86,7 @@ test("ajustes manuais do arquivo: Fábio (Fluminense, goleiro) 78 e Thiago Mende
   expect(fabio.pos).toBe("GOL");
   expect(fabio.ovr).toBe(78);
   expect(D.ALL.find((p) => p.n === "Thiago Mendes" && p.club === "T1974").ovr).toBe(79);
+  expect(D.ALL.find((p) => p.n === "Richarlison" && p.club === "T33").ovr).toBe(80); // Tottenham
   // Todo ajuste do arquivo bate com um jogador da base e vale no lugar do overall.json
   const ajustes = JSON.parse(fs.readFileSync("public/overall-ajustes.json", "utf8"));
   for (const [k, js] of Object.entries(ajustes))
