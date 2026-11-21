@@ -84,6 +84,11 @@ for arq,arq_bruto in STATS_ARQS:
                     x=bruto.get(str(sid)) if sid else None
                     if x: c['p'][i][8]=x[:4] if x[0]>0 else [0,0,0,0]; atualizados+=1; pelo_id+=1
     print(arq,'| jogadores atualizados:',atualizados,'(nome repetido, resolvido pelo ID:',pelo_id,') | nomes não encontrados:',nao_achados)
+# ---- Fotos HD dos jogadores (fotos-ids.json + public/img/players/), pelo mesmo script que roda sozinho ----
+sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
+from marcar_fotos_hd import marcar,relatorio
+marcar(clubs)
 json.dump({'leagues':leagues,'clubs':clubs,'updated':'20/11/2026'},open('public/data.json','w',encoding='utf-8'),ensure_ascii=False,separators=(',',':'))
 print(os.path.getsize('public/data.json')//1024,'KB', 'stats' if st else 'no stats')
 print('fotos HD:',sum(1 for c in clubs for p in c['p'] if p[9]),'de',sum(len(c['p']) for c in clubs),'| escudos HD:',sum(1 for c in clubs if c['hd']),'de',len(clubs))
+relatorio(leagues,clubs)
