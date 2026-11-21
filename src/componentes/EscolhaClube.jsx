@@ -207,19 +207,33 @@ function EtapaClube({ app, cor }) {
   const valorTotal = c.p.reduce((s, r) => s + r[5], 0);
   const salvo = db.plans[c.k]; // já existe plano deste clube?
   const deslizar = useDeslizar(app.passo);
+  // Animação da troca: lembra o clube anterior e para que lado foi (1 = próximo, -1 = anterior, 0 = acabou de abrir).
+  // O escudo novo entra por esse lado, o antigo sai pelo outro, e o texto vem logo atrás.
+  const mov = useRef({ i: indice, dir: 0, antes: null });
+  if (mov.current.i !== indice) {
+    const d = (indice - mov.current.i + n) % n;
+    mov.current = { i: indice, dir: d === n - 1 ? -1 : 1, antes: clubes[mov.current.i] };
+  }
+  const { dir, antes } = mov.current;
   return (
-    <>
+    <div className="esc-etapa-clube" style={{ "--dir": dir, "--dy": dir ? "0px" : "10px" }}>
       <p className="esc-rotulo">{L.n}</p>
       <div className="esc-clubes" {...deslizar}>
-        <span className="esc-vizinho" aria-hidden="true"><Escudo k={anterior.k} z={30} /></span>
-        <div className="esc-escudo"><Escudo k={c.k} z={92} /></div>
-        <span className="esc-vizinho" aria-hidden="true"><Escudo k={proximo.k} z={30} /></span>
+        <span className="esc-vizinho" aria-hidden="true"><span key={anterior.k}><Escudo k={anterior.k} z={30} /></span></span>
+        {/* key: a cada clube o círculo é desenhado de novo, e as animações recomeçam */}
+        <div className="esc-escudo" key={c.k}>
+          {antes && <span className="esc-escudo-sai" aria-hidden="true"><Escudo k={antes.k} z={92} /></span>}
+          <span className="esc-escudo-entra"><Escudo k={c.k} z={92} /></span>
+        </div>
+        <span className="esc-vizinho" aria-hidden="true"><span key={proximo.k}><Escudo k={proximo.k} z={30} /></span></span>
       </div>
-      <h1 className="esc-nome">{c.n}</h1>
-      <p className="esc-sub">Técnico: {c.coach || "–"}</p>
-      <div className="esc-cartoes">
-        <div className="esc-cartao"><b>{dinheiro(valorTotal)}</b><span>valor do elenco</span></div>
-        <div className="esc-cartao"><b>{c.p.length}</b><span>jogadores</span></div>
+      <div className="esc-info" key={c.k}>
+        <h1 className="esc-nome">{c.n}</h1>
+        <p className="esc-sub">Técnico: {c.coach || "–"}</p>
+        <div className="esc-cartoes">
+          <div className="esc-cartao"><b>{dinheiro(valorTotal)}</b><span>valor do elenco</span></div>
+          <div className="esc-cartao"><b>{c.p.length}</b><span>jogadores</span></div>
+        </div>
       </div>
       <div className="esc-acao esc-acoes">
         <button className="esc-round" aria-label="Clube anterior" onClick={() => app.passo(-1)}>‹</button>
@@ -228,6 +242,6 @@ function EtapaClube({ app, cor }) {
         </button>
         <button className="esc-round" aria-label="Próximo clube" onClick={() => app.passo(1)}>›</button>
       </div>
-    </>
+    </div>
   );
 }

@@ -116,6 +116,10 @@ React 19 + Vite 6, em JavaScript (sem TypeScript).
   - `divisao`: só aparece se o país tiver mais de uma liga (Brasil com 3; Inglaterra, Espanha, Itália, Alemanha e França com 2). Fundo = cor do país (`PAISES` em `constantes.js`).
   - `clube`: escudo num círculo branco, vizinhos, valor e jogadores. Setas, teclado e deslizar o dedo trocam de clube. Fundo = `corDeFundo` (`c`, senão `c2`, senão cinza `#222428`, sempre com brilho ≤ 0,6 para o texto branco ser legível).
   - "Voltar" vai para a tela anterior real (pula a divisão se não houve). Transições de 300ms, desligadas com `prefers-reduced-motion`.
+  - Troca de clube animada: o escudo novo entra pelo lado da troca, girando de leve, e o antigo sai pelo outro, dentro do círculo branco.
+    - Os vizinhos, o nome, o técnico e os cartões vêm logo depois, um após o outro, e o fundo muda de cor em 0,55s.
+    - Como funciona: `EtapaClube` guarda num `useRef` o clube anterior e a direção (`--dir`: 1, -1 ou 0 ao abrir); o `key={c.k}` faz as animações recomeçarem a cada troca.
+    - O CSS fica em `estilo.css`, nos `@keyframes esc-*`. Tudo é desligado com `prefers-reduced-motion`.
   - Bandeiras: SVGs do Wikimedia Commons em `public/img/flags/`.
 - Moeda (€, R$, US$; `dinheiro.js` e `cotacao.js`):
   - **Tudo é guardado em euro.** A conversão é só na exibição (`dinheiro(v)`, com formato "€ 12 mi", "R$ 70 mi", "US$ 13 mil") e ao ler o que foi digitado (`paraCampo`/`lerCampo`; campo sem mexer mantém o valor original exato).
