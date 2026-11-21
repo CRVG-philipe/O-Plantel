@@ -135,6 +135,8 @@ img.face{object-fit:cover;object-position:top;background-color:#fff} /* fotos HD
 @media (hover:hover) and (pointer:fine){.inp kbd{display:inline-block}}
 .fbtn{border:0;border-radius:12px;background:var(--sf);box-shadow:0 0 0 1px var(--line);padding:0 14px;font-weight:600;min-height:44px;white-space:nowrap}
 .fbtn b{background:var(--clubVis);color:var(--clubVisInk);border-radius:999px;font-size:11px;padding:1px 6px;margin-left:6px}
+/* valor estimado (sem valor no Transfermarkt): "~€ 300 mil", com o aviso ao passar o mouse */
+.estimado{cursor:help}
 /* selo "Recomendado" nos 10 primeiros do Mercado (ordem Recomendados), na cor do clube */
 .selo-rec{display:inline-block;margin-top:4px;font-size:10.5px;font-weight:700;letter-spacing:.2px;line-height:1.5;white-space:nowrap;
   padding:1px 7px;border-radius:99px;color:var(--clubVis);background:color-mix(in srgb,var(--clubVis) 13%,transparent)}

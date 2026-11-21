@@ -19,8 +19,18 @@ async function carregarApelidos() {
   }
 }
 
+// Valores estimados de quem está sem valor no Transfermarkt (public/valores-estimados.json, gerado por
+// dados-brutos/estimar_valores.py): { "<clube>": { "<nome>|<nascimento>": valor_em_€mi } }. Se falhar, segue sem eles.
+async function carregarEstimados() {
+  try {
+    return await fetch("valores-estimados.json").then((r) => r.json());
+  } catch (e) {
+    return {};
+  }
+}
+
 export async function carregarDados() {
-  const [DATA, APELIDOS] = await Promise.all([fetch("data.json").then((r) => r.json()), carregarApelidos()]);
+  const [DATA, APELIDOS, ESTIMADOS] = await Promise.all([fetch("data.json").then((r) => r.json()), carregarApelidos(), carregarEstimados()]);
   Object.assign(D, { DATA, APELIDOS, LG: {}, CL: {}, ALL: [], BYID: {} }); // começa do zero
   D.CLUBS = DATA.clubs;
   D.LEAGUES = DATA.leagues;
@@ -45,7 +55,9 @@ export async function carregarDados() {
       let a = ref.getFullYear() - b.getFullYear();
       if (new Date(ref.getFullYear(), b.getMonth(), b.getDate()) > ref) a--;
       if (!dob) a = 0;
-      const p = { id: c.k + "-" + i, num, n, nn: norm(n), pos, ctr, v, nat, a, st, sp, hd, lg: c.lg, club: c.k, end26: !!ctr && ctr <= lim };
+      // Valor: o real do Transfermarkt sempre tem prioridade; sem ele (0), o estimado, marcado com "vEst"
+      const est = v > 0 ? undefined : ESTIMADOS?.[c.k]?.[n + "|" + dob];
+      const p = { id: c.k + "-" + i, num, n, nn: norm(n), pos, ctr, v: est > 0 ? est : v, vEst: est > 0, nat, a, st, sp, hd, lg: c.lg, club: c.k, end26: !!ctr && ctr <= lim };
       D.ALL.push(p);
       D.BYID[p.id] = p;
     });

@@ -3,10 +3,10 @@ import { useEffect, useMemo, useRef } from "react";
 import { D } from "../logica/dados.js";
 import { CHIPS, corDoSetor } from "../logica/constantes.js";
 import { ctrTxt } from "../logica/formato.js";
-import { dinheiro, calcularDinheiro, precoDeCompra, valorJogador } from "../logica/dinheiro.js";
+import { dinheiro, calcularDinheiro, precoDeCompra } from "../logica/dinheiro.js";
 import { buscarJogadores, contarFiltros } from "../logica/mercado.js";
 import { notasDoMercado } from "../logica/recomendacao.js";
-import { Avatar, Bandeira, MiniStats, Nota, Pos } from "./Jogador.jsx";
+import { Avatar, Bandeira, MiniStats, Nota, Pos, Valor } from "./Jogador.jsx";
 
 const ORDEM = { rec: "Recomendados", vd: "Valor ↓", va: "Valor ↑", a: "Idade ↑", n: "Nota ↓" };
 const N_SELO = 10; // os 10 primeiros da lista em "Recomendados" ganham o selo
@@ -77,7 +77,7 @@ export default function Mercado({ app }) {
                     </div>
                     <Nota st={p.st} className="so-largo" />
                     <div className="rt vl">
-                      <div className="v num">{valorJogador(p.v)}</div>
+                      <div className="v num"><Valor p={p} /></div>
                       <div className={"s" + (cabe ? "" : " falta")}>{cabe ? "cabe no caixa" : "faltam " + dinheiro(preco - caixa)}</div>
                       {i < comSelo && <span className="selo-rec" title={`Nota de recomendação: ${notas.get(p.id)} de 100`}>★ Recomendado</span>}
                     </div>

@@ -9,6 +9,8 @@ import { corDeFundo } from "../src/logica/formato.js";
 
 const DATA = JSON.parse(fs.readFileSync("public/data.json", "utf8"));
 const APELIDOS = JSON.parse(fs.readFileSync("public/apelidos.json", "utf8"));
+const ESTIMADOS = JSON.parse(fs.readFileSync("public/valores-estimados.json", "utf8"));
+let semEstimados = false; // true = simula o valores-estimados.json fora do ar
 const CHAVE = "plantel:v2";
 // Cotação que a "API de mentira" devolve nos testes
 const COTACAO_TESTE = { amount: 1, base: "EUR", date: "2026-11-19", rates: { BRL: 6, USD: 1.1 } };
@@ -19,12 +21,17 @@ beforeEach(() => {
   localStorage.clear();
   delete document.documentElement.dataset.theme;
   apiCotacaoFora = false;
+  semEstimados = false;
   globalThis.fetch = vi.fn(async (url) => {
     if (String(url).includes("frankfurter")) {
       if (apiCotacaoFora) throw new Error("sem internet");
       return { ok: true, json: async () => structuredClone(COTACAO_TESTE) };
     }
     if (String(url).includes("apelidos")) return { ok: true, json: async () => structuredClone(APELIDOS) };
+    if (String(url).includes("valores-estimados")) {
+      if (semEstimados) throw new Error("fora do ar");
+      return { ok: true, json: async () => structuredClone(ESTIMADOS) };
+    }
     return { ok: true, json: async () => structuredClone(DATA) };
   });
   window.matchMedia = () => ({ matches: false });
@@ -417,7 +424,8 @@ test("moeda: R$ e US$ só na exibição; o que é digitado vira euro ao salvar",
   // Orçamento: campo e atalhos em reais; guardado em euro
   await irParaBrasil();
   const c = clubesDa("BRA")[0];
-  expect(document.querySelector(".esc-cartao b").textContent).toBe(dinheiro(c.p.reduce((s, r) => s + r[5], 0)));
+  // valor do elenco: real, ou estimado para quem não tem valor no Transfermarkt
+  expect(document.querySelector(".esc-cartao b").textContent).toBe(dinheiro(c.p.reduce((s, r) => s + (r[5] || ESTIMADOS[c.k]?.[`${r[1]}|${r[3]}`] || 0), 0)));
   expect(document.querySelector(".esc-cartao b").textContent).toMatch(/^R\$ /);
   clique(botao("Planejar 2027"));
   const orc = noPainel().getByLabelText("Orçamento inicial (R$ milhões)");
@@ -619,7 +627,37 @@ test("busca de país: filtra por país ou liga e esconde continentes vazios", as
   expect(titulo()).toBe(clubesDa("BRC")[0].n);
 });
 
-test("jogador sem valor: aparece '—' e a compra custa no mínimo € 0,1 mi", async () => {
+test("valor estimado: '~' na frente, aviso ao passar o mouse, e vale no caixa", async () => {
+  // Um jogador da Série C sem valor no Transfermarkt, com estimativa de € 0,15 mi ou mais (acima do preço mínimo)
+  const todos = DATA.clubs.flatMap((c) => c.p.map((r, i) => ({ id: `${c.k}-${i}`, n: r[1], v: r[5], est: ESTIMADOS[c.k]?.[`${r[1]}|${r[3]}`], lg: c.lg })));
+  const alvo = todos.find((j) => j.lg === "BRC" && !j.v && j.est >= 0.15 && todos.filter((x) => x.n === j.n).length === 1);
+  expect(alvo).toBeTruthy();
+  render(<App />);
+  await irParaBrasil();
+  clique(botao("Planejar 2027"));
+  clique(noPainel().getByRole("button", { name: "Começar" }));
+  clique(screen.getByRole("tab", { name: "Mercado" }));
+  fireEvent.change(screen.getByLabelText("Buscar jogador"), { target: { value: alvo.n } });
+  const linha = [...document.querySelectorAll("#mList .row")].find((l) => l.querySelector(".nm").textContent === alvo.n);
+  const valor = linha.querySelector(".vl .v .estimado");
+  expect(valor.textContent).toBe("~" + dinheiro(alvo.est));                 // ex.: "~€ 300 mil"
+  expect(valor.getAttribute("title")).toBe("valor estimado");
+  clique(linha);
+  expect(painel().querySelector(".facts").textContent).toContain("~" + dinheiro(alvo.est) + "valor");
+  expect(noPainel().getByText(/^Valor estimado: o Transfermarkt não tem valor/)).toBeTruthy();
+  expect(noPainel().getByLabelText(/Valor da compra/).value).toBe(String(alvo.est)); // preço sugerido = estimado
+  clique(noPainel().getByRole("button", { name: "Contratar" }));
+  expect(salvo().plans[clubesDa("BRA")[0].k].ins).toEqual([{ id: alvo.id, type: "compra", fee: alvo.est }]);
+  expect(caixa()).toBe(dinheiro(20 - alvo.est));
+  // Valor real sempre tem prioridade: quem tem valor no Transfermarkt não aparece com "~"
+  const real = todos.find((j) => j.lg === "BRC" && j.v > 0 && todos.filter((x) => x.n === j.n).length === 1);
+  fireEvent.change(screen.getByLabelText("Buscar jogador"), { target: { value: real.n } });
+  const linhaReal = [...document.querySelectorAll("#mList .row")].find((l) => l.querySelector(".nm").textContent === real.n);
+  expect(linhaReal.querySelector(".vl .v").textContent).toBe(dinheiro(real.v));
+});
+
+test("jogador sem valor e sem estimativa: aparece '—' e a compra custa no mínimo € 0,1 mi", async () => {
+  semEstimados = true; // simula o valores-estimados.json fora do ar
   // Um jogador da Série C sem valor no Transfermarkt
   const c = clubesDa("BRC").find((x) => x.p.some((r) => !r[5]));
   const i = c.p.findIndex((r) => !r[5]);

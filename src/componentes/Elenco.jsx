@@ -3,9 +3,9 @@
 import { D } from "../logica/dados.js";
 import { SECT, ORDER, corDoSetor } from "../logica/constantes.js";
 import { ctrTxt } from "../logica/formato.js";
-import { dinheiro, valorJogador } from "../logica/dinheiro.js";
+import { dinheiro } from "../logica/dinheiro.js";
 import { elencoOriginal, jogador, situacao } from "../logica/elenco.js";
-import { Avatar, Bandeira, Nota, Pos } from "./Jogador.jsx";
+import { Avatar, Bandeira, Nota, Pos, Valor } from "./Jogador.jsx";
 
 export default function Elenco({ app }) {
   const { plano } = app;
@@ -50,7 +50,7 @@ function LinhaPropria({ app, p }) {
         </div>
       </div>
       <Nota st={p.st} className="so-largo" />
-      <div className="rt"><div className="v num">{valorJogador(p.v)}</div>{pill}</div>
+      <div className="rt"><div className="v num"><Valor p={p} /></div>{pill}</div>
     </button>
   );
 }
@@ -67,7 +67,7 @@ function LinhaChegada({ app, m }) {
       </div>
       <Nota st={p.st} className="so-largo" />
       <div className="rt">
-        <div className="v num">{valorJogador(p.v)}</div>
+        <div className="v num"><Valor p={p} /></div>
         <span className="pill in">Chega · {m.type === "emprestimo" ? "empréstimo" : m.fee ? dinheiro(m.fee) : "grátis"}</span>
       </div>
     </button>

@@ -29,9 +29,22 @@ Foi inspirado no reconstruindo.thefenomeno.com, mas **não deve copiá-lo**. O f
     - bloco 2: rodada 2 (9.247 jogadores).
   - Ainda faltam 672 jogadores (`stats` null), 282 deles da Série C. O site mostra "Estatísticas indisponíveis".
   - `[0,0,0,0]` = não entrou em campo (não é "sem estatísticas"): mostra "0 jogos", sem a nota e com as médias por jogo "—".
-- Muitos têm valor 0 (sem valor no Transfermarkt): 876 dos 905 da Série C e dezenas por liga asiática.
-  - `valorJogador()` mostra "—" no lugar de "€ 0".
+- Valores sem Transfermarkt: 2.221 jogadores têm valor 0 no data.json (876 dos 905 da Série C e dezenas por liga).
+  - Todos ganham um **valor estimado** em `public/valores-estimados.json` (`{clube: {"nome|nascimento": valor}}`), gerado por `dados-brutos/estimar_valores.py`.
+  - O `data.json` não muda.
+  - **Prioridade:** o valor real do Transfermarkt sempre vem primeiro. O estimado só entra quando o real é 0.
+  - Ao carregar (`dados.js`), o estimado vira `p.v`, com `p.vEst = true`. Vale em tudo: mercado, caixa, venda, resumo, recomendação e valor do elenco.
+    - A única exceção é o número "jogadores com valor" da tela inicial, que conta só os reais.
+  - **Na tela:** o componente `Valor` (`Jogador.jsx`) mostra "~€ 300 mil", com `title="valor estimado"`. O painel de compra explica, e o rodapé avisa que "~" é estimado.
+  - Sem valor e sem estimativa (por exemplo, se o arquivo falhar): `valorJogador()` mostra "—".
   - `precoDeCompra()` cobra no mínimo `PRECO_MINIMO` (€ 0,1 mi) numa compra. Vale também para "cabe no caixa" e para o filtro "só quem cabe".
+  - **Como é estimado** (`estimar_valores.py`, rodar depois do `build_final.py`):
+    - Valor-base: mediana dos valores reais por faixa de idade (até 21, 22–25, 26–29, 30–32, 33+) × setor (GOL, defesa, meio, ataque). Faixa com menos de 5 jogadores usa a mediana da idade.
+    - Fatores de jogos (0, 1–9, 10–19, 20–29, 30+) e de nota (<6,5, 6,5–6,8, 6,8–7,1, 7,1+): mediana de real ÷ previsto em cada faixa, entre 0,4 e 2,5. Sem estatísticas, fator 1.
+    - Série C: modelo da Série B × 0,35. A razão mediana(BRC) ÷ mediana(BRB) só seria usada com 50+ valores reais na Série C; em 21/11/2026 eram 29. Limites de € 0,05 a 1,5 mi.
+    - Outras ligas: modelo da própria liga (ou da de cima do mesmo país, se tiver menos de 60 valores reais), limitado ao percentil 75 dos valores reais da liga.
+    - Tudo é arredondado para € 0,05 mi, com mínimo de € 0,05 mi.
+    - Em 21/11/2026, os estimados da Série C ficaram entre € 0,05 e 0,3 mi.
 - Cada liga tem `div` (1, 2 ou 3): a divisão dentro do país. A tela de divisão ordena por ele.
 
 ## Comandos (na raiz do projeto)
@@ -118,7 +131,10 @@ React 19 + Vite 6, em JavaScript (sem TypeScript).
     - A correção definitiva vai no `correcoes_jogadores.json`.
   - Para um bloco novo, acrescentar o par de arquivos em `STATS_ARQS`, no `build_final.py`.
   - `tm_new.json`, `sofa_new.json` e `build_new.py`: dados brutos e o script que gerou as ligas novas. Ficam só como referência: o script usa caminhos `raw/` da coleta original e não precisa rodar.
-  - Para gerar: `python dados-brutos/build_all.py` e depois `python dados-brutos/build_final.py` (rodar na raiz do projeto).
+  - Para gerar (na raiz do projeto), nesta ordem:
+    1. `python dados-brutos/build_all.py`;
+    2. `python dados-brutos/build_final.py`;
+    3. `python dados-brutos/estimar_valores.py`, que refaz os valores estimados a partir do data.json novo.
   - Os scripts abrem os arquivos com `encoding='utf-8'`. No Windows isso é obrigatório.
 
 ## Decisões de design

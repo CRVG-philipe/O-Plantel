@@ -61,6 +61,9 @@ export default function PainelCompra({ app, id }) {
       {tipo === "compra" && !(p.v > 0) && (
         <p className="note">Jogador sem valor no Transfermarkt: a compra custa no mínimo {dinheiro(PRECO_MINIMO)}.</p>
       )}
+      {p.vEst && (
+        <p className="note">Valor estimado: o Transfermarkt não tem valor para este jogador. A estimativa usa idade, posição, jogos e nota{p.v < PRECO_MINIMO ? `, e a compra custa no mínimo ${dinheiro(PRECO_MINIMO)}` : ""}.</p>
+      )}
       <div className="acts" style={{ marginTop: 8 }}>
         {ja ? <button className="btn danger" id="rm" onClick={desfazer}>Desfazer contratação</button>
           : <button className="btn" id="cn" onClick={app.fecharPainel}>Cancelar</button>}

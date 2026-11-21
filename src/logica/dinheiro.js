@@ -33,9 +33,10 @@ export const dinheiro = (vEur) => {
   return `${s} 0`;
 };
 
-// Valor de UM jogador: muitos (Série C, ligas asiáticas) não têm valor no Transfermarkt (0).
-// Para eles mostramos "—" em vez de "€ 0". Totais (caixa, valor do elenco) continuam com dinheiro().
-export const valorJogador = (v) => (v > 0 ? dinheiro(v) : "—");
+// Valor de UM jogador. Quem não tem valor no Transfermarkt usa o estimado (estimado = true), mostrado com "~"
+// na frente ("~€ 300 mil"); sem valor nenhum, "—" em vez de "€ 0". Totais (caixa, valor do elenco) usam dinheiro().
+// Na tela, use o componente <Valor p={p} /> (Jogador.jsx), que também põe o aviso "valor estimado" ao passar o mouse.
+export const valorJogador = (v, estimado = false) => (v > 0 ? (estimado ? "~" : "") + dinheiro(v) : "—");
 
 // Preço para contratar: o valor do jogador, mas nunca menos que € 0,1 mi (jogadores sem valor)
 export const PRECO_MINIMO = 0.1;

@@ -89,7 +89,7 @@ function useDeslizar(fn) {
 // ---------- Tela inicial ----------
 function TelaInicio({ app, cor }) {
   const { db } = app;
-  const comValor = D.ALL.filter((p) => p.v > 0).length;
+  const comValor = D.ALL.filter((p) => p.v > 0 && !p.vEst).length; // só valores reais (sem os estimados)
   // Planos salvos: o último aberto primeiro, depois em ordem alfabética
   const planos = Object.values(db.plans).filter((p) => D.CL[p.club])
     .sort((a, b) => (b.club === db.last) - (a.club === db.last) || D.CL[a.club].n.localeCompare(D.CL[b.club].n));
@@ -204,7 +204,7 @@ function EtapaClube({ app, cor }) {
   const n = clubes.length;
   const c = clubes[indice], anterior = clubes[(indice - 1 + n) % n], proximo = clubes[(indice + 1) % n];
   const L = D.LG[c.lg];
-  const valorTotal = c.p.reduce((s, r) => s + r[5], 0);
+  const valorTotal = D.ALL.reduce((s, p) => s + (p.club === c.k ? p.v : 0), 0); // com os valores estimados
   const salvo = db.plans[c.k]; // já existe plano deste clube?
   const deslizar = useDeslizar(app.passo);
   // Animação da troca: lembra o clube anterior e para que lado foi (1 = próximo, -1 = anterior, 0 = acabou de abrir).

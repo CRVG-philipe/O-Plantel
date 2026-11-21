@@ -4,6 +4,7 @@ import { D } from "../logica/dados.js";
 import { corDoSetor } from "../logica/constantes.js";
 import { dec } from "../logica/formato.js";
 import { codigoDoPais } from "../logica/nacionalidades.js";
+import { valorJogador } from "../logica/dinheiro.js";
 import { Foto, Escudo } from "./Imagens.jsx";
 
 // Foto com anel na cor do setor; "clube" mostra o mini escudo no canto (para quem é de outro clube)
@@ -21,6 +22,12 @@ export function Bandeira({ nat }) {
   const c = codigoDoPais(nat);
   if (!c) return null;
   return <img className="fl" src={`img/flags/paises/${c}.svg`} alt={nat} title={nat} loading="lazy" decoding="async" width="16" height="12" />;
+}
+
+// Valor de mercado do jogador: o real, ou o estimado com "~" e o aviso "valor estimado" ao passar o mouse
+export function Valor({ p }) {
+  if (!p.vEst) return valorJogador(p.v);
+  return <span className="estimado" title="valor estimado">{valorJogador(p.v, true)}</span>;
 }
 
 // Selo da posição na cor do setor ("GOL", "ZAG"...)
