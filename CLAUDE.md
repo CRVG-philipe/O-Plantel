@@ -26,19 +26,21 @@ Foi inspirado no reconstruindo.thefenomeno.com, mas **não deve copiá-lo**. O f
   - América do Norte e Central: CAN (Canadá), CRC (Costa Rica), HON (Honduras) e USL (USL Championship, 2ª divisão dos EUA, `div` 2).
   - Europa: ISR (Israel), HUN (Hungria), SVK (Eslováquia), BUL (Bulgária), CYP (Chipre) e SVN (Eslovênia).
   - África e Oceania: EGY (Egito), MAR (Marrocos), RSA (África do Sul) e AUS (Austrália).
-  - Os jogadores já vieram com estatísticas (343 sem). Cerca de 40% têm foto HD (3.397 de 9.259) e poucos têm atributos (482), porque o Sofascore bloqueou a coleta no meio. CAN, CRC, HON, USL, HUN, SVK, BUL, CYP, SVN, RSA e AUS ficaram praticamente sem fotos.
+  - Os jogadores já vieram com estatísticas (343 sem). Na 1ª coleta, só 3.397 tinham foto HD e 482 tinham atributos, porque o Sofascore bloqueou a coleta no meio.
+  - Parte 2 (22/11/2026): mais 1.452 fotos (`fotos-ligas-3-parte2.zip`) e o overall refeito com mais atributos. Hoje são 4.831 de 9.259 com foto (52%) e 1.709 com atributos. O overall de 1.096 jogadores mudou, quase sempre ±1 ou ±2.
+  - Ganharam fotos: CYP 214, USL 165, HUN 141, SVK 128, BUL 123, ISR 118, RSA 111, CRC 93, AUS 90, SVN 83, CAN 62, MAR 53 e HON 53. Ainda têm pouca foto (menos de 40%): HON, RSA, USL, AUS, CAN, SVN, CRC, ISR, BUL, MAR, SVK e HUN.
   - **Dupla nacionalidade:** 1.580 jogadores da rodada 3 vêm com dois países, como "Bolívia/Argentina" (campo 6). `nacionalidades(nat)` (`nacionalidades.js`) separa os países; a bandeira é a do primeiro, e o filtro de nacionalidade acha o jogador por qualquer um dos dois.
   - Arquivos em `dados-brutos/rodada3/`:
     - `novas_ligas_3.json`: ligas e clubes no formato final, lido pelo `build_final.py` (que tira o campo `ci` dos clubes);
     - `fotos-ids-3.json`: `{clube: {nome: ID Sofascore}}`, lido pelo `marcar_fotos_hd.py`;
     - `ids_sofascore_novas_3.json`: ID Sofascore de cada jogador na ordem do elenco, montado de `players_r3.json`, para separar nomes repetidos no clube (Matías García, Alan González, Fredy Valencia e Mohamed Samir);
-    - `overall_r3.json`: overall já balanceado (por `overall_r3.py` e `balancear_r3.py`). O `balancear.py` junta este arquivo ao `public/overall.json`, sem sobrescrever clubes que já existem;
+    - `overall_r3.json`: overall já balanceado (por `overall_r3.py` e `balancear_r3.py`). Em 22/11/2026, foi trocado pela versão 2 (`overall-novas-3-v2.json`, com mais atributos; `attrs_r3.json` também foi atualizado). O `balancear.py` junta este arquivo ao `public/overall.json`, sem sobrescrever clubes que já existem;
     - `emprestimos_r3.json`: empréstimos dos 273 clubes novos, juntados ao `public/emprestimos.json`;
     - o resto (`tm_new3.json`, `sofa_new3.json`, `players_r3.json`, `attrs_r3.json`, `loans_tm3.json`, `stats_bloco3.json` e `build_new3.py`) é dado bruto da coleta, só para referência (os scripts usam caminhos `raw/` da coleta original).
   - Correções no `build_final.py`: nomes repetidos ("Premier League Egípcia", "Premiership Sul-Africana" e "Primera División da Costa Rica") e o `nat` de PER2 ("Perú") e SVN ("Eslovénia"), escritos igual aos jogadores.
   - Afinidade (`afinidade.js`): grupos novos `SULAM2`, `CENTRAL`, `MEDITERRANEO` e `AFRICA`, mais BOL e VEN em `SULAM` e HUN, SVK, BUL e SVN em `LESTE`. Só mudaram pares que envolvem ligas novas.
   - Países novos na tela de escolha: bandeiras em `public/img/flags/paises/<código>.svg` (flag-icons). Continentes novos: "África" e "Oceania"; "América do Norte" virou "América do Norte e Central". Argentina, Colômbia, Chile, Peru e Estados Unidos passaram a ter tela de divisão.
-- Fotos HD dos jogadores: 25.886 dos 32.872 (78%) têm foto em `public/img/players/<id>.webp` (95% nas rodadas 0 a 2; cerca de 40% na rodada 3).
+- Fotos HD dos jogadores: 27.320 dos 32.872 (83%) têm foto em `public/img/players/<id>.webp` (95% nas rodadas 0 a 2; 52% na rodada 3).
   - Quem não tem usa o sprite antigo (só nas 10 ligas originais) ou as iniciais.
 - Estatísticas:
   - As duas rodadas e os jogadores de ARG e SAU que faltavam ganharam estatísticas coletadas em 21/11/2026:
@@ -63,7 +65,7 @@ Foi inspirado no reconstruindo.thefenomeno.com, mas **não deve copiá-lo**. O f
     - Tudo é arredondado para € 0,05 mi, com mínimo de € 0,05 mi.
     - Em 21/11/2026, os estimados da Série C ficaram entre € 0,05 e 0,3 mi.
 - Cada liga tem `div` (1, 2 ou 3): a divisão dentro do país. A tela de divisão ordena por ele.
-- Overall e atributos (gerados em 21/11/2026): `public/overall.json`, no formato `{clube: {"nome|nascimento": [overall, 0, atributos]}}`. Todos os 32.872 jogadores têm overall, de 42 a 91; 15.777 têm atributos. As ligas da rodada 3 vêm de `dados-brutos/rodada3/overall_r3.json` (ver Rodada 3).
+- Overall e atributos (gerados em 21/11/2026): `public/overall.json`, no formato `{clube: {"nome|nascimento": [overall, 0, atributos]}}`. Todos os 32.872 jogadores têm overall, de 42 a 91; 17.004 têm atributos. As ligas da rodada 3 vêm de `dados-brutos/rodada3/overall_r3.json` (ver Rodada 3).
   - O overall do site é a **versão 1** (baseada no valor de mercado) com um **balanceamento por liga** por cima.
   - **Para gerar** (na raiz, sem argumentos, nesta ordem):
     1. `python dados-brutos/overall/overall.py`: lê `players_all.json` e `attrs.json` da mesma pasta e grava a versão 1 em `dados-brutos/overall/overall_v1.json`;
@@ -111,7 +113,7 @@ Foi inspirado no reconstruindo.thefenomeno.com, mas **não deve copiá-lo**. O f
   - `testes/time.test.js`: compatibilidade de posição, reservas e escalar pelo valor ou pelo overall.
   - `testes/estrangeiros.test.js`: limite de estrangeiros (Brasileirão, Argentina, LaLiga e o filtro do Mercado).
   - `testes/overall.test.js`: overall (Mbappé = 91), ajustes manuais (Fábio = 78, Thiago Mendes = 79), força do time, ordem Overall e o overall na recomendação.
-- Com as ~23 mil fotos, o `npm run dev` às vezes demora para servir as imagens. Para conferir fotos, use `npm run build` e `npm run preview`.
+- Com as ~28 mil fotos, o `npm run dev` às vezes demora para servir as imagens. Para conferir fotos, use `npm run build` e `npm run preview`.
 - `npm run build`: gera a versão final em `dist/` (não vai para o git). `npm run preview` serve o `dist/` para conferir.
 
 ## Estrutura
@@ -152,7 +154,7 @@ React 19 + Vite 6, em JavaScript (sem TypeScript).
 - `public/img/p_<LIGA>.webp`: sprite de fotos (32 colunas, células de 48px). `índice_foto` aponta para a célula; -1 = sem foto.
 - `public/img/p_<LIGA>.webp` só existe para as 10 ligas originais. Os jogadores novos não estão em nenhum sprite. Hoje o sprite é só reserva para quem não tem foto HD.
 - `public/img/players/<id>.webp`: fotos HD dos jogadores, nomeadas pelo ID do Sofascore.
-  - São ~23 mil arquivos (~74 MB), todos em WebP 150×150, qualidade 82, com fundo branco.
+  - São ~28 mil arquivos (~91 MB), todos em WebP 150×150, qualidade 82, com fundo branco.
   - O `Foto` (`Imagens.jsx`) usa `<img loading="lazy">` quando `hd` existe; senão o sprite; senão as iniciais.
   - No CSS, `img.face` tem fundo branco, para a foto ficar num círculo branco também no tema escuro.
   - A pasta **vai** para o git (não está no `.gitignore`).
