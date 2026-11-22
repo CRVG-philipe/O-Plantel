@@ -187,6 +187,29 @@ img.face{object-fit:cover;object-position:top;background-color:#fff} /* fotos HD
 .rola.esq{padding-left:9px}.rola.dir{padding-right:9px}
 .rola:hover::before{background:var(--sf2)}
 .rola[hidden]{display:none}
+/* Limite de estrangeiros (Estrangeiros.jsx): selo "EST", contador da aba Time, avisos e selo do Mercado */
+.est{display:inline-block;margin-left:5px;padding:0 4px;border-radius:4px;font-size:9px;line-height:14px;font-weight:800;letter-spacing:.04em;
+  vertical-align:2px;color:#7a4b00;background:#ffe2a8}
+.slot{position:relative}
+.slot > .est{position:absolute;left:calc(50% - 30px);top:-5px;margin:0;box-shadow:0 0 0 1.5px var(--sf);z-index:1}
+.mini .mini-est{margin-left:2px;padding:0 2px;font-size:7px;line-height:10px;vertical-align:1px}
+.est-box{margin:0 0 12px}
+.est-linha{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 16px;font-size:13px;color:var(--mute)}
+.est-cont b{color:var(--ink);font-size:15px}
+.est-cont.excede,.est-cont.excede b{color:var(--neg)}
+.est-sem,.est-lim{font-size:12px;color:var(--mute)}
+.est-aprox{font-size:12px;color:var(--warn);font-style:italic}
+.est-aviso{display:flex;flex-direction:column;gap:2px;margin-top:8px;padding:10px 12px;border-radius:12px;font-size:13px;
+  background:color-mix(in srgb,var(--neg) 12%,var(--sf));color:var(--ink);box-shadow:inset 3px 0 0 var(--neg)}
+.est-aviso b{color:var(--neg)}
+.est-elenco{padding:12px 14px;font-size:14px}
+.est-elenco b.num{font-size:15px}
+.est-card{margin-bottom:16px}
+.card .est-elenco + *{border-top:0}
+.est-vagas{margin:0 0 10px}
+.est-vagas.zero{color:var(--neg)}
+.selo-est{display:inline-block;margin-top:3px;padding:1px 7px;border-radius:99px;font-size:11px;font-weight:700;color:#7a4b00;background:#ffe2a8}
+.est,.selo-est{color:light-dark(#7a4b00,#ffd58a);background:light-dark(#ffe2a8,#4a3410)}
 @media (hover:none){.rola{display:none}} /* no celular, arrastar com o dedo já basta */
 .more{border:0;background:none;color:var(--clubVis);font-weight:600;width:100%;padding:14px;min-height:44px}
 .empty{padding:28px 16px;text-align:center;color:var(--mute);font-size:14px}

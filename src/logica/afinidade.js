@@ -8,7 +8,8 @@
 //   - as demais estão nos blocos abaixo, liga de destino por liga de destino
 
 const BR = ["BRA", "BRB", "BRC"];
-const SULAM = ["ARG", "URU", "COL", "CHI", "PAR", "ECU", "PER"];
+const SULAM = ["ARG", "URU", "COL", "CHI", "PAR", "ECU", "PER", "BOL", "VEN"];
+const SULAM2 = ["ARG2", "COL2", "PER2", "CHI2"];           // 2ª divisões da América do Sul (rodada 3)
 const GRANDES = ["ENG", "ESP", "ITA", "GER", "FRA"];
 const SEGUNDAS = ["ENG2", "ESP2", "ITA2", "GER2", "FRA2"];
 const VITRINE = ["POR", "NED", "BEL"];
@@ -16,14 +17,19 @@ const GOLFO = ["SAU", "QAT", "UAE"];
 const NORTE = ["MEX", "USA"];
 const ASIA = ["JPN", "KOR", "CHN"];
 const NORDICOS = ["NOR", "SWE", "DEN"];
-const LESTE = ["POL", "CZE", "CRO", "SRB", "UKR", "ROU", "RUS"];
+const LESTE = ["POL", "CZE", "CRO", "SRB", "UKR", "ROU", "RUS", "HUN", "SVK", "BUL", "SVN"];
+const MEDITERRANEO = ["ISR", "CYP"];
+const CENTRAL = ["CRC", "HON"];                             // América Central
+const AFRICA = ["EGY", "MAR", "RSA"];
 const CENTRO = ["AUT", "SUI"];
 
-const TODAS = [...BR, ...SULAM, ...GRANDES, ...SEGUNDAS, ...VITRINE, "TUR", "GRE", "SCO", ...CENTRO, ...NORDICOS, ...LESTE, ...GOLFO, ...NORTE, ...ASIA];
+const TODAS = [...BR, ...SULAM, ...SULAM2, ...GRANDES, ...SEGUNDAS, ...VITRINE, "TUR", "GRE", "SCO", ...CENTRO, ...NORDICOS, ...LESTE,
+  ...MEDITERRANEO, ...GOLFO, ...NORTE, "USL", "CAN", ...CENTRAL, ...ASIA, ...AFRICA, "AUS"];
 
 // País de cada liga (para "mesma liga / outra divisão do mesmo país")
-const PAIS = { BRA: "br", BRB: "br", BRC: "br", ENG: "en", ENG2: "en", ESP: "es", ESP2: "es", ITA: "it", ITA2: "it", GER: "de", GER2: "de", FRA: "fr", FRA2: "fr" };
-const DIV = { BRA: 1, BRB: 2, BRC: 3, ENG2: 2, ESP2: 2, ITA2: 2, GER2: 2, FRA2: 2 }; // as outras: 1ª divisão
+const PAIS = { BRA: "br", BRB: "br", BRC: "br", ENG: "en", ENG2: "en", ESP: "es", ESP2: "es", ITA: "it", ITA2: "it", GER: "de", GER2: "de", FRA: "fr", FRA2: "fr",
+  ARG: "ar", ARG2: "ar", COL: "co", COL2: "co", PER: "pe", PER2: "pe", CHI: "cl", CHI2: "cl", USA: "us", USL: "us" };
+const DIV = { BRA: 1, BRB: 2, BRC: 3, ENG2: 2, ESP2: 2, ITA2: 2, GER2: 2, FRA2: 2, ARG2: 2, COL2: 2, PER2: 2, CHI2: 2, USL: 2 }; // as outras: 1ª divisão
 
 const PADRAO = 0.3;
 
@@ -97,6 +103,41 @@ const REGRAS = [
   [SEGUNDAS, VITRINE, 0.45],
   [SEGUNDAS, [...NORDICOS, "SCO", ...CENTRO], 0.4],
   [SEGUNDAS, SEGUNDAS, 0.45],
+  // ---- Ligas da rodada 3 (só mexem em pares que envolvem as ligas novas) ----
+  // 2ª divisões da América do Sul: da própria região (a divisão de cima do país vem da regra "mesmo país")
+  [SULAM2, SULAM, 0.55],
+  [SULAM2, SULAM2, 0.5],
+  [SULAM2, ["BRB", "BRC"], 0.45],
+  [SULAM, SULAM2, 0.55],
+  [BR, SULAM2, 0.4],
+  [BR, ["BOL", "VEN"], 0.55],
+  // EUA (USL), Canadá e América Central: entre si, da MLS e da América do Sul
+  [["USL", "CAN"], ["USL", "CAN"], 0.6],
+  [["CAN"], ["USA"], 0.55],
+  [NORTE, ["CAN", ...CENTRAL], 0.6],
+  [["USL"], [...CENTRAL, ...SULAM2], 0.45],
+  [CENTRAL, CENTRAL, 0.6],
+  [CENTRAL, NORTE, 0.6],
+  [CENTRAL, ["USL", "CAN"], 0.45],
+  [CENTRAL, [...SULAM, ...SULAM2], 0.45],
+  // Israel e Chipre: da Grécia, de Portugal, do Leste e entre si
+  [MEDITERRANEO, MEDITERRANEO, 0.5],
+  [MEDITERRANEO, ["GRE"], 0.65],
+  [MEDITERRANEO, ["POR", "BEL"], 0.55],
+  [MEDITERRANEO, [...LESTE, ...SEGUNDAS], 0.5],
+  [MEDITERRANEO, ["BRA", "BRB"], 0.45],
+  [["GRE", "TUR"], MEDITERRANEO, 0.5],
+  // África: entre si; o Golfo compra do Egito e do Marrocos; França e Bélgica, do Marrocos
+  [AFRICA, AFRICA, 0.5],
+  [AFRICA, GOLFO, 0.4],
+  [["MAR"], ["FRA2"], 0.45],
+  [GOLFO, ["EGY", "MAR"], 0.55],
+  [["FRA", "FRA2", "BEL"], ["MAR"], 0.4],
+  // Austrália: da Ásia e das ilhas britânicas; a Ásia e a Escócia compram de lá
+  [["AUS"], ASIA, 0.4],
+  [["AUS"], ["SCO", "ENG2"], 0.45],
+  [ASIA, ["AUS"], 0.45],
+  [["SCO"], ["AUS"], 0.4],
 ];
 
 function montar() {

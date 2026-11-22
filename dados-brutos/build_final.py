@@ -13,27 +13,30 @@ leagues=[{'k':k,'n':LGN[k][0],'pais':LGN[k][1],'nat':LGN[k][2],'season':pre['lea
 # ---- Ligas novas (já vêm no formato final) ----
 #   rodada 1 (20/11/2026): 16 ligas, dados-brutos/novas_ligas.json
 #   rodada 2 (20/11/2026): 20 ligas, dados-brutos/novas_ligas_2.json
-NOVAS_ARQS=['dados-brutos/novas_ligas.json','dados-brutos/novas_ligas_2.json']
+#   rodada 3 (21/11/2026): 20 ligas, dados-brutos/rodada3/novas_ligas_3.json (jogadores já com estatísticas)
+NOVAS_ARQS=['dados-brutos/novas_ligas.json','dados-brutos/novas_ligas_2.json','dados-brutos/rodada3/novas_ligas_3.json']
 NOVAS={'leagues':[],'clubs':[]}
 for arq in NOVAS_ARQS:
     x=ler(arq);NOVAS['leagues']+=x['leagues'];NOVAS['clubs']+=x['clubs']
 # Correções:
 # nomes iguais a outras ligas (ficaria ambíguo no filtro do Mercado)
 NOME_LIGA={'AUT':'Bundesliga Austríaca','SUI':'Super League Suíça','GRE':'Super League Grega',
-           'UAE':'Pro League dos Emirados','SRB':'Superliga Sérvia','UKR':'Premier Liga Ucraniana','RUS':'Premier Liga Russa'}
+           'UAE':'Pro League dos Emirados','SRB':'Superliga Sérvia','UKR':'Premier Liga Ucraniana','RUS':'Premier Liga Russa',
+           'EGY':'Premier League Egípcia','RSA':'Premiership Sul-Africana','CRC':'Primera División da Costa Rica'}
 # ligas que vão de julho/agosto a maio (não são ano fechado)
 TEMPORADA={'MEX':'26/27',  # Liga MX: Apertura + Clausura
            'JPN':'26/27'}  # J1 League: mudou para o calendário europeu a partir de 2026/27
 # "nat" precisa ser escrito igual à nacionalidade dos jogadores (para contar estrangeiros)
-NAT={'PER':'Perú','POL':'Polónia','CZE':'República Checa','ROU':'Roménia','QAT':'Qatar'}
+NAT={'PER':'Perú','POL':'Polónia','CZE':'República Checa','ROU':'Roménia','QAT':'Qatar','PER2':'Perú','SVN':'Eslovénia'}
 for l in NOVAS['leagues']:
     leagues.append({'k':l['k'],'n':NOME_LIGA.get(l['k'],l['n']),'pais':l['pais'],'nat':NAT.get(l['k'],l['nat']),'season':TEMPORADA.get(l['k'],l['season']),'div':l['div']})
 # Ordem das ligas (filtros do Mercado): por continente e país, 1ª divisão antes da 2ª
-ORDEM=['BRA','BRB','BRC','ARG','COL','URU','CHI','PAR','ECU','PER',
-       'MEX','USA',
+ORDEM=['BRA','BRB','BRC','ARG','ARG2','COL','COL2','URU','CHI','CHI2','PAR','ECU','PER','PER2','BOL','VEN',
+       'MEX','USA','USL','CAN','CRC','HON',
        'ENG','ENG2','ESP','ESP2','ITA','ITA2','GER','GER2','FRA','FRA2','POR','NED','BEL','TUR','SCO','AUT','SUI','GRE','DEN','NOR',
-       'SWE','POL','CZE','CRO','SRB','UKR','ROU','RUS',
-       'SAU','JPN','KOR','CHN','QAT','UAE']
+       'SWE','POL','CZE','CRO','SRB','UKR','ROU','RUS','ISR','HUN','SVK','BUL','CYP','SVN',
+       'SAU','JPN','KOR','CHN','QAT','UAE',
+       'EGY','MAR','RSA','AUS']
 leagues.sort(key=lambda l:ORDEM.index(l['k']))
 clubs=[]
 for c in pre['clubs']:

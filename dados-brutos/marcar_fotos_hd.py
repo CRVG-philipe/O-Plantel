@@ -5,7 +5,7 @@
 # O build_final.py também chama este script no fim, então as fotos não se perdem ao gerar o data.json de novo.
 #
 # Como funciona:
-#   - dados-brutos/fotos-ids.json: {"<clube>": {"<nome exato>": <ID Sofascore>}}
+#   - dados-brutos/fotos-ids.json e dados-brutos/rodada3/fotos-ids-3.json: {"<clube>": {"<nome exato>": <ID Sofascore>}}
 #   - se public/img/players/<ID>.webp existe, o jogador ganha hd = ID; se o ID está lá mas o arquivo não, hd = 0;
 #   - jogador que não está no fotos-ids.json fica como está.
 #   - Nome repetido no mesmo clube (ex.: dois "Danilo" no Botafogo): o nome não diz de quem é a foto, então
@@ -17,7 +17,8 @@ from collections import Counter
 def ler(f): return json.load(open(f, encoding='utf-8'))
 
 PASTA = 'public/img/players'
-ARQ_IDS = 'dados-brutos/fotos-ids.json'
+# {clube: {nome exato: ID Sofascore}}: rodadas 0 a 2 em fotos-ids.json; rodada 3 em rodada3/fotos-ids-3.json
+ARQS_IDS = ['dados-brutos/fotos-ids.json', 'dados-brutos/rodada3/fotos-ids-3.json']
 
 def fotos_existentes():
     return {int(f[:-5]) for f in os.listdir(PASTA) if f.endswith('.webp') and f[:-5].isdigit()} if os.path.isdir(PASTA) else set()
@@ -25,7 +26,7 @@ def fotos_existentes():
 def ids_por_posicao():
     """{clube: [ID Sofascore de cada jogador, na ordem do elenco]} (0 = sem ID)"""
     ids = {}
-    for arq in ['dados-brutos/ids_sofascore_novas.json', 'dados-brutos/ids_sofascore_novas_2.json']:
+    for arq in ['dados-brutos/ids_sofascore_novas.json', 'dados-brutos/ids_sofascore_novas_2.json', 'dados-brutos/rodada3/ids_sofascore_novas_3.json']:
         if os.path.exists(arq): ids.update(ler(arq))
     if os.path.exists('dados-brutos/all_pre.json') and os.path.exists('dados-brutos/kept.json'):
         pre = ler('dados-brutos/all_pre.json'); kept = ler('dados-brutos/kept.json')
@@ -35,8 +36,11 @@ def ids_por_posicao():
 
 def marcar(clubs):
     """Grava o hd de cada jogador (muda a lista clubs no lugar)."""
-    if not os.path.exists(ARQ_IDS): return
-    fotos = ler(ARQ_IDS); tem = fotos_existentes(); pos = ids_por_posicao()
+    fotos = {}
+    for arq in ARQS_IDS:
+        if os.path.exists(arq): fotos.update(ler(arq))
+    if not fotos: return
+    tem = fotos_existentes(); pos = ids_por_posicao()
     for c in clubs:
         mapa = fotos.get(c['k'], {})
         repetidos = Counter(p[1] for p in c['p'])

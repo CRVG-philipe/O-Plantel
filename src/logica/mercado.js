@@ -2,12 +2,14 @@
 import { D } from "./dados.js";
 import { CHIPS, FAIXA_TODA, FILTROS_PADRAO } from "./constantes.js";
 import { norm } from "./formato.js";
+import { nacionalidades } from "./nacionalidades.js";
+import { ehEstrangeiro } from "./estrangeiros.js";
 import { calcularDinheiro, precoDeCompra } from "./dinheiro.js";
 
 // Quantos filtros estão ligados (o número que aparece no botão "Filtros")
 export function contarFiltros(F) {
   return (F.lg ? 1 : 0) + (F.club ? 1 : 0) + (F.nat ? 1 : 0) + (faixaLigada(F.idade) ? 1 : 0) + (faixaLigada(F.ovr) ? 1 : 0) +
-    (F.fit ? 1 : 0) + (F.free ? 1 : 0) + (F.sort !== FILTROS_PADRAO.sort ? 1 : 0);
+    (F.fit ? 1 : 0) + (F.free ? 1 : 0) + (F.semEst ? 1 : 0) + (F.sort !== FILTROS_PADRAO.sort ? 1 : 0);
 }
 
 // Faixa [mínimo, máximo] diferente de 0–100 = filtro ligado
@@ -25,7 +27,7 @@ export function nacionalidadesDoMercado(plano, lg, club) {
   const conta = new Map();
   for (const p of D.ALL) {
     if (!p.nat || !deFora(p, plano) || (lg && p.lg !== lg) || (club && p.club !== club)) continue;
-    conta.set(p.nat, (conta.get(p.nat) || 0) + 1);
+    for (const n of nacionalidades(p.nat)) conta.set(n, (conta.get(n) || 0) + 1); // dupla nacionalidade conta nos dois
   }
   return [...conta].sort((a, b) => a[0].localeCompare(b[0], "pt-BR"));
 }
@@ -59,17 +61,18 @@ const ORDENAR = {
 export function buscarJogadores(plano, busca, chip, F, notas) {
   const q = norm(busca.trim()), ps = CHIPS[chip][1], caixa = calcularDinheiro(plano).caixa;
   const jaVem = new Set(plano.ins.map((m) => m.id));
-  const porApelido = nomesPorApelido(q);
+  const porApelido = nomesPorApelido(q), ligaDoPlano = D.CL[plano.club].lg;
   const l = D.ALL.filter((p) =>
     deFora(p, plano) && !jaVem.has(p.id) &&
     (!ps || ps.includes(p.pos)) &&
     (!F.lg || p.lg === F.lg) &&
     (!F.club || p.club === F.club) &&
-    (!F.nat || p.nat === F.nat) &&
+    (!F.nat || nacionalidades(p.nat).includes(F.nat)) &&
     naFaixa(p.a, F.idade) &&
     naFaixa(p.ovr, F.ovr) &&
     (!F.fit || precoDeCompra(p) <= caixa) &&
     (!F.free || p.end26) &&
+    (!F.semEst || !ehEstrangeiro(p, ligaDoPlano)) && // "Só jogadores que não ocupam vaga de estrangeiro"
     (!q || p.nn.includes(q) || D.CL[p.club].nn.includes(q) || porApelido.has(p.nn))
   );
   const ordem = (ORDENAR[F.sort] || ORDENAR.rec)(notas);

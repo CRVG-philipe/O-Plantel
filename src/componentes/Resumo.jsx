@@ -8,6 +8,7 @@ import { alertas, comprados, devolvidos, elencoAtual, elencoOriginal, jogador, s
 import { compatibilidade, rotuloVaga } from "../logica/compatibilidade.js";
 import { short } from "../logica/formato.js";
 import { forcaAntes, forcaDoTime } from "../logica/escalacao.js";
+import { EstrangeirosNoElenco } from "./Estrangeiros.jsx";
 import { fmtForca } from "./Time.jsx";
 
 const ROTULO_SAIDA = { vende: "venda", empresta: "empréstimo", libera: "liberado" };
@@ -33,7 +34,6 @@ function ListaEmprestimo({ id, titulo, lista, valor }) {
 export default function Resumo({ app }) {
   const { plano } = app;
   const m = calcularDinheiro(plano), sq = elencoAtual(plano), o = saidas(plano), al = alertas(plano), own = elencoOriginal(plano);
-  const L = D.LG[D.CL[plano.club].lg];
   const vt = voltam(plano), dv = devolvidos(plano), cp = comprados(plano), vf = vendidosFora(plano); // empréstimos
   const prof = NEED.map(([l, ps, min]) => ({ l, min, ps, n: sq.filter((p) => ps.includes(p.pos)).length }));
   const mx = Math.max(6, ...prof.map((x) => x.n));
@@ -79,7 +79,7 @@ export default function Resumo({ app }) {
           <div className="kv" id="forca-resumo"><span>Força do time <span className="mute">(média de overall dos titulares)</span></span>
             <span className="num">{fa ? fmtForca(fa.media) : "—"} → <b>{fd ? fmtForca(fd.media) : "—"}</b>{fa && fd && <span className={dif > 0 ? "sobe" : dif < 0 ? "desce" : "mute"}> ({dif > 0 ? "+" : dif < 0 ? "−" : "±"}{fmtForca(Math.abs(dif))})</span>}</span>
           </div>
-          <div className="kv"><span>Estrangeiros</span><span className="num">{sq.filter((p) => p.nat && p.nat !== L.nat).length}</span></div>
+          <EstrangeirosNoElenco plano={plano} />
         </div>
       </div>
 

@@ -7,6 +7,7 @@ import { ctrTxt } from "../logica/formato.js";
 import { dinheiro } from "../logica/dinheiro.js";
 import { elencoOriginal, emprestadosFora, jogador, recebido, situacao, situacaoEmp, voltam } from "../logica/elenco.js";
 import { Avatar, Ovr, Bandeira, Nota, Pos, Valor } from "./Jogador.jsx";
+import { EstrangeirosNoElenco } from "./Estrangeiros.jsx";
 
 export default function Elenco({ app }) {
   const { plano } = app;
@@ -18,6 +19,7 @@ export default function Elenco({ app }) {
   return (
     <section className="panel on" id="p-elenco">
       <p className="hint">Toque em um jogador para decidir se ele fica, é vendido, emprestado ou liberado.</p>
+      <div className="card est-card"><EstrangeirosNoElenco plano={plano} /></div>
       {SECT.map(([titulo, ps]) => {
         // Quem fica primeiro, depois quem sai; dentro disso, por posição e valor
         const o = proprios.filter((p) => ps.includes(p.pos)).sort((a, b) => saiu(a.id) - saiu(b.id) || ORDER.indexOf(a.pos) - ORDER.indexOf(b.pos) || b.v - a.v);

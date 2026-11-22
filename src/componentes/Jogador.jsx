@@ -3,7 +3,7 @@
 import { D } from "../logica/dados.js";
 import { corDoSetor } from "../logica/constantes.js";
 import { dec } from "../logica/formato.js";
-import { codigoDoPais } from "../logica/nacionalidades.js";
+import { codigoDoPais, nacionalidades } from "../logica/nacionalidades.js";
 import { valorJogador } from "../logica/dinheiro.js";
 import { Foto, Escudo } from "./Imagens.jsx";
 
@@ -17,11 +17,13 @@ export function Avatar({ p, z = 42, clube }) {
   );
 }
 
-// Bandeira da nacionalidade (imagem: emoji de bandeira não aparece no Windows)
+// Bandeira da nacionalidade (imagem: emoji de bandeira não aparece no Windows).
+// Dupla nacionalidade ("Bolívia/Argentina"): a bandeira do primeiro país; o nome completo aparece ao passar o mouse.
 export function Bandeira({ nat }) {
   const c = codigoDoPais(nat);
   if (!c) return null;
-  return <img className="fl" src={`img/flags/paises/${c}.svg`} alt={nat} title={nat} loading="lazy" decoding="async" width="16" height="12" />;
+  const nome = nacionalidades(nat).join(" / ");
+  return <img className="fl" src={`img/flags/paises/${c}.svg`} alt={nome} title={nome} loading="lazy" decoding="async" width="16" height="12" />;
 }
 
 // Valor de mercado do jogador: o real, ou o estimado com "~" e o aviso "valor estimado" ao passar o mouse

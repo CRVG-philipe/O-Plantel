@@ -6,6 +6,7 @@ import { ctrTxt } from "../logica/formato.js";
 import { dinheiro, calcularDinheiro, precoDeCompra } from "../logica/dinheiro.js";
 import { buscarJogadores, contarFiltros } from "../logica/mercado.js";
 import { notasDoMercado } from "../logica/recomendacao.js";
+import { ehEstrangeiro, regraDaLiga, temLimite } from "../logica/estrangeiros.js";
 import { Avatar, Ovr, Bandeira, MiniStats, Nota, Pos, Valor } from "./Jogador.jsx";
 
 const ORDEM = { rec: "Recomendados", vd: "Valor ↓", va: "Valor ↑", a: "Idade ↑", n: "Nota ↓", o: "Overall ↓" };
@@ -24,6 +25,8 @@ export default function Mercado({ app }) {
   const caixa = calcularDinheiro(plano).caixa;
   const criar = () => app.abrirPainel("criar");
   const campo = useRef();
+  // Selo "Estrangeiro": quem ocuparia vaga de estrangeiro no clube do plano (só nas ligas com algum limite)
+  const lgPlano = D.CL[plano.club].lg, comLimite = temLimite(regraDaLiga(lgPlano));
 
   // Atalho: "/" coloca o cursor na busca (se não estiver digitando em outro campo)
   useEffect(() => {
@@ -79,6 +82,7 @@ export default function Mercado({ app }) {
                     <div className="rt vl">
                       <div className="v num"><Valor p={p} /></div>
                       <div className={"s" + (cabe ? "" : " falta")}>{cabe ? "cabe no caixa" : "faltam " + dinheiro(preco - caixa)}</div>
+                      {comLimite && ehEstrangeiro(p, lgPlano) && <span className="selo-est" title="Ocuparia uma vaga de estrangeiro no seu clube">Estrangeiro</span>}
                       {p.emp && <span className="selo-emp" title={`Emprestado até ${ctrTxt(p.emp.ate)}`}>Emprestado · dono: {p.emp.de.n}</span>}
                       {i < comSelo && <span className="selo-rec" title={`Nota de recomendação: ${notas.get(p.id)} de 100`}>★ Recomendado</span>}
                     </div>

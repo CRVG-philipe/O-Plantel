@@ -5,7 +5,8 @@ import { D, carregarDados } from "../src/logica/dados.js";
 import { FILTROS_PADRAO } from "../src/logica/constantes.js";
 import { jogador, novoPlano } from "../src/logica/elenco.js";
 import { escalarSozinho, forcaAntes, forcaDoTime } from "../src/logica/escalacao.js";
-import { buscarJogadores, contarFiltros } from "../src/logica/mercado.js";
+import { buscarJogadores, contarFiltros, nacionalidadesDoMercado } from "../src/logica/mercado.js";
+import { codigoDoPais } from "../src/logica/nacionalidades.js";
 import { pontuar } from "../src/logica/recomendacao.js";
 
 beforeAll(async () => {
@@ -79,6 +80,22 @@ test("Mercado: faixas de overall e de idade (0 a 100)", () => {
   expect(contarFiltros({ ...base, ovr: [70, 80] })).toBe(1);
   expect(contarFiltros({ ...base, ovr: [70, 80], idade: [0, 23] })).toBe(2);
   expect(contarFiltros(base)).toBe(0);
+});
+
+test("rodada 3: 20 ligas novas, todo jogador com overall, e dupla nacionalidade ('Bolívia/Argentina')", () => {
+  const novas = ["BOL", "VEN", "ARG2", "COL2", "PER2", "CHI2", "EGY", "MAR", "RSA", "AUS", "ISR", "HUN", "SVK", "BUL", "CYP", "SVN", "CAN", "CRC", "HON", "USL"];
+  expect(novas.every((k) => D.LG[k])).toBe(true);
+  expect(D.LG.USL.div).toBe(2);
+  expect(D.ALL.filter((p) => novas.includes(p.lg)).every((p) => p.ovr >= 40)).toBe(true);
+  // Dupla nacionalidade: o filtro acha pelos dois países e a lista do filtro conta nos dois
+  const duplo = D.ALL.find((p) => p.nat === "Bolívia/Argentina");
+  expect(duplo).toBeTruthy();
+  const P = novoPlano("T1974");
+  const base = { ...FILTROS_PADRAO, fit: false, lg: duplo.lg };
+  for (const n of ["Bolívia", "Argentina"]) expect(buscarJogadores(P, "", 0, { ...base, nat: n }).some((p) => p.id === duplo.id)).toBe(true);
+  const nats = nacionalidadesDoMercado(P, duplo.lg, "");
+  expect(nats.some(([n]) => n.includes("/"))).toBe(false);
+  expect(codigoDoPais(duplo.nat)).toBe("bo"); // a bandeira é a do primeiro país
 });
 
 test("ajustes manuais do arquivo: Fábio (Fluminense, goleiro) 78 e Thiago Mendes (Vasco) 79", () => {

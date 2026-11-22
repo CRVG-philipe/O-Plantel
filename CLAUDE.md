@@ -11,7 +11,7 @@ Site para planejar o elenco de um clube na próxima temporada. O usuário pode:
 
 Foi inspirado no reconstruindo.thefenomeno.com, mas **não deve copiá-lo**. O foco aqui é planejamento, com um visual clean e minimalista.
 
-## Ligas (46 ligas em 39 países, 798 clubes, 23.613 jogadores)
+## Ligas (66 ligas em 54 países, 1.107 clubes, 32.872 jogadores)
 - Originais (214 clubes): BRA (Brasileirão A), BRB (Série B), ENG, ESP, ITA, GER, FRA, ARG, SAU (Saudita), USA (MLS).
 - Rodada 1, 20/11/2026 (270 clubes, 7.617 jogadores):
   - 1ª divisão: MEX (Liga MX), POR, BEL, SCO, NOR, NED, TUR, DEN, SUI, GRE, AUT.
@@ -21,15 +21,32 @@ Foi inspirado no reconstruindo.thefenomeno.com, mas **não deve copiá-lo**. O f
   - América do Sul: COL, URU, CHI, PAR, ECU, PER.
   - Europa: SWE, POL, CZE, CRO, SRB, UKR, ROU, RUS.
   - Ásia e Oriente Médio: JPN, KOR, CHN, QAT, UAE.
-- Fotos HD dos jogadores (coletadas em 21/11/2026): 22.489 dos 23.613 (95%) têm foto em `public/img/players/<id>.webp`.
+- Rodada 3, coletada em 21/11/2026 (309 clubes, 9.259 jogadores; dados brutos e scripts em `dados-brutos/rodada3/`):
+  - América do Sul: BOL (Bolívia), VEN (Venezuela) e as 2ª divisões ARG2 (Primera Nacional), COL2 (Primera B), PER2 (Liga 2) e CHI2 (Liga de Ascenso).
+  - América do Norte e Central: CAN (Canadá), CRC (Costa Rica), HON (Honduras) e USL (USL Championship, 2ª divisão dos EUA, `div` 2).
+  - Europa: ISR (Israel), HUN (Hungria), SVK (Eslováquia), BUL (Bulgária), CYP (Chipre) e SVN (Eslovênia).
+  - África e Oceania: EGY (Egito), MAR (Marrocos), RSA (África do Sul) e AUS (Austrália).
+  - Os jogadores já vieram com estatísticas (343 sem). Cerca de 40% têm foto HD (3.397 de 9.259) e poucos têm atributos (482), porque o Sofascore bloqueou a coleta no meio. CAN, CRC, HON, USL, HUN, SVK, BUL, CYP, SVN, RSA e AUS ficaram praticamente sem fotos.
+  - **Dupla nacionalidade:** 1.580 jogadores da rodada 3 vêm com dois países, como "Bolívia/Argentina" (campo 6). `nacionalidades(nat)` (`nacionalidades.js`) separa os países; a bandeira é a do primeiro, e o filtro de nacionalidade acha o jogador por qualquer um dos dois.
+  - Arquivos em `dados-brutos/rodada3/`:
+    - `novas_ligas_3.json`: ligas e clubes no formato final, lido pelo `build_final.py` (que tira o campo `ci` dos clubes);
+    - `fotos-ids-3.json`: `{clube: {nome: ID Sofascore}}`, lido pelo `marcar_fotos_hd.py`;
+    - `ids_sofascore_novas_3.json`: ID Sofascore de cada jogador na ordem do elenco, montado de `players_r3.json`, para separar nomes repetidos no clube (Matías García, Alan González, Fredy Valencia e Mohamed Samir);
+    - `overall_r3.json`: overall já balanceado (por `overall_r3.py` e `balancear_r3.py`). O `balancear.py` junta este arquivo ao `public/overall.json`, sem sobrescrever clubes que já existem;
+    - `emprestimos_r3.json`: empréstimos dos 273 clubes novos, juntados ao `public/emprestimos.json`;
+    - o resto (`tm_new3.json`, `sofa_new3.json`, `players_r3.json`, `attrs_r3.json`, `loans_tm3.json`, `stats_bloco3.json` e `build_new3.py`) é dado bruto da coleta, só para referência (os scripts usam caminhos `raw/` da coleta original).
+  - Correções no `build_final.py`: nomes repetidos ("Premier League Egípcia", "Premiership Sul-Africana" e "Primera División da Costa Rica") e o `nat` de PER2 ("Perú") e SVN ("Eslovénia"), escritos igual aos jogadores.
+  - Afinidade (`afinidade.js`): grupos novos `SULAM2`, `CENTRAL`, `MEDITERRANEO` e `AFRICA`, mais BOL e VEN em `SULAM` e HUN, SVK, BUL e SVN em `LESTE`. Só mudaram pares que envolvem ligas novas.
+  - Países novos na tela de escolha: bandeiras em `public/img/flags/paises/<código>.svg` (flag-icons). Continentes novos: "África" e "Oceania"; "América do Norte" virou "América do Norte e Central". Argentina, Colômbia, Chile, Peru e Estados Unidos passaram a ter tela de divisão.
+- Fotos HD dos jogadores: 25.886 dos 32.872 (78%) têm foto em `public/img/players/<id>.webp` (95% nas rodadas 0 a 2; cerca de 40% na rodada 3).
   - Quem não tem usa o sprite antigo (só nas 10 ligas originais) ou as iniciais.
 - Estatísticas:
   - As duas rodadas e os jogadores de ARG e SAU que faltavam ganharam estatísticas coletadas em 21/11/2026:
     - bloco 1: rodada 1, mais ARG e SAU (8.438 jogadores);
     - bloco 2: rodada 2 (9.247 jogadores).
-  - Ainda faltam 672 jogadores (`stats` null), 282 deles da Série C. O site mostra "Estatísticas indisponíveis".
+  - Ainda faltam 1.015 jogadores (`stats` null): 672 das rodadas 0 a 2 (282 deles da Série C) e 343 da rodada 3. O site mostra "Estatísticas indisponíveis".
   - `[0,0,0,0]` = não entrou em campo (não é "sem estatísticas"): mostra "0 jogos", sem a nota e com as médias por jogo "—".
-- Valores sem Transfermarkt: 2.221 jogadores têm valor 0 no data.json (876 dos 905 da Série C e dezenas por liga).
+- Valores sem Transfermarkt: 3.748 jogadores têm valor 0 no data.json (876 dos 905 da Série C, 1.527 da rodada 3 e dezenas por liga).
   - Todos ganham um **valor estimado** em `public/valores-estimados.json` (`{clube: {"nome|nascimento": valor}}`), gerado por `dados-brutos/estimar_valores.py`.
   - O `data.json` não muda.
   - **Prioridade:** o valor real do Transfermarkt sempre vem primeiro. O estimado só entra quando o real é 0.
@@ -46,7 +63,7 @@ Foi inspirado no reconstruindo.thefenomeno.com, mas **não deve copiá-lo**. O f
     - Tudo é arredondado para € 0,05 mi, com mínimo de € 0,05 mi.
     - Em 21/11/2026, os estimados da Série C ficaram entre € 0,05 e 0,3 mi.
 - Cada liga tem `div` (1, 2 ou 3): a divisão dentro do país. A tela de divisão ordena por ele.
-- Overall e atributos (gerados em 21/11/2026): `public/overall.json`, no formato `{clube: {"nome|nascimento": [overall, 0, atributos]}}`. Todos os 23.613 jogadores têm overall, de 44 a 91; 15.295 têm atributos.
+- Overall e atributos (gerados em 21/11/2026): `public/overall.json`, no formato `{clube: {"nome|nascimento": [overall, 0, atributos]}}`. Todos os 32.872 jogadores têm overall, de 42 a 91; 15.777 têm atributos. As ligas da rodada 3 vêm de `dados-brutos/rodada3/overall_r3.json` (ver Rodada 3).
   - O overall do site é a **versão 1** (baseada no valor de mercado) com um **balanceamento por liga** por cima.
   - **Para gerar** (na raiz, sem argumentos, nesta ordem):
     1. `python dados-brutos/overall/overall.py`: lê `players_all.json` e `attrs.json` da mesma pasta e grava a versão 1 em `dados-brutos/overall/overall_v1.json`;
@@ -92,6 +109,7 @@ Foi inspirado no reconstruindo.thefenomeno.com, mas **não deve copiá-lo**. O f
   - `testes/recomendacao.test.js` e `testes/busca.test.js`: a nota de recomendação e a busca por apelido.
   - `testes/emprestimos.test.js`: regras dos empréstimos (Botafogo, T1958).
   - `testes/time.test.js`: compatibilidade de posição, reservas e escalar pelo valor ou pelo overall.
+  - `testes/estrangeiros.test.js`: limite de estrangeiros (Brasileirão, Argentina, LaLiga e o filtro do Mercado).
   - `testes/overall.test.js`: overall (Mbappé = 91), ajustes manuais (Fábio = 78, Thiago Mendes = 79), força do time, ordem Overall e o overall na recomendação.
 - Com as ~23 mil fotos, o `npm run dev` às vezes demora para servir as imagens. Para conferir fotos, use `npm run build` e `npm run preview`.
 - `npm run build`: gera a versão final em `dist/` (não vai para o git). `npm run preview` serve o `dist/` para conferir.
@@ -197,7 +215,7 @@ React 19 + Vite 6, em JavaScript (sem TypeScript).
     - Se a pessoa mudar o "só quem cabe", a escolha fica em `plantel:caixa` ("1" ou "0"), separada dos planos.
     - O contador do botão Filtros conta esse filtro, então o padrão mostra "Filtros 1".
   - **Outras ordens:** maior valor, menor valor, mais jovens, melhor nota e Overall (`o`).
-  - **Filtros** (`PainelFiltros`): liga, clube, nacionalidade (`nat`), faixa de overall (`ovr`), faixa de idade (`idade`), ordem, "só quem cabe" e "contrato acabando".
+  - **Filtros** (`PainelFiltros`): liga, clube, nacionalidade (`nat`), faixa de overall (`ovr`), faixa de idade (`idade`), ordem, "só quem cabe", "só quem não ocupa vaga de estrangeiro" (`semEst`) e "contrato acabando".
     - Faixas (`Faixa`): `[mínimo, máximo]` de 0 a 100 (`FAIXA_TODA` = sem filtro), com duas alças para arrastar e duas caixas para digitar (`#fo-min`, `#fo-max`, `#fa-min`, `#fa-max`). O título mostra "70–80" ou "qualquer".
       - Digitando, cada número válido já vale e a caixa só se arruma ao sair dela (para "80" não virar outra coisa no "8"). Ao aplicar, a faixa é posta em ordem (25–20 vira 20–25).
       - Com a faixa de overall ligada, quem não tem overall (jogador criado) não aparece. Cada faixa ligada conta 1 no botão "Filtros".
@@ -275,6 +293,25 @@ React 19 + Vite 6, em JavaScript (sem TypeScript).
   - **Abaixo do campo:** "Reservas", agrupados por vaga, com "Banco: X/22", e "Fora do time e do banco".
   - **Resumo:** seção "Time (formação)" com o titular e os reservas de cada vaga (`timeCompleto`), e alerta para titular improvisado.
   - **Testes:** `testes/time.test.js` e o teste "aba Time" em `app.test.jsx`.
+- Limite de estrangeiros (`public/regras-estrangeiros.json`; lógica em `src/logica/estrangeiros.js`; peças em `componentes/Estrangeiros.jsx`):
+  - **Arquivo:** `{padrao, ligas: {"<liga>": regra}, ue: [países]}`. Em cada regra:
+    - `relacionados`: máximo entre titulares + reservas (aba Time);
+    - `campo`: máximo entre os 11 titulares;
+    - `inscritos`: máximo no elenco (só aviso: contratar continua livre);
+    - `tipo: "extracomunitario"`: só conta quem não tem nacionalidade de um país da lista `ue`;
+    - `confirmado: false`: o site mostra "(regra aproximada)";
+    - `nota`: de onde veio a regra (aparece no aviso).
+    - Campo ausente ou `null` = sem limite. Liga fora de `ligas` usa `padrao`. O campo `proximo` (Brasileirão: limite dos próximos anos) ainda não é usado.
+  - **Para mudar o limite de uma liga:** editar o JSON. Não precisa rodar nada.
+  - **Quem é estrangeiro** (`ehEstrangeiro(p, liga)`): nacionalidade diferente do `nat` da liga. Dupla nacionalidade com o país da liga não conta; em liga "extracomunitario", um passaporte da UE também não conta. Jogador criado (sem nacionalidade) não conta.
+    - Os países são comparados sem acento, porque o arquivo usa a grafia do Brasil ("Polônia") e os jogadores, a de Portugal ("Polónia"). "República Tcheca" = "República Checa".
+  - **Na tela** (o selo "EST" só aparece em ligas com algum limite):
+    - Aba Time: "Estrangeiros: X/limite" (`#est-rel`) e "Em campo: Y/limite" (`#est-campo`), em vermelho quando passa, com o aviso "Limite de estrangeiros excedido" e a regra (`#est-aviso`). Não bloqueia nada. Selo "EST" no campo, nos mini-cards do banco e nas listas.
+    - Lista de escolha (`PainelPosicao`): "Vagas de estrangeiro: sobram X…" (`#est-vagas`), contando que a vaga de quem sai fica livre.
+    - Elenco e Resumo: "Estrangeiros no elenco: N" (`#est-elenco`) e, se passar de `inscritos`, o aviso "pode contratar, mas só X podem ser inscritos".
+    - Mercado: selo "Estrangeiro" (`.selo-est`) ao lado do preço e o filtro "Só jogadores que não ocupam vaga de estrangeiro" (`semEst` nos filtros; conta 1 no botão).
+  - Se o arquivo falhar (ou vier sem `ligas`), o site segue sem limites.
+  - **Testes:** `testes/estrangeiros.test.js` e o teste "limite de estrangeiros" em `app.test.jsx`.
 - Empréstimos (coletados do Transfermarkt em 21/11/2026; dados brutos em `dados-brutos/emprestimos_transfermarkt.json`):
   - **Arquivo:** `public/emprestimos.json`, no formato `{clube: {in: [{nome, nasc, de: {k, n}, ate, contrato}], out: [{nome, pos, idade, para: {k, n}, ate, contrato, valor, em?: {k, nome, nasc}}]}}`.
     - Tem 2.284 recebidos e 3.610 emprestados; 1.830 deles estão em outro clube da base (`em`).

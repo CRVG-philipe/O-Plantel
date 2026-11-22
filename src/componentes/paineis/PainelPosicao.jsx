@@ -9,6 +9,26 @@ import { elencoAtual, jogador } from "../../logica/elenco.js";
 import { adicionarReserva, promover, removerReserva, reservasDa, todosReservas } from "../../logica/escalacao.js";
 import { Cabecalho } from "../Painel.jsx";
 import { Avatar, Ovr, Nota, SeloNivel, Valor } from "../Jogador.jsx";
+import { SeloEst } from "../Estrangeiros.jsx";
+import { D } from "../../logica/dados.js";
+import { ehEstrangeiro, regraDaLiga, temLimite, vagasDeEstrangeiro } from "../../logica/estrangeiros.js";
+
+// "sobram 2" / "nenhuma" / "nenhuma (1 acima do limite)"
+const sobra = (n) => (n > 0 ? `sobra${n > 1 ? "m" : ""} ${n}` : n === 0 ? "nenhuma" : `nenhuma (${-n} acima do limite)`);
+
+// Quantas vagas de estrangeiro ainda sobram (titulares + reservas e, na escolha de titular, em campo)
+function VagasEstrangeiro({ plano, atual, reserva }) {
+  const v = vagasDeEstrangeiro(plano, { naVaga: reserva ? null : atual, titular: !reserva });
+  if (v.relacionados == null && v.campo == null) return null;
+  const partes = [];
+  if (v.relacionados != null) partes.push(`${sobra(v.relacionados)} entre titulares e reservas`);
+  if (v.campo != null) partes.push(`${sobra(v.campo)} em campo`);
+  return (
+    <p className={"note est-vagas" + (Math.min(v.relacionados ?? 1, v.campo ?? 1) <= 0 ? " zero" : "")} id="est-vagas">
+      Vagas de estrangeiro: {partes.join(" · ")}{v.regra.confirmado ? "" : " (regra aproximada)"}
+    </p>
+  );
+}
 
 const notaDe = (p) => (p.st && p.st[0] ? p.st[3] || 0 : 0);
 
@@ -38,12 +58,14 @@ export default function PainelPosicao({ app, i, reserva = false }) {
   };
   const esvaziar = () => { app.mudar((P) => { delete P.xi[i]; }); app.fecharPainel(); };
   const n = reservasDa(plano, i).length + 1;
+  const lg = D.CL[plano.club].lg, comLimite = temLimite(regraDaLiga(lg));
 
   return (
     <>
       <Cabecalho titulo={(reserva ? `${n}º reserva · ` : "") + NOME_VAGA[r]}
         sub={reserva ? `Quem entra se o titular (${atual ? jogador(plano, atual).n : "vaga vazia"}) não puder jogar` : "Escolha quem joga nesta posição"}
         onFechar={app.fecharPainel} />
+      <VagasEstrangeiro plano={plano} atual={atual} reserva={reserva} />
       <div className="card">
         {lista.map((p) => {
           const titularEmOutra = titulares.has(p.id) && p.id !== atual;
@@ -52,7 +74,7 @@ export default function PainelPosicao({ app, i, reserva = false }) {
             <button className="row" key={p.id} style={{ minHeight: 52 }} onClick={() => escolher(p.id)}>
               <Avatar p={p} z={38} /><Ovr p={p} />
               <div className="mid">
-                <div className="nm">{p.n}{p.id === atual && <> <span className="pill in">atual</span></>}</div>
+                <div className="nm">{p.n}{comLimite && ehEstrangeiro(p, lg) && <SeloEst />}{p.id === atual && <> <span className="pill in">atual</span></>}</div>
                 <div className="sub">
                   {p.pos} · <SeloNivel nivel={c.nivel} />
                   {titularEmOutra ? " · titular em outra posição" : noBanco.has(p.id) ? " · reserva em outra vaga" : ""}

@@ -2,12 +2,17 @@
 // Rodar com:  npm test
 import fs from "node:fs";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, configure, fireEvent, render, screen, within } from "@testing-library/react";
 import App from "../src/App.jsx";
 import { dinheiro } from "../src/logica/dinheiro.js";
 import { corDeFundo } from "../src/logica/formato.js";
 
+// Com ~33 mil jogadores, carregar os dados pode passar de 1 s quando todos os testes rodam juntos:
+// os "findBy..." esperam até 10 s (só esperam o necessário)
+configure({ asyncUtilTimeout: 10000 });
+
 const DATA = JSON.parse(fs.readFileSync("public/data.json", "utf8"));
+const REGRAS_EST = JSON.parse(fs.readFileSync("public/regras-estrangeiros.json", "utf8"));
 const APELIDOS = JSON.parse(fs.readFileSync("public/apelidos.json", "utf8"));
 const ESTIMADOS = JSON.parse(fs.readFileSync("public/valores-estimados.json", "utf8"));
 const EMPRESTIMOS = JSON.parse(fs.readFileSync("public/emprestimos.json", "utf8"));
@@ -32,6 +37,7 @@ beforeEach(() => {
     }
     if (String(url).includes("apelidos")) return { ok: true, json: async () => structuredClone(APELIDOS) };
     if (String(url).includes("emprestimos")) return { ok: true, json: async () => structuredClone(EMPRESTIMOS) };
+    if (String(url).includes("regras-estrangeiros")) return { ok: true, json: async () => structuredClone(REGRAS_EST) };
     if (String(url).includes("overall-ajustes")) return { ok: true, json: async () => structuredClone(AJUSTES) };
     if (String(url).includes("overall")) return { ok: true, json: async () => structuredClone(OVERALL) };
     if (String(url).includes("valores-estimados")) {
@@ -80,7 +86,7 @@ test("tela inicial: título, números, linhas de campo e cotação no rodapé", 
   const comValor = DATA.clubs.flatMap((c) => c.p).filter((p) => p[5] > 0).length;
   const numeros = [...document.querySelectorAll(".ini-numeros .esc-card")].map((c) => c.textContent);
   expect(numeros).toEqual([`${DATA.clubs.length}clubes em ${DATA.leagues.length} ligas`, `${comValor.toLocaleString("pt-BR")}jogadores com valor`]);
-  expect(numeros[0]).toBe("798clubes em 46 ligas");
+  expect(numeros[0]).toBe("1107clubes em 66 ligas");
   expect(screen.queryByText("Seus planos")).toBeNull();          // ninguém tem plano ainda
   expect(fundo()).toBe(rgb("#0f3d2b"));
   expect(document.querySelectorAll("svg.campo rect, svg.campo line, svg.campo circle").length).toBe(5);
@@ -97,19 +103,21 @@ test("escolha em etapas: grade de países, divisão, clube e o botão voltar", a
   render(<App />);
   clique(await screen.findByRole("button", { name: "Planejar um clube" }));
 
-  // País: grade com os 20 países, bandeira, nome e ligas
+  // País: grade com os 54 países, bandeira, nome e ligas
   expect(screen.getByRole("heading", { name: "Escolha o país" })).toBeTruthy();
   expect(passoTxt()).toBe("1 de 3");
   expect(fundo()).toBe(rgb("#1f2a24"));
   const cartoes = [...document.querySelectorAll(".esc-pais")];
-  expect(cartoes.map((c) => c.querySelector(".esc-pais-nome").textContent)).toEqual(["Brasil", "Argentina", "Colômbia", "Uruguai", "Chile", "Paraguai", "Equador", "Peru", "México", "Estados Unidos", "Inglaterra", "Espanha", "Itália", "Alemanha", "França", "Portugal", "Holanda", "Bélgica", "Turquia", "Escócia", "Áustria", "Suíça", "Grécia", "Dinamarca", "Noruega", "Suécia", "Polônia", "Tchéquia", "Croácia", "Sérvia", "Ucrânia", "Romênia", "Rússia", "Arábia Saudita", "Japão", "Coreia do Sul", "China", "Catar", "Emirados Árabes"]);
+  expect(cartoes.map((c) => c.querySelector(".esc-pais-nome").textContent)).toEqual(["Brasil", "Argentina", "Colômbia", "Uruguai", "Chile", "Paraguai", "Equador", "Peru", "Bolívia", "Venezuela", "México", "Estados Unidos", "Canadá", "Costa Rica", "Honduras", "Inglaterra", "Espanha", "Itália", "Alemanha", "França", "Portugal", "Holanda", "Bélgica", "Turquia", "Escócia", "Áustria", "Suíça", "Grécia", "Dinamarca", "Noruega", "Suécia", "Polônia", "Tchéquia", "Croácia", "Sérvia", "Ucrânia", "Romênia", "Rússia", "Israel", "Hungria", "Eslováquia", "Bulgária", "Chipre", "Eslovênia", "Egito", "Marrocos", "África do Sul", "Arábia Saudita", "Japão", "Coreia do Sul", "China", "Catar", "Emirados Árabes", "Austrália"]);
   // agrupados por continente, com título pequeno em cada grupo
-  expect([...document.querySelectorAll(".esc-continente")].map((h) => h.textContent)).toEqual(["América do Sul", "América do Norte", "Europa", "Ásia e Oriente Médio"]);
-  expect([...document.querySelectorAll(".esc-grupo")].map((g) => g.querySelectorAll(".esc-pais").length)).toEqual([8, 2, 23, 6]);
+  expect([...document.querySelectorAll(".esc-continente")].map((h) => h.textContent)).toEqual(["América do Sul", "América do Norte e Central", "Europa", "África", "Ásia e Oriente Médio", "Oceania"]);
+  expect([...document.querySelectorAll(".esc-grupo")].map((g) => g.querySelectorAll(".esc-pais").length)).toEqual([10, 5, 29, 3, 6, 1]);
   expect(cartaoPais("Brasil").querySelector(".esc-pais-ligas").textContent).toBe("Série A · Série B · Série C");
   expect(cartaoPais("Inglaterra").querySelector(".esc-pais-ligas").textContent).toBe("Premier League · Championship");
   expect(cartaoPais("Áustria").querySelector(".esc-pais-ligas").textContent).toBe("Bundesliga Austríaca");
   expect(cartaoPais("Brasil").querySelector("img").getAttribute("src")).toBe("img/flags/brasil.svg");
+  expect(cartaoPais("Argentina").querySelector(".esc-pais-ligas").textContent).toBe("Liga Argentina · Primera Nacional");
+  expect(cartaoPais("Egito").querySelector("img").getAttribute("src")).toBe("img/flags/paises/eg.svg");
   // toda bandeira existe de verdade em public/img/flags/
   cartoes.forEach((c) => expect(fs.existsSync("public/" + c.querySelector("img").getAttribute("src"))).toBe(true));
   expect(screen.queryByRole("button", { name: "Continuar" })).toBeNull(); // tocar no país já avança
@@ -160,7 +168,8 @@ test("escolha em etapas: grade de países, divisão, clube e o botão voltar", a
 test("divisões: logo de cada liga, em ordem (1ª antes da 2ª), nos países grandes", async () => {
   render(<App />);
   clique(await screen.findByRole("button", { name: "Planejar um clube" }));
-  const esperado = { Brasil: ["BRA", "BRB", "BRC"], Inglaterra: ["ENG", "ENG2"], Espanha: ["ESP", "ESP2"], Itália: ["ITA", "ITA2"], Alemanha: ["GER", "GER2"], França: ["FRA", "FRA2"] };
+  const esperado = { Brasil: ["BRA", "BRB", "BRC"], Inglaterra: ["ENG", "ENG2"], Espanha: ["ESP", "ESP2"], Itália: ["ITA", "ITA2"], Alemanha: ["GER", "GER2"], França: ["FRA", "FRA2"],
+    Argentina: ["ARG", "ARG2"], Colômbia: ["COL", "COL2"], Chile: ["CHI", "CHI2"], Peru: ["PER", "PER2"], "Estados Unidos": ["USA", "USL"] };
   for (const [pais, ligas] of Object.entries(esperado)) {
     clique(cartaoPais(pais));
     expect(passoTxt()).toBe("2 de 3");
@@ -390,7 +399,7 @@ test("fluxo completo: clube, vender, contratar, filtros, escalação, resumo, re
   expect(cartao.querySelector(".crest").getAttribute("src")).toBe(`img/teams/${arsenal.hd}.webp`);
   clique(cartao);
   expect(caixa()).toBe("€ 20 mi");
-}, 20000); // teste longo (muitas telas): 20 s de limite em vez de 5
+}, 60000); // teste longo (muitas telas): 60 s de limite em vez de 30
 
 test("plano salvo pela versão antiga (mesma chave plantel:v2): aparece no início e abre ao tocar", async () => {
   const c = clubesDa("BRA")[3], d = clubesDa("ENG")[2];
@@ -672,7 +681,10 @@ test("busca de país: filtra por país ou liga e esconde continentes vazios", as
   fireEvent.change(busca, { target: { value: "zzz" } });
   expect(screen.getByText("Nenhum país ou liga encontrado.")).toBeTruthy();
   fireEvent.change(busca, { target: { value: "" } });
-  expect(nomes()).toHaveLength(39);
+  expect(nomes()).toHaveLength(54);
+  fireEvent.change(busca, { target: { value: "australia" } });              // continente novo (Oceania)
+  expect([...document.querySelectorAll(".esc-continente")].map((h) => h.textContent)).toEqual(["Oceania"]);
+  fireEvent.change(busca, { target: { value: "" } });
   // Brasil com 3 divisões; a Série C abre a etapa do clube ("3 de 3")
   clique(cartaoPais("Brasil"));
   expect([...document.querySelectorAll(".esc-divisao b")].map((b) => b.textContent)).toEqual(["Brasileirão Série A", "Brasileirão Série B", "Brasileirão Série C"]);
@@ -807,7 +819,7 @@ test("Mercado: recomendados com selo, 'só quem cabe' ligado e lembrado, busca p
   await abrirMercado();
   expect(document.querySelector("#fOpen").textContent).toBe("Filtros");
   expect(total()).toBeGreaterThan(soOsQueCabem);
-}, 20000); // recalcula as notas do Mercado algumas vezes: 20 s de limite em vez de 5
+}, 60000); // recalcula as notas do Mercado algumas vezes: 60 s de limite em vez de 30
 
 test("empréstimos no Botafogo: devolver, comprar, vender e trazer de volta (plano antigo sem o campo novo)", async () => {
   // Plano salvo no formato antigo (sem "emp"), com € 20 mi
@@ -978,6 +990,61 @@ test("overall e atributos: selo nas listas, ficha com e sem atributos, força do
   selos.forEach((s) => expect(s.textContent).not.toContain("~"));
   expect(document.body.textContent).not.toContain("overall estimado");
 });
+test("limite de estrangeiros: Brasileirão com 10 e Argentina com 6 relacionados mostram o aviso; selos e vagas", async () => {
+  // Plano salvo com "n" estrangeiros contratados (até 6 no time, o resto no banco) e o resto do time com locais
+  const planoCom = (k, n) => {
+    const c = DATA.clubs.find((x) => x.k === k), lg = DATA.leagues.find((l) => l.k === c.lg);
+    const ids = (cl) => cl.p.map((r, i) => ({ id: `${cl.k}-${i}`, nat: r[6] }));
+    const fora = DATA.clubs.filter((x) => x.lg !== c.lg && !EMPRESTIMOS[x.k]?.in?.length).flatMap(ids)
+      .filter((p) => p.nat && !p.nat.split("/").includes(lg.nat) && !p.nat.split("/").includes("Brasil")).slice(0, n);
+    const locais = ids(c).filter((p) => p.nat === lg.nat).slice(0, 11);
+    const time = [...fora.slice(0, 6), ...locais].slice(0, 11), banco = fora.slice(6);
+    const res = {};
+    banco.forEach((p, j) => { res[j % 11] = [...(res[j % 11] || []), p.id]; });
+    return { club: k, budget: 500, st: {}, ins: fora.map((p) => ({ id: p.id, type: "compra", fee: 0 })), form: "4-3-3",
+      xi: Object.fromEntries(time.map((p, i) => [i, p.id])), custom: [], res };
+  };
+  const arg = DATA.clubs.find((c) => c.lg === "ARG").k;
+  localStorage.setItem(CHAVE, JSON.stringify({ plans: { T1974: planoCom("T1974", 10), [arg]: planoCom(arg, 6) }, last: "T1974" }));
+  render(<App />);
+  clique(await screen.findByRole("button", { name: /Vasco da Gama 2027/ }));
+  // Aba Time: contador em vermelho, aviso com a regra, selo "EST" nos estrangeiros do campo
+  clique(screen.getByRole("tab", { name: "Time" }));
+  const rel = document.querySelector("#est-rel");
+  expect(rel.textContent).toBe("Estrangeiros: 10/9");
+  expect(rel.classList.contains("excede")).toBe(true);
+  expect(document.querySelector("#est-aviso").textContent).toContain("Limite de estrangeiros excedido");
+  expect(document.querySelector("#est-aviso").textContent).toContain("até 9 entre titulares e reservas");
+  expect(document.querySelector("#estrangeiros").textContent).not.toContain("regra aproximada"); // regra confirmada
+  expect(document.querySelectorAll(".slot > .est")).toHaveLength(6);
+  // Lista de escolha: quantas vagas de estrangeiro sobram
+  clique(screen.getAllByRole("button", { name: /^Adicionar reserva de/ })[0]);
+  expect(painel().querySelector("#est-vagas").textContent).toBe("Vagas de estrangeiro: nenhuma (1 acima do limite) entre titulares e reservas");
+  fireEvent.keyDown(document, { key: "Escape" });
+  // Elenco e Resumo: estrangeiros no elenco
+  clique(screen.getByRole("tab", { name: "Elenco" }));
+  expect(document.querySelector("#est-elenco").textContent).toMatch(/^Estrangeiros no elenco: \d+/);
+  clique(screen.getByRole("tab", { name: "Resumo" }));
+  expect(document.querySelector("#est-elenco")).not.toBeNull();
+  // Mercado: selo "Estrangeiro" e o filtro que esconde quem ocupa vaga
+  clique(screen.getByRole("tab", { name: "Mercado" }));
+  expect(document.querySelectorAll("#mList .selo-est").length).toBeGreaterThan(0);
+  clique(document.querySelector("#fOpen"));
+  clique(noPainel().getByRole("button", { name: /Só jogadores que não ocupam vaga de estrangeiro/ }));
+  clique(noPainel().getByRole("button", { name: "Aplicar" }));
+  expect(document.querySelectorAll("#mList .row").length).toBeGreaterThan(0);
+  expect(document.querySelectorAll("#mList .selo-est")).toHaveLength(0);
+
+  // Argentina: 6 relacionados passam do limite de 5
+  clique(document.querySelector(".clubBtn"));
+  clique(noPainel().getByRole("button", { name: /Trocar de clube/ }));
+  clique(await screen.findByRole("button", { name: new RegExp(DATA.clubs.find((c) => c.k === arg).n + " 2027") }));
+  clique(screen.getByRole("tab", { name: "Time" }));
+  expect(document.querySelector("#est-rel").textContent).toMatch(/^Estrangeiros: \d+\/5$/);
+  expect(+document.querySelector("#est-rel b").textContent.split("/")[0]).toBeGreaterThanOrEqual(6);
+  expect(document.querySelector("#est-aviso").textContent).toContain("Limite de estrangeiros excedido");
+}, 60000);
+
 test("aba Time: tocar em um jogador e depois em outro troca os dois de posição", async () => {
   localStorage.setItem(CHAVE, JSON.stringify({ plans: { T42: { club: "T42", budget: 50, st: {}, ins: [], form: "4-3-3", xi: {}, custom: [] } }, last: "T42" }));
   render(<App />);

@@ -35,24 +35,29 @@ export const FORMS = {
 export const MES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 
 // Continentes, na ordem em que aparecem na tela de países
-export const CONTINENTES = ["América do Sul", "América do Norte", "Europa", "Ásia e Oriente Médio"];
+export const CONTINENTES = ["América do Sul", "América do Norte e Central", "Europa", "África", "Ásia e Oriente Médio", "Oceania"];
 
 // Países da tela de escolha, na ordem da grade (dentro de cada continente).
 // cor = fundo do cartão da bandeira e da escolha de divisão (escura o bastante para texto branco: brilho ≤ 0,6)
-// bandeira = arquivo em public/img/flags/ (Wikimedia Commons)
+// bandeira = arquivo em public/img/flags/ (Wikimedia Commons; os países da rodada 3 usam paises/<código>.svg, do flag-icons)
 // ligas = chaves das ligas do país (a ordem na tela segue o campo "div" de cada liga)
-const AS = "América do Sul", AN = "América do Norte", EU = "Europa", AO = "Ásia e Oriente Médio";
+const AS = "América do Sul", AN = "América do Norte e Central", EU = "Europa", AF = "África", AO = "Ásia e Oriente Médio", OC = "Oceania";
 export const PAISES = [
   { n: "Brasil", sigla: "BRA", continente: AS, cor: "#009c3b", bandeira: "brasil.svg", ligas: ["BRA", "BRB", "BRC"] },
-  { n: "Argentina", sigla: "ARG", continente: AS, cor: "#3a83c4", bandeira: "argentina.svg", ligas: ["ARG"] },
-  { n: "Colômbia", sigla: "COL", continente: AS, cor: "#a07a00", bandeira: "colombia.svg", ligas: ["COL"] },
+  { n: "Argentina", sigla: "ARG", continente: AS, cor: "#3a83c4", bandeira: "argentina.svg", ligas: ["ARG", "ARG2"] },
+  { n: "Colômbia", sigla: "COL", continente: AS, cor: "#a07a00", bandeira: "colombia.svg", ligas: ["COL", "COL2"] },
   { n: "Uruguai", sigla: "URU", continente: AS, cor: "#2b6cb0", bandeira: "uruguai.svg", ligas: ["URU"] },
-  { n: "Chile", sigla: "CHI", continente: AS, cor: "#0039a6", bandeira: "chile.svg", ligas: ["CHI"] },
+  { n: "Chile", sigla: "CHI", continente: AS, cor: "#0039a6", bandeira: "chile.svg", ligas: ["CHI", "CHI2"] },
   { n: "Paraguai", sigla: "PAR", continente: AS, cor: "#9c1c26", bandeira: "paraguai.svg", ligas: ["PAR"] },
   { n: "Equador", sigla: "ECU", continente: AS, cor: "#034ea2", bandeira: "equador.svg", ligas: ["ECU"] },
-  { n: "Peru", sigla: "PER", continente: AS, cor: "#b5121b", bandeira: "peru.svg", ligas: ["PER"] },
+  { n: "Peru", sigla: "PER", continente: AS, cor: "#b5121b", bandeira: "peru.svg", ligas: ["PER", "PER2"] },
+  { n: "Bolívia", sigla: "BOL", continente: AS, cor: "#007934", bandeira: "paises/bo.svg", ligas: ["BOL"] },
+  { n: "Venezuela", sigla: "VEN", continente: AS, cor: "#7a1528", bandeira: "paises/ve.svg", ligas: ["VEN"] },
   { n: "México", sigla: "MEX", continente: AN, cor: "#006847", bandeira: "mexico.svg", ligas: ["MEX"] },
-  { n: "Estados Unidos", sigla: "USA", continente: AN, cor: "#2b2f6b", bandeira: "estados-unidos.svg", ligas: ["USA"] },
+  { n: "Estados Unidos", sigla: "USA", continente: AN, cor: "#2b2f6b", bandeira: "estados-unidos.svg", ligas: ["USA", "USL"] },
+  { n: "Canadá", sigla: "CAN", continente: AN, cor: "#b3001b", bandeira: "paises/ca.svg", ligas: ["CAN"] },
+  { n: "Costa Rica", sigla: "CRC", continente: AN, cor: "#002b7f", bandeira: "paises/cr.svg", ligas: ["CRC"] },
+  { n: "Honduras", sigla: "HON", continente: AN, cor: "#00539b", bandeira: "paises/hn.svg", ligas: ["HON"] },
   { n: "Inglaterra", sigla: "ENG", continente: EU, cor: "#1d2a6b", bandeira: "inglaterra.svg", ligas: ["ENG", "ENG2"] },
   { n: "Espanha", sigla: "ESP", continente: EU, cor: "#aa151b", bandeira: "espanha.svg", ligas: ["ESP", "ESP2"] },
   { n: "Itália", sigla: "ITA", continente: EU, cor: "#0b6b3a", bandeira: "italia.svg", ligas: ["ITA", "ITA2"] },
@@ -76,16 +81,26 @@ export const PAISES = [
   { n: "Ucrânia", sigla: "UKR", continente: EU, cor: "#0057b7", bandeira: "ucrania.svg", ligas: ["UKR"] },
   { n: "Romênia", sigla: "ROU", continente: EU, cor: "#002b7f", bandeira: "romenia.svg", ligas: ["ROU"] },
   { n: "Rússia", sigla: "RUS", continente: EU, cor: "#1c3578", bandeira: "russia.svg", ligas: ["RUS"] },
+  { n: "Israel", sigla: "ISR", continente: EU, cor: "#0038b8", bandeira: "paises/il.svg", ligas: ["ISR"] },
+  { n: "Hungria", sigla: "HUN", continente: EU, cor: "#3d6b45", bandeira: "paises/hu.svg", ligas: ["HUN"] },
+  { n: "Eslováquia", sigla: "SVK", continente: EU, cor: "#0b4ea2", bandeira: "paises/sk.svg", ligas: ["SVK"] },
+  { n: "Bulgária", sigla: "BUL", continente: EU, cor: "#00805e", bandeira: "paises/bg.svg", ligas: ["BUL"] },
+  { n: "Chipre", sigla: "CYP", continente: EU, cor: "#8f5410", bandeira: "paises/cy.svg", ligas: ["CYP"] },
+  { n: "Eslovênia", sigla: "SVN", continente: EU, cor: "#005da4", bandeira: "paises/si.svg", ligas: ["SVN"] },
+  { n: "Egito", sigla: "EGY", continente: AF, cor: "#a3171f", bandeira: "paises/eg.svg", ligas: ["EGY"] },
+  { n: "Marrocos", sigla: "MAR", continente: AF, cor: "#9c1a1f", bandeira: "paises/ma.svg", ligas: ["MAR"] },
+  { n: "África do Sul", sigla: "RSA", continente: AF, cor: "#007749", bandeira: "paises/za.svg", ligas: ["RSA"] },
   { n: "Arábia Saudita", sigla: "SAU", continente: AO, cor: "#0b6b3a", bandeira: "arabia-saudita.svg", ligas: ["SAU"] },
   { n: "Japão", sigla: "JPN", continente: AO, cor: "#bc002d", bandeira: "japao.svg", ligas: ["JPN"] },
   { n: "Coreia do Sul", sigla: "KOR", continente: AO, cor: "#003478", bandeira: "coreia-do-sul.svg", ligas: ["KOR"] },
   { n: "China", sigla: "CHN", continente: AO, cor: "#c8200e", bandeira: "china.svg", ligas: ["CHN"] },
   { n: "Catar", sigla: "QAT", continente: AO, cor: "#8a1538", bandeira: "catar.svg", ligas: ["QAT"] },
   { n: "Emirados Árabes", sigla: "UAE", continente: AO, cor: "#00732f", bandeira: "emirados.svg", ligas: ["UAE"] },
+  { n: "Austrália", sigla: "AUS", continente: OC, cor: "#012169", bandeira: "paises/au.svg", ligas: ["AUS"] },
 ];
 
 // Filtros do Mercado ao abrir: ordem "Recomendados" e "Só quem cabe no caixa" ligado
 // (se a pessoa desligar, a escolha fica salva em "plantel:caixa"; ver armazenamento.js)
 // idade e ovr: faixas [mínimo, máximo] de 0 a 100 (FAIXA_TODA = sem filtro)
 export const FAIXA_TODA = [0, 100];
-export const FILTROS_PADRAO = { lg: "", club: "", nat: "", idade: FAIXA_TODA, ovr: FAIXA_TODA, sort: "rec", fit: true, free: false };
+export const FILTROS_PADRAO = { lg: "", club: "", nat: "", idade: FAIXA_TODA, ovr: FAIXA_TODA, semEst: false, sort: "rec", fit: true, free: false };

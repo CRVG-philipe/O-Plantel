@@ -9,6 +9,9 @@ import { dinheiro } from "../logica/dinheiro.js";
 import { elencoAtual, jogador } from "../logica/elenco.js";
 import { CRITERIOS, escalarSozinho, forcaDoTime, MAX_RESERVAS, moverReservas, reservasDa, todosReservas, trocarComReserva, trocarTitulares } from "../logica/escalacao.js";
 import { Foto } from "./Imagens.jsx";
+import { ContadorEstrangeiros, SeloEst } from "./Estrangeiros.jsx";
+import { ehEstrangeiro, regraDaLiga, temLimite } from "../logica/estrangeiros.js";
+import { D } from "../logica/dados.js";
 
 // Força com uma casa decimal, com vírgula ("78,4")
 export const fmtForca = (m) => m.toFixed(1).replace(".", ",");
@@ -22,6 +25,9 @@ export default function Time({ app }) {
   const outros = sq.filter((p) => !titulares.has(p.id) && !noBanco.has(p.id)).sort((a, b) => ORDER.indexOf(a.pos) - ORDER.indexOf(b.pos) || b.v - a.v);
   const comBanco = noBanco.size > 0;
   const forca = forcaDoTime(plano); // média de overall dos titulares
+  // Estrangeiros: o selo "EST" só aparece nas ligas com algum limite
+  const lg = D.CL[plano.club].lg, comLimite = temLimite(regraDaLiga(lg));
+  const est = (p) => comLimite && ehEstrangeiro(p, lg);
 
   // Trocar de posição: 1º toque seleciona um titular ("sel" = índice da vaga); 2º toque em outro titular troca os dois,
   // numa vaga vazia move o selecionado, num reserva coloca o reserva no lugar dele. Tocar de novo no mesmo abre a lista.
@@ -80,6 +86,7 @@ export default function Time({ app }) {
           <div className="xv">Valor do time<b className="num">{dinheiro(valorTime)}</b></div>
         </div>
       </div>
+      <ContadorEstrangeiros plano={plano} />
       <div className={"pitch" + (comBanco ? " com-banco" : "") + (selecionado ? " trocando" : "")}>
         <svg viewBox="0 0 68 92" preserveAspectRatio="none" aria-hidden="true">
           <g fill="none" stroke="currentColor" strokeWidth=".4">
@@ -98,10 +105,11 @@ export default function Time({ app }) {
             // Com reservas no campo, as vagas sobem um pouco e o goleiro desce, para as pilhas não se encostarem
             <div className="vaga" key={i} style={{ left: x + "%", top: (comBanco ? (r === "GOL" ? 85 : 2 + y * 0.86) : y) + "%" }}>
               <button className={"slot" + (p ? "" : " empty") + (sel === i && selecionado ? " sel" : "")} style={{ "--pc": corDoSetor(r) }}
-                aria-label={`${NOME_VAGA[r]}: ${p ? p.n : "vazio"}${nv === "improvisado" ? " (improvisado)" : ""}`}
+                aria-label={`${NOME_VAGA[r]}: ${p ? p.n : "vazio"}${nv === "improvisado" ? " (improvisado)" : ""}${est(p) ? " (estrangeiro)" : ""}`}
                 aria-pressed={p ? sel === i : undefined}
                 onClick={() => tocarVaga(i, p)}>
                 <span className="dot">{p ? <Foto p={p} z={40} /> : "+"}</span>
+                {est(p) && <SeloEst />}
                 <span className={"lb" + (nv === "boa" ? " boa" : nv === "improvisado" ? " improvisado" : "")}>{p ? (nv === "improvisado" ? "⚠ " : "") + short(p.n) : rotuloVaga(r)}</span>
               </button>
               {res.length < MAX_RESERVAS && (
@@ -111,7 +119,7 @@ export default function Time({ app }) {
                 <div className="mini-banco">
                   {res.map((q, k) => (
                     <button key={q.id} className="mini" aria-label={`${k + 1}º reserva de ${NOME_VAGA[r]}: ${q.n}`} onClick={() => tocarReserva(i, q)}>
-                      <Foto p={q} z={14} /><span>{short(q.n)}</span>
+                      <Foto p={q} z={14} /><span>{short(q.n)}</span>{est(q) && <SeloEst mini />}
                     </button>
                   ))}
                 </div>
@@ -148,7 +156,7 @@ export default function Time({ app }) {
                     <button className="row" key={id} style={{ minHeight: 48 }} onClick={() => app.abrirPainel("reserva", { i, id })}>
                       <Avatar p={p} z={34} /><Ovr p={p} />
                       <div className="mid">
-                        <div className="nm">{p.n}<Bandeira nat={p.nat} /></div>
+                        <div className="nm">{p.n}<Bandeira nat={p.nat} />{est(p) && <SeloEst />}</div>
                         <div className="sub">{k + 1}º reserva · {p.pos} · <SeloNivel nivel={compatibilidade(r, p.pos).nivel} /></div>
                       </div>
                       <Nota st={p.st} className="so-largo" />
@@ -167,7 +175,7 @@ export default function Time({ app }) {
           {outros.length ? outros.map((p) => (
             <div className="row" key={p.id} style={{ minHeight: 48 }}>
               <Avatar p={p} z={34} /><Ovr p={p} />
-              <div className="mid"><div className="nm">{p.n}<Bandeira nat={p.nat} /></div></div>
+              <div className="mid"><div className="nm">{p.n}<Bandeira nat={p.nat} />{est(p) && <SeloEst />}</div></div>
               <Nota st={p.st} className="so-largo" />
               <div className="rt"><Pos pos={p.pos} /></div>
             </div>

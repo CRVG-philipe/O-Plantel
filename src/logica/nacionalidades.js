@@ -32,7 +32,13 @@ const CODIGO = {
   "Quirguistão": "kg", "Gibraltar": "gi", "Maurícias": "mu", "Tajiquistão": "tj", "Turquemenistão": "tm",
   "Coreia do Norte": "kp", "Hong Kong": "hk", "Taipé Chinesa": "tw", "Sudão": "sd", "Bahrain": "bh",
   "Etiópia": "et", "Iémen": "ye", "Omã": "om",
+  // acrescentadas com as ligas da rodada 3
+  "Nicarágua": "ni", "Cuba": "cu", "Samoa": "ws", "Antígua e Barbuda": "ag", "Eswatini": "sz", "Lesoto": "ls",
+  "Vanuatu": "vu", "Mongólia": "mn", "Índia": "in", "Dominica": "dm", "Laos": "la", "Ilhas Caimão": "ky", "Montserrat": "ms",
 };
 
-export const codigoDoPais = (nat) => CODIGO[nat] || null;
+// Jogadores com dupla nacionalidade vêm como "Bolívia/Argentina" (rodada 3). nacionalidades() separa os países;
+// a bandeira mostrada é a do primeiro.
+export const nacionalidades = (nat) => String(nat || "").split("/").map((n) => n.trim()).filter(Boolean);
+export const codigoDoPais = (nat) => CODIGO[nacionalidades(nat)[0]] || null;
 export const TODOS_OS_CODIGOS = Object.values(CODIGO);

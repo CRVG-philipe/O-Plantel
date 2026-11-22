@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { D } from "../../logica/dados.js";
 import { FAIXA_TODA, FILTROS_PADRAO } from "../../logica/constantes.js";
 import { faixaLigada, nacionalidadesDoMercado } from "../../logica/mercado.js";
+import { regraDaLiga, textoRegra } from "../../logica/estrangeiros.js";
 import { Cabecalho } from "../Painel.jsx";
 import { Bandeira } from "../Jogador.jsx";
 import { Opcao } from "./comum.jsx";
@@ -70,6 +71,7 @@ export default function PainelFiltros({ app }) {
   // Clubes que aparecem na lista: só os da liga escolhida (ou todos, separados por liga)
   const clubesDa = (lg) => D.CLUBS.filter((c) => c.lg === lg && c.k !== app.plano.club).sort((a, b) => a.n.localeCompare(b.n));
   const liga = t.lg ? D.LG[t.lg] : null;
+  const lgPlano = D.CL[app.plano.club].lg; // liga do clube do plano (regra de estrangeiros)
 
   // Nacionalidades de quem está na liga/clube escolhidos, com quantos jogadores tem cada uma
   const nats = useMemo(() => nacionalidadesDoMercado(app.plano, t.lg, t.club), [app.plano, t.lg, t.club]);
@@ -115,6 +117,8 @@ export default function PainelFiltros({ app }) {
         </select>
       </label>
       <Opcao marcado={t.fit} titulo="Só quem cabe no caixa" onClick={() => muda("fit", !t.fit)} />
+      <Opcao marcado={!!t.semEst} titulo="Só jogadores que não ocupam vaga de estrangeiro"
+        detalhe={`No seu clube (${D.LG[lgPlano].n}): ${textoRegra(regraDaLiga(lgPlano))}.`} onClick={() => muda("semEst", !t.semEst)} />
       <Opcao marcado={t.free} titulo="Contrato acabando" detalhe="Termina antes da próxima temporada: podem chegar sem custo." onClick={() => muda("free", !t.free)} />
       <div className="acts" style={{ marginTop: 8 }}>
         <button className="btn" id="clr" onClick={() => aplicar({ ...FILTROS_PADRAO })}>Limpar</button>

@@ -25,7 +25,8 @@ def ler(f): return json.load(open(f, encoding='utf-8'))
 HOJE = (2026, 11, 20)  # data dos dados
 SETOR = {'GOL': 'gol', 'ZAG': 'def', 'LD': 'def', 'LE': 'def', 'VOL': 'mei', 'MC': 'mei', 'MEI': 'mei', 'MD': 'mei', 'ME': 'mei',
          'PE': 'ata', 'PD': 'ata', 'SA': 'ata', 'CA': 'ata'}
-LIGA_DE_CIMA = {'BRB': 'BRA', 'BRC': 'BRB', 'ENG2': 'ENG', 'ESP2': 'ESP', 'ITA2': 'ITA', 'GER2': 'GER', 'FRA2': 'FRA'}
+LIGA_DE_CIMA = {'BRB': 'BRA', 'BRC': 'BRB', 'ENG2': 'ENG', 'ESP2': 'ESP', 'ITA2': 'ITA', 'GER2': 'GER', 'FRA2': 'FRA',
+                'ARG2': 'ARG', 'COL2': 'COL', 'PER2': 'PER', 'CHI2': 'CHI', 'USL': 'USA'}
 MIN_REFERENCIA = 60      # valores reais mínimos para a liga servir de referência para si mesma
 MIN_SERIE_C = 50         # valores reais mínimos na Série C para usar a razão calculada
 RAZAO_SERIE_C = 0.35     # razão Série C ÷ Série B quando há poucos dados

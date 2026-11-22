@@ -6,5 +6,6 @@ import react from "@vitejs/plugin-react";
 export default defineConfig({
   plugins: [react()],
   // Testes (npm test): rodam num "navegador de mentira" (jsdom)
-  test: { environment: "jsdom" },
+  // testTimeout: com ~33 mil jogadores, cada teste de tela carrega muitos dados; 30 s de limite (só espera se precisar)
+  test: { environment: "jsdom", testTimeout: 30000 },
 });

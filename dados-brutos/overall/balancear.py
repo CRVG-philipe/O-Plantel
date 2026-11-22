@@ -1,7 +1,7 @@
 """Balanceamento por liga sobre o overall v1.
 f(x) = x + a + b*max(0, x - c)   (c = percentil 85 da liga; b<0 comprime o topo, b>0 estica)
 A ordem dos jogadores dentro da liga não muda."""
-import json, collections, sys, itertools
+import json, collections, sys, itertools, os
 IN = sys.argv[1] if len(sys.argv) > 1 else 'dados-brutos/overall/overall_v1.json'
 PL = sys.argv[2] if len(sys.argv) > 2 else 'dados-brutos/overall/players_all.json'
 OUT = sys.argv[3] if len(sys.argv) > 3 else 'public/overall.json'
@@ -32,5 +32,11 @@ out = {}
 for k, d in O.items():
     p = PARAM.get(lg[k])
     out[k] = {nm: ([max(40, min(92, round(v[0] + p[0] + p[1] * max(0, v[0] - p[2]))))] if p else [v[0]]) + [0, v[2]] for nm, v in d.items()}
+# Ligas da rodada 3 (21/11/2026): o overall já vem pronto e balanceado (dados-brutos/rodada3/overall_r3.json,
+# feito por rodada3/overall_r3.py + balancear_r3.py). Entra como está, sem sobrescrever clubes que já existem.
+R3 = 'dados-brutos/rodada3/overall_r3.json'
+if len(sys.argv) <= 3 and os.path.exists(R3):
+    for k, d in json.load(open(R3, encoding='utf-8')).items():
+        out.setdefault(k, d)
 json.dump(out, open(OUT, 'w', encoding='utf-8'), ensure_ascii=False, separators=(',', ':'))
 json.dump({L: {'a': p[0], 'b': p[1], 'c': p[2]} for L, p in PARAM.items()}, open('dados-brutos/overall/balanceamento-parametros.json', 'w'), indent=1)
