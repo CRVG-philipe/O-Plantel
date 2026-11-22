@@ -82,6 +82,26 @@ test("Mercado: faixas de overall e de idade (0 a 100)", () => {
   expect(contarFiltros(base)).toBe(0);
 });
 
+test("Mercado: faixa de valor (€ 0 a 200 mi; 200 = sem teto)", () => {
+  const P = novoPlano("T1974");
+  const base = { ...FILTROS_PADRAO, fit: false };
+  const todos = buscarJogadores(P, "", 0, base).length;
+  const l = buscarJogadores(P, "", 0, { ...base, valor: [5, 20] });
+  expect(l.length).toBeGreaterThan(100);
+  expect(l.every((p) => p.v >= 5 && p.v <= 20)).toBe(true);
+  // Máximo no teto (200) = sem teto: entra quem vale mais de € 200 mi
+  const caros = buscarJogadores(P, "", 0, { ...base, valor: [100, 200] });
+  expect(caros.every((p) => p.v >= 100)).toBe(true);
+  expect(caros.length).toBe(buscarJogadores(P, "", 0, base).filter((p) => p.v >= 100).length);
+  // Faixa inteira não filtra; filtros antigos sem o campo "valor" também não
+  expect(buscarJogadores(P, "", 0, { ...base, valor: [0, 200] }).length).toBe(todos);
+  const { valor, ...semValor } = base; // eslint-disable-line no-unused-vars
+  expect(buscarJogadores(P, "", 0, semValor).length).toBe(todos);
+  // Conta 1 no botão "Filtros"
+  expect(contarFiltros({ ...base, valor: [0, 10] })).toBe(1);
+  expect(contarFiltros({ ...base, valor: [0, 10], ovr: [70, 80], idade: [0, 23] })).toBe(3);
+});
+
 test("rodada 3: 20 ligas novas, todo jogador com overall, e dupla nacionalidade ('Bolívia/Argentina')", () => {
   const novas = ["BOL", "VEN", "ARG2", "COL2", "PER2", "CHI2", "EGY", "MAR", "RSA", "AUS", "ISR", "HUN", "SVK", "BUL", "CYP", "SVN", "CAN", "CRC", "HON", "USL"];
   expect(novas.every((k) => D.LG[k])).toBe(true);

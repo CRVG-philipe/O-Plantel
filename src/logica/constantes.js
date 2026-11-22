@@ -102,5 +102,8 @@ export const PAISES = [
 // Filtros do Mercado ao abrir: ordem "Recomendados" e "Só quem cabe no caixa" ligado
 // (se a pessoa desligar, a escolha fica salva em "plantel:caixa"; ver armazenamento.js)
 // idade e ovr: faixas [mínimo, máximo] de 0 a 100 (FAIXA_TODA = sem filtro)
+// valor: faixa em € milhões de 0 a VALOR_MAX (o máximo em VALOR_MAX = sem teto; FAIXA_VALOR = sem filtro)
 export const FAIXA_TODA = [0, 100];
-export const FILTROS_PADRAO = { lg: "", club: "", nat: "", idade: FAIXA_TODA, ovr: FAIXA_TODA, semEst: false, sort: "rec", fit: true, free: false };
+export const VALOR_MAX = 200;
+export const FAIXA_VALOR = [0, VALOR_MAX];
+export const FILTROS_PADRAO = { lg: "", club: "", nat: "", idade: FAIXA_TODA, ovr: FAIXA_TODA, valor: FAIXA_VALOR, semEst: false, sort: "rec", fit: true, free: false };

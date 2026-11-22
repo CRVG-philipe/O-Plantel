@@ -1,7 +1,7 @@
 // Painel de filtros do Mercado. As mudanças só valem ao tocar em "Aplicar".
 import { useMemo, useState } from "react";
 import { D } from "../../logica/dados.js";
-import { FILTROS_PADRAO } from "../../logica/constantes.js";
+import { FAIXA_VALOR, FILTROS_PADRAO, VALOR_MAX } from "../../logica/constantes.js";
 import { nacionalidadesDoMercado } from "../../logica/mercado.js";
 import { regraDaLiga, textoRegra } from "../../logica/estrangeiros.js";
 import { Cabecalho } from "../Painel.jsx";
@@ -28,7 +28,7 @@ export default function PainelFiltros({ app }) {
   const natFora = t.nat && !nats.some(([n]) => n === t.nat); // a escolhida não existe nessa liga/clube
 
   // Ao aplicar, cada faixa fica em ordem (quem digitou 80 no mínimo e 70 no máximo ganha 70–80)
-  const aplicar = (f) => { app.setFiltros({ ...f, idade: ordenarFaixa(f.idade), ovr: ordenarFaixa(f.ovr) }); app.fecharPainel(); app.setLimite(40); };
+  const aplicar = (f) => { app.setFiltros({ ...f, idade: ordenarFaixa(f.idade), ovr: ordenarFaixa(f.ovr), valor: ordenarFaixa(f.valor || FAIXA_VALOR) }); app.fecharPainel(); app.setLimite(40); };
 
   return (
     <>
@@ -61,6 +61,7 @@ export default function PainelFiltros({ app }) {
       </label>
       <Faixa id="fo" rotulo="Overall" valor={t.ovr} onChange={(f) => muda("ovr", f)} />
       <Faixa id="fa" rotulo="Idade" unidade=" anos" valor={t.idade} onChange={(f) => muda("idade", f)} />
+      <Faixa id="fv" rotulo="Valor (€ milhões)" valor={t.valor || FAIXA_VALOR} lo={0} hi={VALOR_MAX} onChange={(f) => muda("valor", f)} />
       <label className="field">Ordenar por
         <select id="fs" value={t.sort} onChange={(e) => muda("sort", e.target.value)}>
           {ORDENS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}

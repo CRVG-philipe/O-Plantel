@@ -1,13 +1,13 @@
 // "Lista de jogadores": consulta de todos os jogadores do site, fora de qualquer time.
 // Filtros, ordens e o endereço (os filtros ficam na URL para dar para compartilhar: ?liga=BRA&pos=CA).
 import { D } from "./dados.js";
-import { PAISES } from "./constantes.js";
+import { PAISES, VALOR_MAX } from "./constantes.js";
 import { norm } from "./formato.js";
 import { nacionalidades } from "./nacionalidades.js";
 import { nomesPorApelido } from "./mercado.js";
 
 export const POR_PAGINA = 50;
-export const VALOR_MAX = 200; // € mi: o teto da faixa de valor ("200" = sem teto)
+export { VALOR_MAX }; // € mi: o teto da faixa de valor ("200" = sem teto), definido em constantes.js
 
 // Filtros padrão. pos = lista de posições (vazia = todas); faixas = [mínimo, máximo]
 export const LISTA_PADRAO = { q: "", pais: "", liga: "", clube: "", pos: [], idade: [0, 100], valor: [0, VALOR_MAX], ovr: [0, 100], nat: "", fim: false, emp: false, ordem: "o", pag: 1 };

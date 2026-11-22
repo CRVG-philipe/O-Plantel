@@ -1,6 +1,6 @@
 // Busca e filtros da aba Mercado.
 import { D } from "./dados.js";
-import { CHIPS, FAIXA_TODA, FILTROS_PADRAO } from "./constantes.js";
+import { CHIPS, FAIXA_TODA, FILTROS_PADRAO, VALOR_MAX } from "./constantes.js";
 import { norm } from "./formato.js";
 import { nacionalidades } from "./nacionalidades.js";
 import { ehEstrangeiro } from "./estrangeiros.js";
@@ -8,14 +8,15 @@ import { calcularDinheiro, precoDeCompra } from "./dinheiro.js";
 
 // Quantos filtros estão ligados (o número que aparece no botão "Filtros")
 export function contarFiltros(F) {
-  return (F.lg ? 1 : 0) + (F.club ? 1 : 0) + (F.nat ? 1 : 0) + (faixaLigada(F.idade) ? 1 : 0) + (faixaLigada(F.ovr) ? 1 : 0) +
+  return (F.lg ? 1 : 0) + (F.club ? 1 : 0) + (F.nat ? 1 : 0) + (faixaLigada(F.idade) ? 1 : 0) + (faixaLigada(F.ovr) ? 1 : 0) + (faixaLigada(F.valor, 0, VALOR_MAX) ? 1 : 0) +
     (F.fit ? 1 : 0) + (F.free ? 1 : 0) + (F.semEst ? 1 : 0) + (F.sort !== FILTROS_PADRAO.sort ? 1 : 0);
 }
 
-// Faixa [mínimo, máximo] diferente de 0–100 = filtro ligado
-export const faixaLigada = (f) => !!f && (f[0] > FAIXA_TODA[0] || f[1] < FAIXA_TODA[1]);
-// O número está dentro da faixa? Sem faixa ligada, todo mundo passa (até quem não tem o número, como jogador sem overall)
-const naFaixa = (x, f) => !faixaLigada(f) || (x != null && x >= f[0] && x <= f[1]);
+// Faixa [mínimo, máximo] diferente de lo–hi (0–100 na idade e no overall) = filtro ligado
+export const faixaLigada = (f, lo = FAIXA_TODA[0], hi = FAIXA_TODA[1]) => !!f && (f[0] > lo || f[1] < hi);
+// O número está dentro da faixa? Sem faixa ligada, todo mundo passa (até quem não tem o número, como jogador sem overall).
+// Máximo no teto (hi) = sem teto: no valor, "200" inclui quem vale mais de € 200 mi.
+const naFaixa = (x, f, lo, hi = FAIXA_TODA[1]) => !faixaLigada(f, lo, hi) || (x != null && x >= f[0] && (f[1] >= hi || x <= f[1]));
 
 // Quem pode aparecer no Mercado: jogadores de outros clubes, menos os emprestados pelo próprio clube
 // (esses já estão na seção "Emprestados a outros clubes")
@@ -70,6 +71,7 @@ export function buscarJogadores(plano, busca, chip, F, notas) {
     (!F.nat || nacionalidades(p.nat).includes(F.nat)) &&
     naFaixa(p.a, F.idade) &&
     naFaixa(p.ovr, F.ovr) &&
+    naFaixa(p.v, F.valor, 0, VALOR_MAX) && // valor de mercado (o real, ou o estimado quando não há)
     (!F.fit || precoDeCompra(p) <= caixa) &&
     (!F.free || p.end26) &&
     (!F.semEst || !ehEstrangeiro(p, ligaDoPlano)) && // "Só jogadores que não ocupam vaga de estrangeiro"

@@ -221,7 +221,7 @@ React 19 + Vite 6, em JavaScript (sem TypeScript).
     - Se a pessoa mudar o "só quem cabe", a escolha fica em `plantel:caixa` ("1" ou "0"), separada dos planos.
     - O contador do botão Filtros conta esse filtro, então o padrão mostra "Filtros 1".
   - **Outras ordens:** maior valor, menor valor, mais jovens, melhor nota e Overall (`o`).
-  - **Filtros** (`PainelFiltros`): liga, clube, nacionalidade (`nat`), faixa de overall (`ovr`), faixa de idade (`idade`), ordem, "só quem cabe", "só quem não ocupa vaga de estrangeiro" (`semEst`) e "contrato acabando".
+  - **Filtros** (`PainelFiltros`): liga, clube, nacionalidade (`nat`), faixa de overall (`ovr`), faixa de idade (`idade`), faixa de valor (`valor`, em € mi de 0 a `VALOR_MAX` = 200, onde 200 = sem teto; usa `p.v`, o valor real ou o estimado; `#fv-min`, `#fv-max`), ordem, "só quem cabe", "só quem não ocupa vaga de estrangeiro" (`semEst`) e "contrato acabando".
     - Faixas (`Faixa`): `[mínimo, máximo]` de 0 a 100 (`FAIXA_TODA` = sem filtro), com duas alças para arrastar e duas caixas para digitar (`#fo-min`, `#fo-max`, `#fa-min`, `#fa-max`). O título mostra "70–80" ou "qualquer".
       - Digitando, cada número válido já vale e a caixa só se arruma ao sair dela (para "80" não virar outra coisa no "8"). Ao aplicar, a faixa é posta em ordem (25–20 vira 20–25).
       - Com a faixa de overall ligada, quem não tem overall (jogador criado) não aparece. Cada faixa ligada conta 1 no botão "Filtros".

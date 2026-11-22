@@ -332,6 +332,14 @@ test("fluxo completo: clube, vender, contratar, filtros, escalação, resumo, re
   clique(screen.getByRole("button", { name: /Filtros/ }));
   expect(noPainel().getByLabelText("Idade mínimo").value).toBe("20");
   expect(noPainel().getByLabelText("Idade máximo").value).toBe("25");
+  // Faixa de valor, junto das de overall e idade: conta mais 1 e reduz a lista
+  expect(noPainel().getByText("Valor (€ milhões)")).toBeTruthy();
+  fireEvent.change(noPainel().getByLabelText("Valor (€ milhões) máximo"), { target: { value: "1" } });
+  expect(painel().querySelector("#fv-t").parentElement.textContent).toBe("Valor (€ milhões)0–1");
+  clique(noPainel().getByRole("button", { name: "Aplicar" }));
+  expect(document.querySelector("#fOpen").textContent).toBe("Filtros5"); // liga + overall + idade + valor + caixa
+  expect(document.querySelectorAll("#mList .row").length).toBeLessThanOrEqual(naFaixa.length);
+  clique(screen.getByRole("button", { name: /Filtros/ }));
   clique(noPainel().getByRole("button", { name: "Limpar" }));
   expect(document.querySelector("#fOpen").textContent).toBe("Filtros1"); // de volta ao padrão: só o "cabe no caixa"
 
