@@ -1,6 +1,6 @@
 // Painéis da "Lista de jogadores":
 //   PainelFiltrosLista  país → liga → clube (em cascata), faixas de idade, valor e overall, nacionalidade,
-//                       "só com foto" e "emprestados". Só vale ao tocar em "Aplicar".
+//                       "fim de contrato" e "emprestados". Só vale ao tocar em "Aplicar".
 //   PainelFicha         a ficha do jogador (fatos, overall e atributos, estatísticas, empréstimo), sem nada de time:
 //                       o único atalho é "Abrir clube", para planejar o clube dele.
 import { useMemo, useState } from "react";
@@ -69,7 +69,7 @@ export function PainelFiltrosLista({ app }) {
       <Faixa id="lfa" rotulo="Idade" unidade=" anos" valor={t.idade} onChange={(f) => muda("idade", f)} />
       <Faixa id="lfv" rotulo="Valor (€ milhões)" valor={t.valor} lo={0} hi={VALOR_MAX} onChange={(f) => muda("valor", f)} />
       <Faixa id="lfo" rotulo="Overall" valor={t.ovr} onChange={(f) => muda("ovr", f)} />
-      <Opcao marcado={t.foto} titulo="Só com foto" onClick={() => muda("foto", !t.foto)} />
+      <Opcao marcado={t.fim} titulo="Jogadores em fim de contrato" detalhe="O contrato termina antes da próxima temporada da liga dele." onClick={() => muda("fim", !t.fim)} />
       <Opcao marcado={t.emp} titulo="Emprestados" detalhe="Só quem está emprestado a outro clube." onClick={() => muda("emp", !t.emp)} />
       <div className="acts" style={{ marginTop: 8 }}>
         <button className="btn" id="lclr" onClick={limpar}>Limpar</button>

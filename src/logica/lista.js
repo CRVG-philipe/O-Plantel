@@ -10,7 +10,7 @@ export const POR_PAGINA = 50;
 export const VALOR_MAX = 200; // € mi: o teto da faixa de valor ("200" = sem teto)
 
 // Filtros padrão. pos = lista de posições (vazia = todas); faixas = [mínimo, máximo]
-export const LISTA_PADRAO = { q: "", pais: "", liga: "", clube: "", pos: [], idade: [0, 100], valor: [0, VALOR_MAX], ovr: [0, 100], nat: "", foto: false, emp: false, ordem: "o", pag: 1 };
+export const LISTA_PADRAO = { q: "", pais: "", liga: "", clube: "", pos: [], idade: [0, 100], valor: [0, VALOR_MAX], ovr: [0, 100], nat: "", fim: false, emp: false, ordem: "o", pag: 1 };
 
 // Ordens: [rótulo, comparação]. Empate: maior overall, depois maior valor.
 const st = (p, i) => (p.st ? p.st[i] : -1);
@@ -31,7 +31,7 @@ const naFaixa = (x, f, lo, hi) => !faixaLigada(f, lo, hi) || (x != null && x >= 
 
 // Quantos filtros estão ligados (o número do botão "Filtros"; a busca e as posições ficam à vista e não contam)
 export function contarFiltrosLista(F) {
-  return (F.pais ? 1 : 0) + (F.liga ? 1 : 0) + (F.clube ? 1 : 0) + (F.nat ? 1 : 0) + (F.foto ? 1 : 0) + (F.emp ? 1 : 0) +
+  return (F.pais ? 1 : 0) + (F.liga ? 1 : 0) + (F.clube ? 1 : 0) + (F.nat ? 1 : 0) + (F.fim ? 1 : 0) + (F.emp ? 1 : 0) +
     (faixaLigada(F.idade, 0, 100) ? 1 : 0) + (faixaLigada(F.valor, 0, VALOR_MAX) ? 1 : 0) + (faixaLigada(F.ovr, 0, 100) ? 1 : 0);
 }
 
@@ -49,7 +49,7 @@ export function filtrarLista(F) {
     naFaixa(p.v, F.valor, 0, VALOR_MAX) &&
     naFaixa(p.ovr, F.ovr, 0, 100) &&
     (!F.nat || nacionalidades(p.nat).includes(F.nat)) &&
-    (!F.foto || p.hd > 0) &&
+    (!F.fim || p.end26) &&
     (!F.emp || !!p.emp) &&
     (!q || p.nn.includes(q) || D.CL[p.club].nn.includes(q) || porApelido.has(p.nn))
   );
@@ -70,9 +70,9 @@ export function nacionalidadesDaLista(F) {
 }
 
 // ---------- Endereço (URL) ----------
-// Nomes curtos na URL: ?q=&pais=&liga=&clube=&pos=CA,SA&idade=18-23&valor=0-10&ovr=70-80&nat=&foto=1&emp=1&ordem=v&p=2
+// Nomes curtos na URL: ?q=&pais=&liga=&clube=&pos=CA,SA&idade=18-23&valor=0-10&ovr=70-80&nat=&fim=1&emp=1&ordem=v&p=2
 // "jogadores" sozinho (?jogadores) abre a lista sem filtros.
-const CHAVES_URL = ["jogadores", "q", "pais", "liga", "clube", "pos", "idade", "valor", "ovr", "nat", "foto", "emp", "ordem", "p"];
+const CHAVES_URL = ["jogadores", "q", "pais", "liga", "clube", "pos", "idade", "valor", "ovr", "nat", "fim", "emp", "ordem", "p"];
 export const urlTemLista = (search) => { const u = new URLSearchParams(search); return CHAVES_URL.some((k) => u.has(k)); };
 
 const lerFaixa = (txt, lo, hi) => {
@@ -93,7 +93,7 @@ export function lerFiltrosDaUrl(search) {
   F.valor = lerFaixa(u.get("valor"), 0, VALOR_MAX);
   F.ovr = lerFaixa(u.get("ovr"), 0, 100);
   F.nat = u.get("nat") || "";
-  F.foto = u.get("foto") === "1";
+  F.fim = u.get("fim") === "1";
   F.emp = u.get("emp") === "1";
   F.ordem = ORDENS_LISTA[u.get("ordem")] ? u.get("ordem") : "o";
   F.pag = Math.max(1, parseInt(u.get("p"), 10) || 1);
@@ -110,7 +110,7 @@ export function urlDosFiltros(F) {
   if (F.pos.length) u.set("pos", F.pos.join(","));
   faixa("idade", F.idade, 0, 100); faixa("valor", F.valor, 0, VALOR_MAX); faixa("ovr", F.ovr, 0, 100);
   if (F.nat) u.set("nat", F.nat);
-  if (F.foto) u.set("foto", "1");
+  if (F.fim) u.set("fim", "1");
   if (F.emp) u.set("emp", "1");
   if (F.ordem !== "o") u.set("ordem", F.ordem);
   if (F.pag > 1) u.set("p", String(F.pag));

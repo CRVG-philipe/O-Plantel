@@ -254,7 +254,7 @@ React 19 + Vite 6, em JavaScript (sem TypeScript).
   - Na recomendação, elenco com menos de 5 overalls usa o overall médio da liga.
 - Lista de jogadores (`ListaJogadores.jsx`, `PainelLista.jsx`, `lista.js`; tela `"lista"` no `Plantel.jsx`):
   - Todos os jogadores do `D.ALL`, fora de qualquer time: sem caixa, recomendação, "cabe no caixa" ou contratar.
-  - **Busca** igual à do Mercado (`norm` e apelidos). **Posições:** chips de cada posição, com a cor do setor (várias ao mesmo tempo). **Filtros** (painel): país → liga → clube (em cascata), nacionalidade, faixas de idade, valor (0 a 200 € mi; 200 = sem teto) e overall, "só com foto" e "emprestados". **Ordem:** overall (padrão), valor, idade, nome, gols, assistências e nota.
+  - **Busca** igual à do Mercado (`norm` e apelidos). **Posições:** chips de cada posição, com a cor do setor (várias ao mesmo tempo). **Filtros** (painel): país → liga → clube (em cascata), nacionalidade, faixas de idade, valor (0 a 200 € mi; 200 = sem teto) e overall, "jogadores em fim de contrato" (`fim`, mesma regra do "contrato acabando" do Mercado: `p.end26`, contrato que termina antes da próxima temporada da liga do jogador; a linha mostra "contrato até …") e "emprestados". **Ordem:** overall (padrão), valor, idade, nome, gols, assistências e nota.
   - Páginas de 50 (`POR_PAGINA`), com "‹ Anterior" e "Próxima ›"; fotos com `loading="lazy"`.
   - Tocar abre a `PainelFicha` (fatos, empréstimo, overall e atributos, estatísticas) com o único botão "Abrir clube", que leva à etapa do clube dele.
   - **URL:** os filtros ficam no endereço (`?liga=BRA&pos=CA&ordem=g&p=2`; sem filtros, `?jogadores`). Abrir um link assim cai direto na Lista. Fora da Lista, a URL fica limpa.

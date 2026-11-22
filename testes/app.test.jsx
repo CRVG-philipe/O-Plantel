@@ -1159,6 +1159,18 @@ test("lista de jogadores pelo menu: posições, filtros em cascata e páginas", 
   expect(window.location.search).toBe("?pais=ARG&liga=ARG2&pos=GOL&ovr=60-100");
   expect(document.querySelector("#lfOpen").textContent).toBe("Filtros3");
   [...document.querySelectorAll("#lList .row .ovr")].forEach((o) => expect(+o.textContent).toBeGreaterThanOrEqual(60));
+  // "Jogadores em fim de contrato" (no lugar do antigo "Só com foto"): todos mostram "contrato até"
+  clique(document.querySelector("#lfOpen"));
+  expect(noPainel().queryByText("Só com foto")).toBeNull();
+  clique(noPainel().getByRole("button", { name: "Limpar" }));
+  clique(document.querySelector("#lfOpen"));
+  clique(noPainel().getByRole("button", { name: /Jogadores em fim de contrato/ }));
+  clique(noPainel().getByRole("button", { name: "Aplicar" }));
+  expect(window.location.search).toBe("?pos=GOL&fim=1");
+  expect(document.querySelector("#lfOpen").textContent).toBe("Filtros1");
+  const linhas = [...document.querySelectorAll("#lList .row")];
+  expect(linhas.length).toBeGreaterThan(0);
+  linhas.forEach((r) => expect(r.textContent).toContain("contrato até"));
   // Menu no topo volta à tela inicial e limpa a URL
   clique(screen.getByRole("button", { name: "Voltar ao menu" }));
   expect(screen.getByRole("button", { name: /^Lista de jogadores/ })).toBeTruthy();

@@ -4,6 +4,7 @@
 // Os filtros ficam na URL (Plantel.jsx grava), para dar para compartilhar o link.
 import { useEffect, useMemo, useRef } from "react";
 import { D } from "../logica/dados.js";
+import { ctrTxt } from "../logica/formato.js";
 import { ORDER, corDoSetor } from "../logica/constantes.js";
 import { POR_PAGINA, ORDENS_LISTA, contarFiltrosLista, filtrarLista } from "../logica/lista.js";
 import { Avatar, Bandeira, MiniStats, Ovr, Pos, Valor } from "./Jogador.jsx";
@@ -12,7 +13,7 @@ import { Rolavel } from "./Mercado.jsx";
 export default function ListaJogadores({ app }) {
   const F = app.lista;
   const muda = (campos) => app.setLista({ ...F, ...campos, pag: campos.pag ?? 1 });
-  const todos = useMemo(() => filtrarLista(F), [F.q, F.pais, F.liga, F.clube, F.pos.join(), F.idade.join(), F.valor.join(), F.ovr.join(), F.nat, F.foto, F.emp, F.ordem]); // eslint-disable-line
+  const todos = useMemo(() => filtrarLista(F), [F.q, F.pais, F.liga, F.clube, F.pos.join(), F.idade.join(), F.valor.join(), F.ovr.join(), F.nat, F.fim, F.emp, F.ordem]); // eslint-disable-line
   const paginas = Math.max(1, Math.ceil(todos.length / POR_PAGINA));
   const pag = Math.min(F.pag, paginas);
   const pagina = todos.slice((pag - 1) * POR_PAGINA, pag * POR_PAGINA);
@@ -62,6 +63,7 @@ export default function ListaJogadores({ app }) {
                 <div className="mid">
                   <div className="nm">{p.n}<Bandeira nat={p.nat} /></div>
                   <div className="sub meta"><Pos pos={p.pos} />{p.a} anos<span className="pt"></span>{D.CL[p.club].n}
+                    {p.end26 && <><span className="pt"></span><span className="w">contrato até {ctrTxt(p.ctr)}</span></>}
                     {p.emp && <><span className="pt"></span><span className="w">emprestado</span></>}
                   </div>
                   <MiniStats p={p} />
