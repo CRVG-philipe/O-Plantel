@@ -30,6 +30,10 @@ export default function Topo({ app }) {
     <div className="top" ref={ref} style={c && c.hd ? { "--escudo": `url("${new URL(`img/teams/${c.hd}.webp`, document.baseURI).href}")` } : undefined}>
       <div className="col">
         <div className="bar">
+          <button className="menu-btn" id="menu" aria-label="Voltar ao menu" title="Menu" onClick={app.irMenu}>
+            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 11 12 4l9 7M5 10v9h5v-5h4v5h5v-9" /></svg>
+            <span>Menu</span>
+          </button>
           <div className="logo"><i></i>Plantel</div>
           <span style={{ marginLeft: "auto" }}><SeletorMoeda app={app} /></span>
           <BotaoTema app={app} />
@@ -75,7 +79,7 @@ function ResumoEAbas({ app }) {
         <button className="stat" onClick={() => app.irPara("elenco")}>
           <span className="ic" aria-hidden="true"><IconePessoas /></span>
           <b className="num">{sq.length}</b>
-          <span className="l">Jogadores<span className="media"> · média {idade} anos</span></span>
+          <span className="l">Jogadores{sq.length > 0 && <span className="media"> · média {idade} anos</span>}</span>
         </button>
         <button className="stat stat-mov" onClick={() => app.irPara("resumo")}>
           <span className="ic" aria-hidden="true"><IconeTroca /></span>

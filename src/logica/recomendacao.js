@@ -43,8 +43,10 @@ function contexto(plano, clubeDestino) {
     const n = elenco.filter((p) => ps.includes(p.pos)).length;
     ps.forEach((pos) => { grupos[pos] = { n, min }; });
   });
-  // Overall médio do elenco original do clube (quem tem overall)
-  const ovrs = original.map((p) => p.ovr).filter((o) => o != null);
+  // Overall médio do elenco original do clube (quem tem overall). Elenco quase vazio (ex.: time criado do zero):
+  // o overall médio da liga
+  let ovrs = original.map((p) => p.ovr).filter((o) => o != null);
+  if (ovrs.length < 5) ovrs = D.ALL.filter((p) => p.lg === clubeDestino.lg && p.ovr != null).map((p) => p.ovr);
   const mediaOvr = ovrs.length ? ovrs.reduce((s, o) => s + o, 0) / ovrs.length : null;
   c = { k: clubeDestino.k, caixa: calcularDinheiro(plano).caixa, media, grupos, mediaOvr };
   CACHE.set(plano, c);

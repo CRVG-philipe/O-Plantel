@@ -122,7 +122,8 @@ React 19 + Vite 6, em JavaScript (sem TypeScript).
 - `src/Plantel.jsx`: estado e ações do app (plano aberto, aba, filtros, painel, aviso). Monta um objeto `app` com dados e ações e passa para todos os componentes.
   - Mudanças no plano sempre passam por `app.mudar(fn)`: ele copia o plano, aplica `fn`, chama `completarTime` e salva.
   - Painéis abrem com `app.abrirPainel(tipo, args)`. Os tipos estão em `PAINEIS`.
-- `src/componentes/`: `EscolhaClube`, `Topo` (resumo e abas), `Elenco`, `Mercado`, `Time`, `Resumo`, `Painel` (o painel que sobe de baixo), `Imagens` (`Foto`, `Escudo` e `LogoLiga`), `SeletorMoeda` e `Rodape`.
+- `src/componentes/`: `EscolhaClube`, `Topo` (botão Menu, resumo e abas), `Elenco`, `Mercado` (exporta `Rolavel`), `Time`, `Resumo`, `ListaJogadores`, `Estrangeiros`, `Painel` (o painel que sobe de baixo), `Imagens` (`Foto`, `Escudo`, `EscudoCriado` e `LogoLiga`), `SeletorMoeda` e `Rodape`.
+  - Painéis novos: `PainelTime` (criar/editar time e `PainelExcluirTime`) e `PainelLista` (`PainelFiltrosLista` e `PainelFicha`). `comum.jsx` tem também a `Faixa` (faixa com duas alças, usada nos filtros do Mercado e da Lista).
   - `paineis/`: o conteúdo de cada painel (`PainelJogador`, `PainelCompra`, `PainelFiltros`, `PainelCriar`, `PainelClube`, `PainelOrcamento`, `PainelPosicao`) e `comum.jsx`.
   - `Congelado` (em `Painel.jsx`) congela o conteúdo enquanto o painel fecha, para ele sumir sem piscar.
 - `src/logica/`: funções sem tela.
@@ -137,7 +138,10 @@ React 19 + Vite 6, em JavaScript (sem TypeScript).
   - `recomendacao.js`: nota de recomendação 0–100 (`pontuar(jogador, clubeOrigem, clubeDestino, plano)` e `notasDoMercado(plano)`).
   - `afinidade.js`: tabela `AFINIDADE[ligaDestino][ligaOrigem]` (0 a 1), montada a partir de regras por grupo de ligas.
   - `formato.js`: textos (datas, nomes curtos, iniciais) e `norm` (prepara texto para a busca).
-  - `armazenamento.js`: ler e salvar no localStorage (planos e o filtro "só quem cabe no caixa").
+  - `armazenamento.js`: ler e salvar no localStorage (planos, times criados, o filtro "só quem cabe no caixa" e o critério do "Escalar sozinho").
+  - `times.js`: times criados do zero (`registrarTimes`, `sugerirSigla`, `caixaSugerido`, cores e modelos de escudo).
+  - `lista.js`: Lista de jogadores (filtros, ordens, páginas e a URL).
+  - `estrangeiros.js`: limite de estrangeiros.
 - `public/apelidos.json`: `{ "apelido": "Nome exato como está no data.json" }`, usado na busca do Mercado. Um teste confere que todo nome existe.
 - `public/data.json`: `{leagues, clubs, updated}`. **É gerado pelo `build_final.py`: não editar à mão.**
   - Cada liga: `{k, n, pais, nat, season, div}`. `nat` = nacionalidade como aparece nos jogadores (para contar estrangeiros). `season` "2026" = ano fechado (planeja "2027"); "26/27" = planeja "27/28".
@@ -237,7 +241,21 @@ React 19 + Vite 6, em JavaScript (sem TypeScript).
   - **Cuidado:** a classe `.no` já existe (`.row .no`); não reutilizar esse nome.
 - Antes do plano (`EscolhaClube.jsx`, estado `tela` no `Plantel.jsx`): telas cheias com fundo colorido, linhas de campo em SVG (branco a 8%) e conteúdo num bloco de até 480px, com o botão principal logo abaixo do conteúdo. Modelo visual: `referencia-inicio-paises.html`, enviado pelo Philipe.
   - Topo de todas: logo e seletor de moeda. Nas etapas, há também "← X de Y".
-  - `inicio`: o site **sempre** abre aqui, mesmo com plano salvo. Fundo `#0f3d2b`, título, números calculados do data.json (clubes, ligas, jogadores com valor > 0), "Seus planos" (o último aberto primeiro; tocar abre o plano; a lixeira ao lado abre `PainelExcluirPlano`, que só apaga ao tocar em "Excluir plano") e "Planejar um clube". "Trocar de clube" volta para cá.
+  - `inicio`: o site **sempre** abre aqui, mesmo com plano salvo (a exceção é um link da Lista de jogadores, com filtros na URL). Fundo `#0f3d2b`, título e o **menu**: três cartões (`.ini-menu`) "Escolher clube", "Criar time do zero" e "Lista de jogadores". Depois, os números calculados do data.json (clubes, ligas, jogadores com valor > 0), "Seus planos" (clubes reais; o último aberto primeiro; tocar abre o plano; a lixeira ao lado abre `PainelExcluirPlano`, que só apaga ao tocar em "Excluir plano") e "Meus times". "Trocar de clube" volta para cá.
+  - **Menu no topo:** botão "Menu" (`#menu`, `app.irMenu`) no `Topo` (plano e Lista) e nas etapas país/divisão/clube.
+- Times criados do zero ("Criar time do zero", `PainelTime`; lógica em `times.js`):
+  - **Formulário:** nome (obrigatório), sigla de 3 letras (sai do nome com `sugerirSigla`, editável), cor principal e secundária (8 prontas + seletor livre), modelo do escudo (`classico`, `faixa` ou `redondo`), país e liga, caixa inicial em € mi (vazio = sugestão `caixaSugerido`: média do valor dos elencos da liga).
+  - **Escudo:** `EscudoCriado` (`Imagens.jsx`) desenha em SVG a sigla sobre as cores. Sem upload. O `Escudo` usa ele sozinho quando o clube é criado.
+  - **Guardado em `plantel:times`**: `{ "<k>": { n, sigla, c, c2, modelo, lg, caixa } }`, com **k começando por "U"** (`"U" + Date.now()`). O plano fica em `plantel:v2` com os campos de sempre e `club = k`; começa com `budget = caixa` e elenco vazio.
+  - **Como funciona:** `registrarTimes` põe cada time em `D.CL` (com `criado: true`, `p: []`, sem técnico e sem empréstimos), mas **não em `D.CLUBS`**. Assim Elenco, Mercado, Time, Resumo, estrangeiros, recomendação e nível de preço (média da liga, porque o elenco é vazio) funcionam como num clube real, e o time não aparece na escolha de clube, nos filtros do Mercado nem na Lista.
+  - Ao criar, abre o plano no Mercado com "só quem cabe no caixa" ligado. "Meus times" (tela inicial) mostra escudo, nome, liga, nº de jogadores e overall médio, com abrir, editar (lápis) e excluir (lixeira → `PainelExcluirTime`, que apaga o time e o plano). Editar o caixa inicial muda o orçamento do plano; "Reiniciar" volta ao caixa inicial.
+  - Na recomendação, elenco com menos de 5 overalls usa o overall médio da liga.
+- Lista de jogadores (`ListaJogadores.jsx`, `PainelLista.jsx`, `lista.js`; tela `"lista"` no `Plantel.jsx`):
+  - Todos os jogadores do `D.ALL`, fora de qualquer time: sem caixa, recomendação, "cabe no caixa" ou contratar.
+  - **Busca** igual à do Mercado (`norm` e apelidos). **Posições:** chips de cada posição, com a cor do setor (várias ao mesmo tempo). **Filtros** (painel): país → liga → clube (em cascata), nacionalidade, faixas de idade, valor (0 a 200 € mi; 200 = sem teto) e overall, "só com foto" e "emprestados". **Ordem:** overall (padrão), valor, idade, nome, gols, assistências e nota.
+  - Páginas de 50 (`POR_PAGINA`), com "‹ Anterior" e "Próxima ›"; fotos com `loading="lazy"`.
+  - Tocar abre a `PainelFicha` (fatos, empréstimo, overall e atributos, estatísticas) com o único botão "Abrir clube", que leva à etapa do clube dele.
+  - **URL:** os filtros ficam no endereço (`?liga=BRA&pos=CA&ordem=g&p=2`; sem filtros, `?jogadores`). Abrir um link assim cai direto na Lista. Fora da Lista, a URL fica limpa.
   - `pais`: grade de cartões (2 colunas; 3 a partir de 600px), fundo `#1f2a24`, agrupada por continente (`CONTINENTES` e o campo `continente` de `PAISES`), com busca por país ou liga no topo. Tocar avança.
   - `divisao`: só aparece se o país tiver mais de uma liga (Brasil com 3; Inglaterra, Espanha, Itália, Alemanha e França com 2). Fundo = cor do país (`PAISES` em `constantes.js`).
   - `clube`: escudo num círculo branco, vizinhos, valor e jogadores. Setas, teclado e deslizar o dedo trocam de clube. Fundo = `corDeFundo` (`c`, senão `c2`, senão cinza `#222428`, sempre com brilho ≤ 0,6 para o texto branco ser legível).
@@ -253,7 +271,8 @@ React 19 + Vite 6, em JavaScript (sem TypeScript).
   - Cotação da API Frankfurter (`https://api.frankfurter.dev/v1/...`; o endereço `.app` redireciona sem CORS e falha no navegador), salva em `plantel:cotacao`. Se a busca falhar, usa a salva; sem nada salvo, usa `COTACAO_RESERVA`.
   - O rodapé mostra a cotação usada e a data.
 - Temporada planejada: "2027" nas ligas de calendário anual (BRA, BRB, ARG, USA) e "27/28" nas demais.
-- Os planos ficam salvos no localStorage (chave `plantel:v2`, formato `{plans:{<clube>: plano}, last}`). **Não mudar os nomes dos campos do plano** (`club, budget, st, ins, form, xi, custom`), senão quem já tem planos salvos os perde.
+- Outras chaves do localStorage: `plantel:times` (times criados do zero; ver acima), `plantel:caixa`, `plantel:escalar`, `plantel:moeda`, `plantel:cotacao` e `plantel:tema`.
+- Os planos ficam salvos no localStorage (chave `plantel:v2`, formato `{plans:{<clube>: plano}, last}`). Plano de time criado: mesma coisa, com a chave "U...". **Não mudar os nomes dos campos do plano** (`club, budget, st, ins, form, xi, custom`), senão quem já tem planos salvos os perde.
   - Campo novo opcional: `res` (reservas), `{ "<índice da vaga>": [id 1º reserva, id 2º reserva] }`. Planos antigos não têm, e o código trata a falta como "sem reservas". Ele só é criado quando alguém vai para o banco.
   - Campo novo opcional: `emp` (escolhas sobre empréstimos). Planos antigos não têm, e todo o código trata a falta como `{}`. O `novoPlano` não cria esse campo; ele só aparece quando a pessoa mexe num empréstimo.
 - Aba Time: titulares, reservas e compatibilidade.

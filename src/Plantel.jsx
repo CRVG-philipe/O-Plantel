@@ -3,7 +3,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { D } from "./logica/dados.js";
 import { FILTROS_PADRAO, PAISES } from "./logica/constantes.js";
 import { lum } from "./logica/formato.js";
-import { lerCriterioEscalar, lerFiltroCaixa, lerPlanos, salvarCriterioEscalar, salvarFiltroCaixa, salvarPlanos } from "./logica/armazenamento.js";
+import { lerCriterioEscalar, lerFiltroCaixa, lerPlanos, lerTimes, salvarCriterioEscalar, salvarFiltroCaixa, salvarPlanos, salvarTimes } from "./logica/armazenamento.js";
+import { ehTimeCriado, novaChaveDeTime, registrarTimes } from "./logica/times.js";
+import { lerFiltrosDaUrl, urlDosFiltros, urlTemLista } from "./logica/lista.js";
 import { ehEmprestadoFora, jogador, novoPlano } from "./logica/elenco.js";
 import { escalarSozinho, completarTime } from "./logica/escalacao.js";
 import { usarMoeda } from "./logica/dinheiro.js";
@@ -11,6 +13,7 @@ import { buscarCotacao, lerCotacaoSalva, lerMoeda, salvarMoeda } from "./logica/
 import { salvarTema, temaAtual } from "./logica/tema.js";
 import Topo from "./componentes/Topo.jsx";
 import EscolhaClube from "./componentes/EscolhaClube.jsx";
+import ListaJogadores from "./componentes/ListaJogadores.jsx";
 import Elenco from "./componentes/Elenco.jsx";
 import Mercado from "./componentes/Mercado.jsx";
 import Time from "./componentes/Time.jsx";
@@ -26,9 +29,12 @@ import PainelOrcamento from "./componentes/paineis/PainelOrcamento.jsx";
 import PainelPosicao, { PainelReserva } from "./componentes/paineis/PainelPosicao.jsx";
 import PainelExcluirPlano from "./componentes/paineis/PainelExcluirPlano.jsx";
 import PainelEmprestado from "./componentes/paineis/PainelEmprestado.jsx";
+import PainelTime, { PainelExcluirTime } from "./componentes/paineis/PainelTime.jsx";
+import { PainelFicha, PainelFiltrosLista } from "./componentes/paineis/PainelLista.jsx";
 
 const ABAS = { elenco: Elenco, mercado: Mercado, time: Time, resumo: Resumo };
-const PAINEIS = { jogador: PainelJogador, compra: PainelCompra, filtros: PainelFiltros, criar: PainelCriar, clube: PainelClube, orcamento: PainelOrcamento, posicao: PainelPosicao, excluirPlano: PainelExcluirPlano, emprestado: PainelEmprestado, reserva: PainelReserva };
+const PAINEIS = { jogador: PainelJogador, compra: PainelCompra, filtros: PainelFiltros, criar: PainelCriar, clube: PainelClube, orcamento: PainelOrcamento, posicao: PainelPosicao, excluirPlano: PainelExcluirPlano, emprestado: PainelEmprestado, reserva: PainelReserva,
+  time: PainelTime, excluirTime: PainelExcluirTime, filtrosLista: PainelFiltrosLista, ficha: PainelFicha };
 
 // Clubes de uma liga em ordem alfabética
 const clubesDa = (lg) => D.CLUBS.filter((c) => c.lg === lg).sort((a, b) => a.n.localeCompare(b.n));
@@ -54,13 +60,19 @@ function aplicarCor(k) {
 
 export default function Plantel() {
   // ---------- estado ----------
+  // Times criados do zero ("plantel:times"): entram em D.CL antes de qualquer coisa ser desenhada
+  const [times, setTimesEstado] = useState(() => { const t = lerTimes(); registrarTimes(t); return t; });
+  function setTimes(t) { registrarTimes(t); salvarTimes(t); setTimesEstado(t); }
   const [db, setDb] = useState(lerPlanos);       // tudo que está salvo no navegador
   const [aberto, setAberto] = useState(null);    // clube do plano aberto (null = tela de escolha)
   const [aba, setAba] = useState("elenco");
-  // Tela antes do plano: "inicio", "pais", "divisao" ou "clube". O site sempre abre no início.
+  // Tela antes do plano: "inicio", "pais", "divisao", "clube" ou "lista" (Lista de jogadores).
+  // O site sempre abre no início, a não ser que o endereço traga filtros da Lista (?liga=BRA&pos=CA).
   // País, liga e clube começam no último clube aberto (para quem volta a ele).
   const ultimo = db.last && D.CL[db.last] ? D.CL[db.last] : null;
-  const [tela, setTela] = useState("inicio");
+  const [tela, setTela] = useState(() => (urlTemLista(window.location.search) ? "lista" : "inicio"));
+  // Filtros da Lista de jogadores (começam pelos da URL, se houver)
+  const [lista, setLista] = useState(() => lerFiltrosDaUrl(window.location.search));
   const [pais, setPais] = useState(() => (ultimo ? paisDa(ultimo.lg) : 0));
   const [liga, setLiga] = useState(() => (ultimo ? ultimo.lg : "BRA"));
   const [indice, setIndice] = useState(() => (ultimo ? Math.max(0, clubesDa(ultimo.lg).findIndex((c) => c.k === ultimo.k)) : 0));
@@ -156,10 +168,12 @@ export default function Plantel() {
   function reiniciarClube() {
     const p = novoPlano(aberto);
     escalarSozinho(p, criterio);
+    // Time criado: volta ao caixa inicial dele (não pergunta o orçamento de novo)
+    if (times[aberto]) p.budget = times[aberto].caixa;
     gravar(p);
     setAba("elenco");
     mostrarAviso("Progresso do " + D.CL[aberto].n + " reiniciado");
-    abrirPainel("orcamento", { primeiro: true });
+    if (!times[aberto]) abrirPainel("orcamento", { primeiro: true });
   }
 
   // Jogador do próprio elenco abre "vender/emprestar" (ou, se veio emprestado, "manter/devolver/comprar");
@@ -167,6 +181,65 @@ export default function Plantel() {
   function abrirJogador(id) {
     if (ehEmprestadoFora(plano, id)) return abrirPainel("emprestado", { id });
     abrirPainel(jogador(plano, id).club !== plano.club ? "compra" : "jogador", { id });
+  }
+
+  // ---------- Times criados do zero ----------
+  // Cria o time, o plano dele (com o caixa inicial) e já abre o plano. O elenco começa vazio.
+  function criarTime(dados) {
+    const k = novaChaveDeTime();
+    setTimes({ ...times, [k]: dados });
+    const p = { ...novoPlano(k), budget: dados.caixa };
+    gravar(p);
+    setFiltrosEstado((f) => ({ ...f, fit: true })); // monta o elenco vendo só quem cabe no caixa
+    fecharPainel();
+    setAberto(k);
+    setAba("mercado");
+    window.scrollTo(0, 0);
+    mostrarAviso(dados.n + " criado. Contrate pelo Mercado.");
+  }
+  // Salva a edição; se o caixa inicial mudou, o orçamento do plano acompanha
+  function salvarTime(k, dados) {
+    const antes = times[k];
+    setTimes({ ...times, [k]: dados });
+    if (db.plans[k] && antes && antes.caixa !== dados.caixa) gravar({ ...db.plans[k], budget: dados.caixa });
+    fecharPainel();
+    mostrarAviso(dados.n + " salvo");
+  }
+  // Apaga o time e o plano dele
+  function excluirTime(k) {
+    const n = times[k]?.n || "Time";
+    const plans = { ...db.plans };
+    delete plans[k];
+    const novoDb = { ...db, plans };
+    if (novoDb.last === k) delete novoDb.last;
+    setDb(novoDb);
+    salvarPlanos(novoDb);
+    const t = { ...times };
+    delete t[k];
+    setTimes(t);
+    if (aberto === k) setAberto(null);
+    fecharPainel();
+    mostrarAviso(n + " excluído");
+  }
+
+  // ---------- Menu e Lista de jogadores ----------
+  // Volta ao menu (tela inicial) de qualquer lugar
+  function irMenu() {
+    fecharPainel();
+    if (aberto) { trocarClube(); return; }
+    setTela("inicio");
+    window.scrollTo(0, 0);
+  }
+  const abrirLista = () => { setTela("lista"); window.scrollTo(0, 0); };
+  // "Abrir clube" na ficha da Lista: vai para a etapa do clube, já nele
+  function abrirClubeNaEscolha(k) {
+    fecharPainel();
+    const c = D.CL[k];
+    setPais(paisDa(c.lg));
+    setLiga(c.lg);
+    setIndice(Math.max(0, clubesDa(c.lg).findIndex((x) => x.k === k)));
+    setTela("clube");
+    window.scrollTo(0, 0);
   }
 
   const irPara = (a) => { setAba(a); window.scrollTo(0, 0); };
@@ -207,9 +280,17 @@ export default function Plantel() {
     buscarCotacao().then(setCotacao).catch((e) => console.warn("Cotação indisponível:", e.message));
   }, []);
 
-  // Cor de destaque: do clube aberto ou do clube mostrado no carrossel
-  const clubeDaCor = aberto || clubes[indice]?.k;
+  // Cor de destaque: do clube aberto ou do clube mostrado no carrossel (na Lista de jogadores, nenhuma)
+  const naLista = !aberto && tela === "lista";
+  const clubeDaCor = aberto || (naLista ? null : clubes[indice]?.k);
   useEffect(() => { aplicarCor(clubeDaCor); }, [clubeDaCor]);
+
+  // Endereço: na Lista de jogadores, os filtros ficam na URL; fora dela, a URL fica limpa
+  useEffect(() => {
+    const { pathname, search, hash } = window.location;
+    const desejado = naLista ? urlDosFiltros(lista) : "";
+    if (search !== desejado) window.history.replaceState(null, "", pathname + desejado + hash);
+  }, [naLista, lista]);
 
   // Teclado: Esc fecha o painel; na etapa do clube, as setas trocam de clube
   useEffect(() => {
@@ -226,8 +307,9 @@ export default function Plantel() {
   // ---------- tela ----------
   // "app" é o pacote de dados e ações que cada componente recebe
   const app = {
-    db, plano, aba, tela, pais, liga, indice, clubes, busca, chip, limite, filtros, moeda, cotacao, criterio,
-    setIndice, setBusca, setChip, setLimite, setFiltros, setCriterio, trocarMoeda, tema, alternarTema,
+    db, plano, aba, tela, pais, liga, indice, clubes, busca, chip, limite, filtros, moeda, cotacao, criterio, times, lista,
+    setIndice, setBusca, setChip, setLimite, setFiltros, setCriterio, trocarMoeda, tema, alternarTema, setLista,
+    criarTime, salvarTime, excluirTime, irMenu, abrirLista, abrirClubeNaEscolha,
     abrirClube, trocarClube, reiniciarClube, excluirPlano, abrirJogador, abrirPainel, fecharPainel,
     mudar, irPara, passo, planejarClube, escolherPais, escolherDivisao, voltar, aviso: mostrarAviso,
   };
@@ -240,6 +322,12 @@ export default function Plantel() {
         <>
           <Topo app={app} />
           <main className="col"><Aba app={app} /></main>
+          <Rodape cotacao={cotacao} />
+        </>
+      ) : naLista ? (
+        <>
+          <Topo app={app} />
+          <main className="col"><ListaJogadores app={app} /></main>
           <Rodape cotacao={cotacao} />
         </>
       ) : (

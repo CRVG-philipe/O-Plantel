@@ -187,6 +187,41 @@ img.face{object-fit:cover;object-position:top;background-color:#fff} /* fotos HD
 .rola.esq{padding-left:9px}.rola.dir{padding-right:9px}
 .rola:hover::before{background:var(--sf2)}
 .rola[hidden]{display:none}
+/* Menu: botão "Menu" no topo das telas (volta à tela inicial) */
+.menu-btn{display:flex;align-items:center;gap:6px;border:0;background:var(--sf2);color:var(--ink);border-radius:999px;min-height:36px;padding:0 12px 0 10px;font-size:13px;font-weight:600;flex:none}
+.menu-btn:hover{background:color-mix(in srgb,var(--sf2) 70%,var(--ink) 8%)}
+@media (max-width:420px){.menu-btn span{display:none}.menu-btn{padding:0 10px}}
+.esc-top-dir{display:flex;align-items:center;gap:8px}
+.esc-menu{display:flex;align-items:center;gap:6px;border:0;border-radius:999px;min-height:36px;padding:0 12px;background:rgba(255,255,255,.18);color:#fff;font-size:13px;font-weight:600}
+.esc-menu:hover{background:rgba(255,255,255,.26)}
+/* Tela inicial: os três cartões do menu */
+.ini-menu{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:24px}
+.ini-opcao{display:flex;flex-direction:column;align-items:flex-start;gap:4px;border:0;text-align:left;min-height:124px;transition:background-color .15s,transform .15s}
+.ini-opcao:hover{background:rgba(255,255,255,.2);transform:translateY(-1px)}
+.ini-opcao b{font-size:14px;font-weight:600;line-height:1.2;margin-top:6px}
+.ini-opcao span:not(.ini-ic){font-size:11.5px;line-height:1.3;color:rgba(255,255,255,.75)}
+.ini-ic{width:38px;height:38px;border-radius:12px;background:rgba(255,255,255,.16);display:grid;place-items:center}
+@media (max-width:380px){.ini-menu{grid-template-columns:1fr}.ini-opcao{min-height:0;flex-direction:row;align-items:center;flex-wrap:wrap}.ini-opcao b{margin:0}}
+.crest-criado{display:inline-block;flex:none;overflow:visible}
+/* Criar time: cores e modelos de escudo */
+.cores{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.cor{width:32px;height:32px;border-radius:50%;border:0;padding:0;box-shadow:inset 0 0 0 1px rgb(0 0 0/.15);cursor:pointer;position:relative}
+.cor.on{box-shadow:inset 0 0 0 1px rgb(0 0 0/.15),0 0 0 2px var(--sf),0 0 0 4px var(--ink)}
+.cor.livre{background:conic-gradient(red,#ff0,lime,cyan,blue,#f0f,red);overflow:hidden}
+.cor.livre input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;margin:0;padding:0;min-height:0}
+.modelos{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:8px}
+.modelo{display:flex;flex-direction:column;align-items:center;gap:6px;border:0;border-radius:12px;padding:10px 6px;background:var(--sf2);color:var(--ink);font-size:13px;font-weight:600}
+.modelo.on{box-shadow:0 0 0 2px var(--ink)}
+.vazio-criado{padding:16px;margin-bottom:16px;display:flex;flex-direction:column;gap:10px;align-items:flex-start}
+.vazio-criado p{margin:0;color:var(--mute);font-size:14px}
+/* Lista de jogadores */
+.lista-cab h1{font-size:24px;font-weight:700;letter-spacing:-.02em;margin:16px 0 2px}
+.lista-cab .hint{margin:0 0 12px}
+.ordem-sel{display:flex;align-items:center;gap:6px}
+.ordem-sel select{border:0;background:var(--sf2);color:var(--ink);border-radius:8px;min-height:30px;padding:0 6px;font-weight:600;font-size:13px}
+.paginas{display:flex;align-items:center;justify-content:center;gap:12px;margin:16px 0;font-size:13px;color:var(--mute)}
+.paginas .btn{min-height:40px;padding:0 14px}
+.paginas .btn:disabled{opacity:.4}
 /* Limite de estrangeiros (Estrangeiros.jsx): selo "EST", contador da aba Time, avisos e selo do Mercado */
 .est{display:inline-block;margin-left:5px;padding:0 4px;border-radius:4px;font-size:9px;line-height:14px;font-weight:800;letter-spacing:.04em;
   vertical-align:2px;color:#7a4b00;background:#ffe2a8}

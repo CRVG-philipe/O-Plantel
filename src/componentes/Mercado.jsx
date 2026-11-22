@@ -112,7 +112,7 @@ export default function Mercado({ app }) {
 
 // Fileira de botões que rola para o lado. No computador não há dedo para arrastar, então aparecem setas
 // ‹ › nas pontas (só quando há o que rolar daquele lado), e a rodinha do mouse também rola para o lado.
-function Rolavel({ id, children }) {
+export function Rolavel({ id, children }) {
   const ref = useRef();
   const [lados, setLados] = useState({ esq: false, dir: false });
   useEffect(() => {

@@ -15,14 +15,20 @@ export default function PainelClube({ app }) {
 
   return (
     <>
-      <Cabecalho icone={<Escudo k={k} z={48} />} titulo={n + " " + D.LG[c.lg].plan} sub={"Técnico: " + c.coach} onFechar={app.fecharPainel} />
+      <Cabecalho icone={<Escudo k={k} z={48} />} titulo={n + " " + D.LG[c.lg].plan} sub={c.criado ? "Time criado por você · " + D.LG[c.lg].n : "Técnico: " + c.coach} onFechar={app.fecharPainel} />
+      {c.criado && (
+        <button className="opt" id="editar-time" onClick={() => app.abrirPainel("time", { k })}>
+          <span>Editar time<small>Nome, sigla, cores, escudo, liga e caixa inicial.</small></span>
+        </button>
+      )}
       <button className="opt" id="swap" onClick={app.trocarClube}>
         <span>Trocar de clube<small>Seu plano do {n} continua salvo.</small></span>
       </button>
       <button className="opt" id="wipe" style={armado ? { boxShadow: "0 0 0 2px var(--neg)" } : undefined} onClick={reiniciar}>
         <span style={{ color: "var(--neg)" }}>
           {armado ? "Toque de novo para apagar tudo" : "Reiniciar todo o progresso do " + n}
-          <small>{armado ? "Isso apaga vendas, contratações, escalação e orçamento. Não dá para desfazer." : "Volta o elenco ao original e pede o orçamento de novo."}</small>
+          <small>{armado ? "Isso apaga vendas, contratações, escalação e orçamento. Não dá para desfazer."
+            : c.criado ? "Esvazia o elenco e volta ao caixa inicial." : "Volta o elenco ao original e pede o orçamento de novo."}</small>
         </span>
       </button>
     </>

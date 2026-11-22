@@ -27,6 +27,7 @@ let apiCotacaoFora = false; // true = simula a API de cotação fora do ar
 // ---------- preparação do "navegador de mentira" ----------
 beforeEach(() => {
   localStorage.clear();
+  window.history.replaceState(null, "", "/"); // sem filtros da Lista de jogadores no endereço
   delete document.documentElement.dataset.theme;
   apiCotacaoFora = false;
   semEstimados = false;
@@ -71,7 +72,7 @@ const rgb = (h) => { const n = parseInt(h.slice(1), 16); return `rgb(${n >> 16},
 const cartaoPais = (nome) => [...document.querySelectorAll(".esc-pais")].find((b) => b.querySelector(".esc-pais-nome").textContent === nome);
 // Do início até a etapa do clube de uma liga do Brasil
 async function irParaBrasil(divisao = /Brasileirão Série A/) {
-  clique(await screen.findByRole("button", { name: "Planejar um clube" }));
+  clique(await screen.findByRole("button", { name: /^Escolher clube/ }));
   clique(cartaoPais("Brasil"));
   clique(botao(divisao));
 }
@@ -80,7 +81,7 @@ const esperarCotacao = () => screen.findByText(/€1 = R\$ 6,00/);
 
 test("tela inicial: título, números, linhas de campo e cotação no rodapé", async () => {
   render(<App />);
-  await screen.findByRole("button", { name: "Planejar um clube" });
+  await screen.findByRole("button", { name: /^Escolher clube/ });
   expect(document.querySelector(".ini-titulo").textContent).toBe("Monte o elencodo seu timepara 2027");
   expect(screen.getByText("Venda, contrate, escale e veja onde o elenco ainda tem buracos.")).toBeTruthy();
   const comValor = DATA.clubs.flatMap((c) => c.p).filter((p) => p[5] > 0).length;
@@ -101,7 +102,7 @@ test("tela inicial: título, números, linhas de campo e cotação no rodapé", 
 
 test("escolha em etapas: grade de países, divisão, clube e o botão voltar", async () => {
   render(<App />);
-  clique(await screen.findByRole("button", { name: "Planejar um clube" }));
+  clique(await screen.findByRole("button", { name: /^Escolher clube/ }));
 
   // País: grade com os 54 países, bandeira, nome e ligas
   expect(screen.getByRole("heading", { name: "Escolha o país" })).toBeTruthy();
@@ -122,8 +123,8 @@ test("escolha em etapas: grade de países, divisão, clube e o botão voltar", a
   cartoes.forEach((c) => expect(fs.existsSync("public/" + c.querySelector("img").getAttribute("src"))).toBe(true));
   expect(screen.queryByRole("button", { name: "Continuar" })).toBeNull(); // tocar no país já avança
   clique(botao("Voltar"));
-  expect(screen.getByRole("button", { name: "Planejar um clube" })).toBeTruthy(); // voltou ao início
-  clique(botao("Planejar um clube"));
+  expect(screen.getByRole("button", { name: /^Escolher clube/ })).toBeTruthy(); // voltou ao início
+  clique(botao(/^Escolher clube/));
 
   // Divisão (Brasil)
   clique(cartaoPais("Brasil"));
@@ -167,7 +168,7 @@ test("escolha em etapas: grade de países, divisão, clube e o botão voltar", a
 
 test("divisões: logo de cada liga, em ordem (1ª antes da 2ª), nos países grandes", async () => {
   render(<App />);
-  clique(await screen.findByRole("button", { name: "Planejar um clube" }));
+  clique(await screen.findByRole("button", { name: /^Escolher clube/ }));
   const esperado = { Brasil: ["BRA", "BRB", "BRC"], Inglaterra: ["ENG", "ENG2"], Espanha: ["ESP", "ESP2"], Itália: ["ITA", "ITA2"], Alemanha: ["GER", "GER2"], França: ["FRA", "FRA2"],
     Argentina: ["ARG", "ARG2"], Colômbia: ["COL", "COL2"], Chile: ["CHI", "CHI2"], Peru: ["PER", "PER2"], "Estados Unidos": ["USA", "USL"] };
   for (const [pais, ligas] of Object.entries(esperado)) {
@@ -202,7 +203,7 @@ test("ligas novas: jogadores sem estatísticas aparecem sem erro e podem ser con
     .find((j) => j.st === null && DATA.clubs.every((x) => x.p.filter((r) => r[1] === j.n).length <= (x.n === j.clube ? 1 : 0)));
   render(<App />);
   // Elenco de um clube sueco
-  clique(await screen.findByRole("button", { name: "Planejar um clube" }));
+  clique(await screen.findByRole("button", { name: /^Escolher clube/ }));
   clique(cartaoPais("Suécia"));
   clique(botao(/^Planejar /));
   clique(noPainel().getByRole("button", { name: "Começar" }));
@@ -233,7 +234,7 @@ test("fluxo completo: clube, vender, contratar, filtros, escalação, resumo, re
   await esperarCotacao();
 
   // 1. Início → Inglaterra → Premier League → Arsenal
-  clique(botao("Planejar um clube"));
+  clique(botao(/^Escolher clube/));
   clique(cartaoPais("Inglaterra"));
   clique(botao(/Premier League/));
   for (let i = 0; i < 30 && titulo() !== "Arsenal"; i++) clique(botao("Próximo clube"));
@@ -532,13 +533,13 @@ test("cotação: sem internet usa a última salva; sem nada salvo, a de reserva"
   apiCotacaoFora = true;
   localStorage.setItem("plantel:cotacao", JSON.stringify({ BRL: 5.5, USD: 1.05, data: "2026-11-01" }));
   render(<App />);
-  await screen.findByRole("button", { name: "Planejar um clube" });
+  await screen.findByRole("button", { name: /^Escolher clube/ });
   expect(rodape()).toBe("€1 = R$ 5,50 · US$ 1,05 (BCE, 01/11/2026)");
   cleanup();
 
   localStorage.clear();
   render(<App />);
-  await screen.findByRole("button", { name: "Planejar um clube" });
+  await screen.findByRole("button", { name: /^Escolher clube/ });
   await act(async () => {});
   expect(rodape()).toBe("€1 = R$ 6,53 · US$ 1,10 (cotação de reserva, BCE, 20/11/2026)");
   expect(localStorage.getItem("plantel:cotacao")).toBeNull();
@@ -670,7 +671,7 @@ test("tema: o botão alterna entre claro e escuro e guarda a escolha", async () 
 
 test("busca de país: filtra por país ou liga e esconde continentes vazios", async () => {
   render(<App />);
-  clique(await screen.findByRole("button", { name: "Planejar um clube" }));
+  clique(await screen.findByRole("button", { name: /^Escolher clube/ }));
   const busca = screen.getByLabelText("Buscar país");
   const nomes = () => [...document.querySelectorAll(".esc-pais-nome")].map((n) => n.textContent);
   fireEvent.change(busca, { target: { value: "japao" } });                 // sem acento também acha
@@ -1043,6 +1044,125 @@ test("limite de estrangeiros: Brasileirão com 10 e Argentina com 6 relacionados
   expect(document.querySelector("#est-rel").textContent).toMatch(/^Estrangeiros: \d+\/5$/);
   expect(+document.querySelector("#est-rel b").textContent.split("/")[0]).toBeGreaterThanOrEqual(6);
   expect(document.querySelector("#est-aviso").textContent).toContain("Limite de estrangeiros excedido");
+}, 60000);
+
+test("criar time do zero: Série A com € 50 mi, contratar 2, 'Meus times' depois de recarregar e excluir", async () => {
+  render(<App />);
+  clique(await screen.findByRole("button", { name: /^Criar time do zero/ }));
+  // Formulário: nome (a sigla sai sozinha), país Brasil, Série A, caixa € 50 mi
+  fireEvent.change(noPainel().getByLabelText("Nome do time"), { target: { value: "Unidos da Várzea" } });
+  expect(noPainel().getByLabelText("Sigla (3 letras)").value).toBe("UVA");
+  expect(painel().querySelector(".sh svg.crest-criado")).not.toBeNull(); // escudo desenhado com a sigla
+  expect(painel().querySelector(".sh svg text").textContent).toBe("UVA");
+  clique(noPainel().getByRole("button", { name: "Faixa" }));              // outro modelo de escudo
+  fireEvent.change(noPainel().getByLabelText("País"), { target: { value: "BRA" } });
+  fireEvent.change(noPainel().getByLabelText("Liga"), { target: { value: "BRA" } });
+  fireEvent.change(noPainel().getByLabelText(/Caixa inicial/), { target: { value: "50" } });
+  clique(noPainel().getByRole("button", { name: "Criar time" }));
+  // Guardado em "plantel:times", com chave "U..."; o plano usa os campos de sempre, com club = a chave
+  const times = JSON.parse(localStorage.getItem("plantel:times"));
+  const [k] = Object.keys(times);
+  expect(k).toMatch(/^U\d+$/);
+  expect(times[k]).toEqual({ n: "Unidos da Várzea", sigla: "UVA", c: "#0b3d91", c2: "#ffffff", modelo: "faixa", lg: "BRA", caixa: 50 });
+  expect(salvo().plans[k]).toEqual({ club: k, budget: 50, st: {}, ins: [], form: "4-3-3", xi: {}, custom: [] });
+  // Abre no Mercado, com o caixa de € 50 mi e "só quem cabe no caixa" ligado
+  expect(caixa()).toBe(dinheiro(50));
+  expect(document.querySelector("#fOpen").textContent).toBe("Filtros1");
+  expect(document.querySelectorAll("#mList .selo-est").length).toBeGreaterThanOrEqual(0); // regra da Série A vale aqui
+  // Contratar 2 jogadores: o caixa desconta os dois
+  for (let i = 0; i < 2; i++) {
+    clique(document.querySelector("#mList .row"));
+    clique(noPainel().getByRole("button", { name: "Contratar" }));
+  }
+  const ins = salvo().plans[k].ins;
+  expect(ins).toHaveLength(2);
+  expect(caixa()).toBe(dinheiro(50 - ins[0].fee - ins[1].fee));
+  // Elenco com os 2; o painel do clube oferece "Editar time"
+  clique(screen.getByRole("tab", { name: "Elenco" }));
+  expect(document.querySelector("#time-vazio")).toBeNull();
+  clique(document.querySelector(".clubBtn"));
+  expect(noPainel().getByRole("button", { name: /Editar time/ })).toBeTruthy();
+  fireEvent.keyDown(document, { key: "Escape" });
+  // Menu: o time aparece em "Meus times" (e não em "Seus planos")
+  clique(screen.getByRole("button", { name: "Voltar ao menu" }));
+  const meus = () => document.querySelector("#meus-times");
+  expect(meus().textContent).toContain("Unidos da Várzea");
+  expect(meus().textContent).toContain("Brasileirão Série A · 2 jogadores");
+  expect([...document.querySelectorAll(".ini-planos:not(#meus-times) .ini-plano b")].map((b) => b.textContent)).toEqual([]);
+  // Recarregar a página: continua lá
+  cleanup();
+  render(<App />);
+  await screen.findByRole("button", { name: /^Criar time do zero/ });
+  expect(meus().textContent).toContain("Unidos da Várzea");
+  // Excluir (com confirmação): apaga o time e o plano
+  clique(screen.getByRole("button", { name: "Excluir Unidos da Várzea" }));
+  expect(salvo().plans[k]).toBeTruthy(); // só abriu a confirmação
+  clique(noPainel().getByRole("button", { name: "Excluir time" }));
+  expect(JSON.parse(localStorage.getItem("plantel:times"))).toEqual({});
+  expect(salvo().plans[k]).toBeUndefined();
+  expect(meus()).toBeNull();
+}, 60000);
+
+test("lista de jogadores: liga BRA + posição CA pela URL, ordem por overall, ficha sem contratar e 'Abrir clube'", async () => {
+  window.history.replaceState(null, "", "/?liga=BRA&pos=CA");
+  render(<App />);
+  expect(await screen.findByRole("heading", { name: "Lista de jogadores" })).toBeTruthy();
+  const clubesBRA = new Set(DATA.clubs.filter((c) => c.lg === "BRA").map((c) => c.n));
+  const linhas = () => [...document.querySelectorAll("#lList .row")];
+  expect(linhas().length).toBeGreaterThan(10);
+  const ovrs = linhas().map((l) => +l.querySelector(".ovr").textContent);
+  linhas().forEach((l) => {
+    expect(l.querySelector(".pos").textContent).toBe("CA");
+    expect([...clubesBRA].some((n) => l.querySelector(".sub").textContent.includes(n))).toBe(true);
+  });
+  for (let i = 1; i < ovrs.length; i++) expect(ovrs[i]).toBeLessThanOrEqual(ovrs[i - 1]); // overall, do maior para o menor
+  expect(document.querySelector("#lcont").textContent).toMatch(/jogadores · Brasileirão Série A$/);
+  // Nada de time na tela: sem caixa, sem "cabe no caixa", sem recomendação
+  expect(document.querySelector("#bud")).toBeNull();
+  expect(document.body.textContent).not.toContain("cabe no caixa");
+  expect(document.querySelector("#lList .selo-rec")).toBeNull();
+  // Trocar a ordem vai para a URL
+  fireEvent.change(screen.getByLabelText(/Ordenar/), { target: { value: "g" } });
+  expect(window.location.search).toBe("?liga=BRA&pos=CA&ordem=g");
+  // Ficha: estatísticas e atributos, sem "Contratar"; "Abrir clube" leva à etapa do clube
+  const primeiro = linhas()[0], nome = primeiro.querySelector(".nm").textContent;
+  clique(primeiro);
+  expect(painel().querySelector(".sh h3").textContent).toBe(nome);
+  expect(noPainel().queryByRole("button", { name: "Contratar" })).toBeNull();
+  const clube = DATA.clubs.find((c) => c.lg === "BRA" && primeiro.querySelector(".sub").textContent.includes(c.n));
+  clique(noPainel().getByRole("button", { name: /^Abrir clube/ }));
+  expect(titulo()).toBe(clube.n);
+  expect(window.location.search).toBe(""); // fora da lista, a URL fica limpa
+}, 60000);
+
+test("lista de jogadores pelo menu: posições, filtros em cascata e páginas", async () => {
+  render(<App />);
+  clique(await screen.findByRole("button", { name: /^Lista de jogadores/ }));
+  expect(window.location.search).toBe("?jogadores");
+  expect(screen.getByText(/^Página 1 de/)).toBeTruthy();
+  clique(screen.getByRole("button", { name: "Próxima ›" }));
+  expect(screen.getByText(/^Página 2 de/)).toBeTruthy();
+  expect(window.location.search).toBe("?p=2");
+  // Posição: o chip vai para a URL e volta para a página 1
+  clique(within(document.querySelector("#lpos")).getByRole("button", { name: "GOL" }));
+  expect(window.location.search).toBe("?pos=GOL");
+  [...document.querySelectorAll("#lList .row .pos")].forEach((s) => expect(s.textContent).toBe("GOL"));
+  // Filtros em cascata: país Argentina → só ligas e clubes da Argentina
+  clique(document.querySelector("#lfOpen"));
+  fireEvent.change(noPainel().getByLabelText("País"), { target: { value: "ARG" } });
+  expect([...painel().querySelectorAll("#lfl option")].slice(1).map((o) => o.value)).toEqual(["ARG", "ARG2"]);
+  const clubesArg = DATA.clubs.filter((c) => c.lg === "ARG" || c.lg === "ARG2").length;
+  expect(painel().querySelectorAll("#lfc option").length - 1).toBe(clubesArg);
+  fireEvent.change(noPainel().getByLabelText("Liga"), { target: { value: "ARG2" } });
+  fireEvent.change(noPainel().getByLabelText("Overall mínimo"), { target: { value: "60" } });
+  clique(noPainel().getByRole("button", { name: "Aplicar" }));
+  expect(window.location.search).toBe("?pais=ARG&liga=ARG2&pos=GOL&ovr=60-100");
+  expect(document.querySelector("#lfOpen").textContent).toBe("Filtros3");
+  [...document.querySelectorAll("#lList .row .ovr")].forEach((o) => expect(+o.textContent).toBeGreaterThanOrEqual(60));
+  // Menu no topo volta à tela inicial e limpa a URL
+  clique(screen.getByRole("button", { name: "Voltar ao menu" }));
+  expect(screen.getByRole("button", { name: /^Lista de jogadores/ })).toBeTruthy();
+  expect(window.location.search).toBe("");
 }, 60000);
 
 test("aba Time: tocar em um jogador e depois em outro troca os dois de posição", async () => {

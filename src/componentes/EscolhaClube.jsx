@@ -1,5 +1,6 @@
 // Antes de entrar num plano: tela inicial e escolha em etapas.
-//   inicio  → título, números da base, "Seus planos" e "Planejar um clube"
+//   inicio  → título, os três cartões do menu (Escolher clube, Criar time do zero, Lista de jogadores),
+//             números da base, "Seus planos" e "Meus times"
 //   pais    → grade de países (tocar avança)
 //   divisao → só se o país tiver mais de uma liga (hoje, só o Brasil)
 //   clube   → escudo grande, vizinhos, valor e jogadores, "Planejar 2027"/"Planejar 27/28"
@@ -9,7 +10,7 @@ import { D } from "../logica/dados.js";
 import { CONTINENTES, PAISES } from "../logica/constantes.js";
 import { corDeFundo, norm } from "../logica/formato.js";
 import { dinheiro, calcularDinheiro } from "../logica/dinheiro.js";
-import { saidas } from "../logica/elenco.js";
+import { elencoAtual, saidas } from "../logica/elenco.js";
 import { Escudo, LogoLiga } from "./Imagens.jsx";
 import SeletorMoeda from "./SeletorMoeda.jsx";
 import Rodape from "./Rodape.jsx";
@@ -57,7 +58,15 @@ export function Moldura({ cor, app, passo, cotacao, children }) {
       <div className="esc-wrap">
         <div className="esc-top">
           <span className="esc-logo"><i></i>Plantel</span>
-          {app && <SeletorMoeda app={app} corAtiva={cor} />}
+          <span className="esc-top-dir">
+            {app && app.tela !== "inicio" && (
+              <button className="esc-menu" id="menu" aria-label="Voltar ao menu" onClick={app.irMenu}>
+                <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 11 12 4l9 7M5 10v9h5v-5h4v5h5v-9" /></svg>
+                Menu
+              </button>
+            )}
+            {app && <SeletorMoeda app={app} corAtiva={cor} />}
+          </span>
         </div>
         {passo && (
           <div className="esc-passo">
@@ -90,13 +99,33 @@ function useDeslizar(fn) {
 function TelaInicio({ app, cor }) {
   const { db } = app;
   const comValor = D.ALL.filter((p) => p.v > 0 && !p.vEst).length; // só valores reais (sem os estimados)
-  // Planos salvos: o último aberto primeiro, depois em ordem alfabética
-  const planos = Object.values(db.plans).filter((p) => D.CL[p.club])
+  // Planos salvos de clubes reais (os times criados ficam em "Meus times"): o último aberto primeiro, depois em ordem alfabética
+  const planos = Object.values(db.plans).filter((p) => D.CL[p.club] && !D.CL[p.club].criado)
     .sort((a, b) => (b.club === db.last) - (a.club === db.last) || D.CL[a.club].n.localeCompare(D.CL[b.club].n));
   return (
     <>
       <h1 className="ini-titulo">Monte o elenco<br />do seu time<br />para 2027</h1>
       <p className="ini-frase">Venda, contrate, escale e veja onde o elenco ainda tem buracos.</p>
+      <div className="ini-menu" role="group" aria-label="Menu">
+        <button className="esc-card ini-opcao" onClick={app.planejarClube}>
+          <span className="ini-ic" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3 4 6v6c0 4.5 3.4 8 8 9 4.6-1 8-4.5 8-9V6z" /></svg>
+          </span>
+          <b>Escolher clube</b><span>Planeje um dos {D.CLUBS.length.toLocaleString("pt-BR")} clubes</span>
+        </button>
+        <button className="esc-card ini-opcao" onClick={() => app.abrirPainel("time")}>
+          <span className="ini-ic" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
+          </span>
+          <b>Criar time do zero</b><span>Nome, cores, escudo e liga</span>
+        </button>
+        <button className="esc-card ini-opcao" onClick={app.abrirLista}>
+          <span className="ini-ic" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01" /></svg>
+          </span>
+          <b>Lista de jogadores</b><span>Busque e filtre todos</span>
+        </button>
+      </div>
       <div className="ini-numeros">
         <div className="esc-card"><b>{D.CLUBS.length}</b><span>clubes em {D.LEAGUES.length} ligas</span></div>
         <div className="esc-card"><b>{comValor.toLocaleString("pt-BR")}</b><span>jogadores com valor</span></div>
@@ -130,8 +159,46 @@ function TelaInicio({ app, cor }) {
           </div>
         </>
       )}
-      <div className="esc-acao">
-        <button className="esc-cta" style={{ color: cor }} onClick={app.planejarClube}>Planejar um clube</button>
+      <MeusTimes app={app} />
+    </>
+  );
+}
+
+// "Meus times": os times criados do zero, com escudo, liga, nº de jogadores e overall médio do elenco planejado.
+// Tocar abre o plano; o lápis edita; a lixeira pede confirmação antes de excluir (time e plano).
+function MeusTimes({ app }) {
+  const ks = Object.keys(app.times).filter((k) => D.CL[k]).sort((a, b) => D.CL[a].n.localeCompare(D.CL[b].n));
+  if (!ks.length) return null;
+  return (
+    <>
+      <p className="ini-rotulo">Meus times</p>
+      <div className="ini-planos" id="meus-times">
+        {ks.map((k) => {
+          const c = D.CL[k], p = app.db.plans[k];
+          const sq = p ? elencoAtual(p).filter(Boolean) : [];
+          const ovrs = sq.map((x) => x.ovr).filter((o) => o != null);
+          const media = ovrs.length ? (ovrs.reduce((s, o) => s + o, 0) / ovrs.length).toFixed(1).replace(".", ",") : "–";
+          return (
+            <div key={k} className="ini-plano-linha">
+              <button className="esc-card ini-plano" onClick={() => app.abrirClube(k)}>
+                <span className="ini-badge"><Escudo k={k} z={30} /></span>
+                <span className="ini-plano-txt">
+                  <b>{c.n}</b>
+                  <span>{D.LG[c.lg].n} · {sq.length} jogadores · <span className="sem-quebra">overall médio {media}</span></span>
+                </span>
+                <span aria-hidden="true">›</span>
+              </button>
+              <button className="esc-round ini-excluir" aria-label={`Editar ${c.n}`} title="Editar time" onClick={() => app.abrirPainel("time", { k })}>
+                <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 20h4L19 9l-4-4L4 16zM14 6l4 4" /></svg>
+              </button>
+              <button className="esc-round ini-excluir" aria-label={`Excluir ${c.n}`} title="Excluir time" onClick={() => app.abrirPainel("excluirTime", { k })}>
+                <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3" />
+                </svg>
+              </button>
+            </div>
+          );
+        })}
       </div>
     </>
   );

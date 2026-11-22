@@ -22,6 +22,26 @@ export function salvarPlanos(db) {
   }
 }
 
+// Times criados do zero ("Criar time do zero"): chave separada, para não mexer no formato dos planos.
+//   "plantel:times" = { "<k>": { n, sigla, c, c2, modelo, lg, caixa } }, com k começando por "U" (ex.: "U1732212345").
+// O plano de cada um fica em "plantel:v2", como o de qualquer clube, com club = "<k>".
+const CHAVE_TIMES = "plantel:times";
+export function lerTimes() {
+  try {
+    const t = JSON.parse(localStorage.getItem(CHAVE_TIMES));
+    return t && typeof t === "object" ? t : {};
+  } catch (e) {
+    return {};
+  }
+}
+export function salvarTimes(times) {
+  try {
+    localStorage.setItem(CHAVE_TIMES, JSON.stringify(times));
+  } catch (e) {
+    // segue sem salvar
+  }
+}
+
 // Filtro "Só quem cabe no caixa" do Mercado: ligado por padrão; guarda só se a pessoa mudar.
 // Chave separada ("plantel:caixa", valor "1" ou "0") para não mexer no formato dos planos.
 const CHAVE_CAIXA = "plantel:caixa";

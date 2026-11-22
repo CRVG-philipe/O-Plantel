@@ -20,6 +20,12 @@ export default function Elenco({ app }) {
     <section className="panel on" id="p-elenco">
       <p className="hint">Toque em um jogador para decidir se ele fica, é vendido, emprestado ou liberado.</p>
       <div className="card est-card"><EstrangeirosNoElenco plano={plano} /></div>
+      {D.CL[plano.club].criado && !proprios.length && !plano.ins.length && (
+        <div className="card vazio-criado" id="time-vazio">
+          <p>Seu time começa vazio. Contrate jogadores pelo Mercado; o caixa é o limite.</p>
+          <button className="btn pri" onClick={() => app.irPara("mercado")}>Ir ao Mercado</button>
+        </div>
+      )}
       {SECT.map(([titulo, ps]) => {
         // Quem fica primeiro, depois quem sai; dentro disso, por posição e valor
         const o = proprios.filter((p) => ps.includes(p.pos)).sort((a, b) => saiu(a.id) - saiu(b.id) || ORDER.indexOf(a.pos) - ORDER.indexOf(b.pos) || b.v - a.v);

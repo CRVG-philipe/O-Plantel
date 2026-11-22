@@ -1,5 +1,7 @@
 // Pedaços usados por mais de um painel.
+import { useState } from "react";
 import { D } from "../../logica/dados.js";
+import { FAIXA_TODA } from "../../logica/constantes.js";
 import { ctrTxt, dec } from "../../logica/formato.js";
 import { classeNota, classeOvr, Ovr, Valor } from "../Jogador.jsx";
 
@@ -98,5 +100,55 @@ export function Opcao({ marcado, titulo, detalhe, onClick, ...resto }) {
       <span className="r"></span>
       <span>{titulo}{detalhe ? <small>{detalhe}</small> : null}</span>
     </button>
+  );
+}
+
+// Faixa [mínimo, máximo] em ordem (quem digitou 80 no mínimo e 70 no máximo ganha 70–80)
+export const ordenarFaixa = (f = FAIXA_TODA) => (f[0] <= f[1] ? f : [f[1], f[0]]);
+
+// Caixa de número da faixa. Guarda o texto enquanto a pessoa digita (para "80" não virar outra coisa no meio,
+// quando ainda está "8"); cada número válido já vale, e ao sair da caixa o texto volta a mostrar o valor certo.
+function Numero({ id, rotulo, valor, onChange, lo, hi }) {
+  const [txt, setTxt] = useState(String(valor));
+  const [focado, setFocado] = useState(false);
+  return (
+    <input type="number" inputMode="numeric" className="faixa-num" id={id} aria-label={rotulo} min={lo} max={hi}
+      value={focado ? txt : String(valor)}
+      onFocus={() => { setTxt(String(valor)); setFocado(true); }}
+      onBlur={() => setFocado(false)}
+      onChange={(e) => {
+        setTxt(e.target.value);
+        const x = Math.round(+e.target.value);
+        if (e.target.value !== "" && x >= lo && x <= hi) onChange(x);
+      }} />
+  );
+}
+
+// Faixa de lo a hi (padrão 0 a 100; ex.: Overall 70–80): duas alças para arrastar e duas caixas para digitar.
+// Arrastando, o mínimo nunca passa do máximo; digitando, a faixa é posta em ordem ao aplicar (ordenarFaixa).
+export function Faixa({ id, rotulo, unidade = "", valor, onChange, lo = FAIXA_TODA[0], hi = FAIXA_TODA[1] }) {
+  const [a, b] = valor || [lo, hi];
+  const mudaMin = (x) => onChange([Math.min(+x, b), b]);
+  const mudaMax = (x) => onChange([a, Math.max(+x, a)]);
+  const pct = (x) => ((x - lo) / (hi - lo)) * 100 + "%";
+  const [x, y] = ordenarFaixa([a, b]), ligada = x > lo || y < hi;
+  return (
+    <div className="field faixa" role="group" aria-labelledby={id + "-t"}>
+      <div className="faixa-topo">
+        <span id={id + "-t"}>{rotulo}</span>
+        <b>{ligada ? `${x}–${y}${unidade}` : "qualquer"}</b>
+      </div>
+      <div className="faixa-corpo">
+        <Numero id={id + "-min"} rotulo={rotulo + " mínimo"} valor={a} lo={lo} hi={hi} onChange={(n) => onChange([n, b])} />
+        <div className="faixa-barra" style={{ "--a": pct(x), "--b": pct(y) }}>
+          <i className="faixa-trilho" />
+          <input type="range" min={lo} max={hi} value={a} aria-label={rotulo + " mínimo (arrastar)"} tabIndex={-1}
+            style={{ zIndex: a > hi - 10 ? 3 : 2 }} onChange={(e) => mudaMin(e.target.value)} />
+          <input type="range" min={lo} max={hi} value={b} aria-label={rotulo + " máximo (arrastar)"} tabIndex={-1}
+            onChange={(e) => mudaMax(e.target.value)} />
+        </div>
+        <Numero id={id + "-max"} rotulo={rotulo + " máximo"} valor={b} lo={lo} hi={hi} onChange={(n) => onChange([a, n])} />
+      </div>
+    </div>
   );
 }
