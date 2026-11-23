@@ -30,7 +30,7 @@ import { campanhaCopa, comoEntra, defCopa, finaisPendentes, nomeCopa, participan
 import { escalarClube, idsDoPlano } from "../logica/simulacao/escalar.js";
 import {
   VELOCIDADES, assinaturaDoPlano, calcularPrevisaoCopas, campeaoDe, copasDe, criarEstado, datasDe, esqCopa, jogadorSim, jogarProximoJogo,
-  jogoAoVivo, jogosDaRodada, jogosDaRodadaCopa, juntarResto, lerSim, pedidoDoResto, timeNaTemporada, lerVelocidade, linhasEstatisticas, minimoJogos, nomeClube, nomeDaData, nomeDaRodada,
+  jogoAoVivoCompleto, jogosDaRodada, penaltisDoJogo, jogosDaRodadaCopa, juntarResto, lerSim, pedidoDoResto, timeNaTemporada, lerVelocidade, linhasEstatisticas, minimoJogos, nomeClube, nomeDaData, nomeDaRodada,
   nomeDaRodadaCopa, proximoJogo, resultadosDe, salvarSim, salvarVelocidade, selecaoDaTemporada, simularAte, simularDatas, tabelaAtual,
   titulosDe, totalDatas, totalRodadas, vistaAtual, vistasTabela,
 } from "../logica/simulacao/temporada.js";
@@ -54,12 +54,13 @@ function rotuloJogar(estado, r) {
 
 // Estado salvo do clube, se ainda servir (liga e clubes existem); senão, uma temporada nova
 // (a previsão das copas, a parte mais demorada, é calculada logo depois de a tela abrir)
-function carregar(plano) {
-  const e = lerSim(plano.club);
+// chave = id do plano (cada plano tem a sua temporada; o 1º plano de cada clube usa a chave do clube, como antes)
+function carregar(plano, chave) {
+  const e = lerSim(chave);
   const ok = e && D.LG[e.liga] && e.composicao?.clubes?.length && e.composicao.clubes.every((k) => D.CL[k]) && e.composicao.clubes.includes(plano.club);
   if (ok) return e;
   const novo = criarEstado(plano, { semPrevisaoCopas: true });
-  salvarSim(plano.club, novo);
+  salvarSim(chave, novo);
   return novo;
 }
 
@@ -79,7 +80,8 @@ export default function Simulador({ app }) {
   const { plano } = app;
   const k = plano.club;
   const assinatura = assinaturaDoPlano(plano);
-  const [estado, setEstado] = useState(() => carregar(plano));
+  const chave = app.planoId || k; // "plantel:sim" guarda uma temporada por plano
+  const [estado, setEstado] = useState(() => carregar(plano, chave));
   const [vista, setVista] = useState("resumo");
   const [comp, setComp] = useState("liga"); // competição mostrada em Tabela, Jogos e Estatísticas
   const [aoVivo, setAoVivo] = useState(null); // { c, r, d } do jogo que está sendo assistido (null = fora do jogo ao vivo)
@@ -90,9 +92,9 @@ export default function Simulador({ app }) {
   const tabela = useMemo(() => tabelaAtual(estado), [estado]);
   const ids = copasDe(estado);
 
-  const guardar = (e) => { salvarSim(k, e); setEstado(e); };
+  const guardar = (e) => { salvarSim(chave, e); setEstado(e); };
   // Para resultados que chegam depois (previsão das copas, janela do resto do mundo): aplica sobre o estado mais novo
-  const atualizar = (fn) => setEstado((e) => { const n = fn(e); if (n !== e) salvarSim(k, n); return n; });
+  const atualizar = (fn) => setEstado((e) => { const n = fn(e); if (n !== e) salvarSim(chave, n); return n; });
   // (a janela da IA guarda o interruptor e a semente própria, do "Refazer janela")
   const criar = (mudar = {}) => criarEstado(plano, { semente: estado.semente, escolhas: estado.escolhas, substitui: estado.substitui, escolhasFinais: estado.escolhasFinais || {}, semPrevisaoCopas: true,
     mercadoAtivo: estado.mercadoAtivo !== false, mercadoSemente: estado.mercadoSemente ?? null, ...mudar });
@@ -571,7 +573,7 @@ function CopasAntes({ estado, k, refazer }) {
                   <button aria-pressed={r.modo === "escolher"} onClick={() => r.modo !== "escolher" && escolher(f.id, r.vence)}>Escolher campeão</button>
                 </div>
                 {r.modo === "simular" ? (
-                  <p className="sim-final-res"><Escudo k={a} z={20} /> {nomeClube(a)} <b className="num">{r.placar[0]} × {r.placar[1]}</b> {nomeClube(b)} <Escudo k={b} z={20} />{r.pen ? " (pênaltis)" : ""} → <b>{nomeClube(r.vence)}</b></p>
+                  <p className="sim-final-res"><Escudo k={a} z={20} /> {nomeClube(a)} <b className="num">{r.placar[0]} × {r.placar[1]}</b> {nomeClube(b)} <Escudo k={b} z={20} />{Array.isArray(r.pen) ? ` (${r.pen[0]}×${r.pen[1]} nos pênaltis)` : r.pen ? " (pênaltis)" : ""} → <b>{nomeClube(r.vence)}</b></p>
                 ) : (
                   <div className="sim-duelo">
                     {[a, b].map((x) => <button key={x} className="sim-op" aria-pressed={r.vence === x} onClick={() => escolher(f.id, x)}><Escudo k={x} z={20} /><span>{nomeClube(x)}</span></button>)}
@@ -889,7 +891,8 @@ function Chave({ b, k }) {
     <div className={"sim-conf-time" + (vence ? " sim-conf-vence" : "") + (x === k ? " meu" : "")}>
       {x ? <Escudo k={x} z={20} /> : <span className="sim-conf-vazio"></span>}
       <span className="sim-nome">{x ? nomeClube(x) : "a definir"}</span>
-      {gols != null && <b className="num">{gols}{pen ? <small> (pên.)</small> : null}</b>}
+      {/* pen = gols na disputa por pênaltis (número) ou true (save antigo, sem o placar da disputa) */}
+      {gols != null && <b className="num">{gols}{pen === true ? <small> (pên.)</small> : pen != null ? <small className="sim-pen-n"> ({pen})</small> : null}</b>}
     </div>
   );
   return (
@@ -902,9 +905,10 @@ function Chave({ b, k }) {
             {!f.definida && <div className="card sim-conf sim-conf-aguarde">Sai da fase anterior</div>}
             {f.confrontos.map((c, j) => (
               <div className="card sim-conf" key={j}>
-                <Time x={c.a} gols={c.jogados ? c.ga : null} vence={c.vence === c.a} pen={c.penaltis && c.vence === c.a} />
-                <Time x={c.b} gols={c.jogados ? c.gb : null} vence={c.vence === c.b} pen={c.penaltis && c.vence === c.b} />
+                <Time x={c.a} gols={c.jogados ? c.ga : null} vence={c.vence === c.a} pen={c.penaltis ? (c.pen ? c.pen.placar[0] : c.vence === c.a || null) : null} />
+                <Time x={c.b} gols={c.jogados ? c.gb : null} vence={c.vence === c.b} pen={c.penaltis ? (c.pen ? c.pen.placar[1] : c.vence === c.b || null) : null} />
                 {c.jogos.length > 1 && <span className="sim-conf-jogos num">{c.jogos.map(([casa, x, y]) => `${casa === c.a ? x + "×" + y : y + "×" + x}`).join(" · ")}</span>}
+                {c.penaltis && c.pen && <span className="sim-conf-jogos sim-conf-pen num">Pênaltis: {nomeClube(c.vence)} {Math.max(...c.pen.placar)}×{Math.min(...c.pen.placar)}</span>}
               </div>
             ))}
             {f.passam.length > 0 && (
@@ -944,6 +948,7 @@ function Jogos({ estado, total: totalLiga, k, plano, jogarAoVivo, comp = "liga" 
         <div className="card">
           {ordenados.map((j) => {
             const [c, f, gc, gf, ev] = j, meu = c === k || f === k, id = c + f, ab = aberto === id || (meu && jogada && aberto === null);
+            const pen = jogada ? penaltisDoJogo(estado, comp, r, jogos.indexOf(j)) : null;
             return (
               <div className={"sim-jogo" + (meu ? " meu" : "")} key={id} id={meu ? "sim-jogo-meu" : undefined}>
                 <button className="sim-jogo-linha" disabled={!jogada || !ev.length} aria-expanded={jogada ? ab : undefined} onClick={() => setAberto(ab ? "" : id)}>
@@ -951,6 +956,7 @@ function Jogos({ estado, total: totalLiga, k, plano, jogarAoVivo, comp = "liga" 
                   <b className="num sim-placar-n">{jogada ? `${gc} × ${gf}` : "×"}</b>
                   <span className="f"><Escudo k={f} z={22} /><span className="sim-nome">{nomeClube(f)}</span></span>
                 </button>
+                {pen && <span className="sim-jogo-pen num">Pênaltis: {pen.placar[0]} × {pen.placar[1]} · passa o {nomeClube(pen.vence)}</span>}
                 {ab && ev.length > 0 && (
                   <div className="sim-gols">
                     <ul>{ev.filter((e) => e[1] === 0).map((e, n) => <li key={n}><span className="num mute">{e[0]}'</span> {nomeJog(plano, e[2])}{e[3] && <span className="mute"> ({nomeJog(plano, e[3])})</span>}</li>)}</ul>
@@ -1065,15 +1071,19 @@ function Estatisticas({ estado, k, plano, comp = "total" }) {
 // narracao.js (gols, minutos, trocas e cartões do motor; o resto preenchido em volta, sempre igual para o mesmo jogo).
 // Relógio: 0' a 45' + acréscimos, intervalo, 46' a 90' + acréscimos. Gol: animação de ~2,5 s (toque para pular).
 
-// Passos do relógio: [{ t (instante, como nos lances), rot (texto), intervalo?, fim? }]
-function passosDoRelogio([a1, a2]) {
+// Passos do relógio: [{ t (instante, como nos lances), rot (texto), intervalo?, penalti?, fim? }]. Com disputa por
+// pênaltis (pen), depois do tempo normal vem um passo por cobrança e só então o fim de jogo.
+function passosDoRelogio([a1, a2], pen = null) {
   const l = [{ t: 0, rot: "Começando" }];
   for (let m = 1; m <= 45; m++) l.push({ t: m, rot: `${m}'` });
   for (let x = 1; x <= a1; x++) l.push({ t: 45 + x / 10, rot: `45+${x}'` });
   l.push({ t: 45 + (a1 + 0.5) / 10, rot: "Intervalo", intervalo: true });
   for (let m = 46; m <= 90; m++) l.push({ t: m, rot: `${m}'` });
   for (let x = 1; x <= a2; x++) l.push({ t: 90 + x / 10, rot: `90+${x}'` });
-  l.push({ t: 90 + (a2 + 0.5) / 10, rot: "Fim de jogo", fim: true });
+  if (!pen) { l.push({ t: 90 + (a2 + 0.5) / 10, rot: "Fim de jogo", fim: true }); return l; }
+  l.push({ t: 90 + (a2 + 0.5) / 10, rot: "Fim do tempo normal", intervalo: true });
+  pen.cob.forEach((_, k) => l.push({ t: 91 + (k + 1) / 100, rot: "Pênaltis", penalti: true }));
+  l.push({ t: 91 + (pen.cob.length + 1) / 100, rot: "Fim de jogo", fim: true });
   return l;
 }
 const minutoDoLance = (x) => (x.acr >= 1 ? `${x.min}+${Math.floor(x.acr)}'` : `${x.min}'`);
@@ -1097,6 +1107,7 @@ function IconeLance({ x }) {
   const svg = (filhos, cor = "currentColor") => <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke={cor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{filhos}</svg>;
   switch (k) {
     case "gol": return svg(<><circle cx="12" cy="12" r="9" /><path d="M12 7l4 3-1.5 4.5h-5L8 10z" fill="currentColor" stroke="none" /></>);
+    case "penalti": return x.ok ? svg(<><circle cx="12" cy="12" r="9" /><path d="M8 12.5l2.5 2.5L16 9.5" /></>, "#1a9e55") : svg(<><circle cx="12" cy="12" r="9" /><path d="M9 9l6 6M15 9l-6 6" /></>, "#d33");
     case "cartao": return <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><rect x="7" y="3" width="10" height="18" rx="2" fill="#f2c500" /></svg>;
     case "sub": return svg(<><path d="M7 20V6M3.5 9.5 7 6l3.5 3.5" stroke="#1a9e55" /><path d="M17 4v14M13.5 14.5 17 18l3.5-3.5" stroke="#d33" /></>);
     case "defesa": return svg(<path d="M6 13V7a2 2 0 0 1 4 0v4M10 11V5a2 2 0 0 1 4 0v6M14 11V7a2 2 0 0 1 4 0v7a6 6 0 0 1-6 6h-1a6 6 0 0 1-5-3l-2-3a2 2 0 0 1 3-2l2 2" />);
@@ -1152,8 +1163,8 @@ function AoVivo({ estado, c = "liga", r, d, plano, k, onSair, onProxima }) {
   const jogos = resultadosDe(estado, c)[r] || [];
   const i = jogos.findIndex((j) => j[0] === k || j[1] === k);
   const meu = i >= 0 ? jogos[i] : null;
-  const narr = useMemo(() => (i >= 0 ? jogoAoVivo(estado, plano, r, i, c) : null), [r, c]); // eslint-disable-line
-  const passos = useMemo(() => passosDoRelogio(narr?.acrescimos || [2, 4]), [narr]);
+  const narr = useMemo(() => (i >= 0 ? jogoAoVivoCompleto(estado, plano, r, i, c) : null), [r, c]); // eslint-disable-line
+  const passos = useMemo(() => passosDoRelogio(narr?.acrescimos || [2, 4], narr?.pen), [narr]);
   const [p, setP] = useState(0);
   const [vel, setVel] = useState(lerVelocidade);
   const [pausa, setPausa] = useState(false);
@@ -1163,7 +1174,7 @@ function AoVivo({ estado, c = "liga", r, d, plano, k, onSair, onProxima }) {
   // Relógio: 1 passo a cada VELOCIDADES[vel] ms; pausa mais longa no intervalo; parado durante a animação de gol
   useEffect(() => {
     if (pausa || acabou || festa) return;
-    const tm = setTimeout(() => setP((x) => Math.min(passos.length - 1, x + 1)), VELOCIDADES[vel] * (passo.intervalo ? 4 : 1));
+    const tm = setTimeout(() => setP((x) => Math.min(passos.length - 1, x + 1)), VELOCIDADES[vel] * (passo.intervalo ? 4 : passo.penalti ? 6 : 1));
     return () => clearTimeout(tm);
   }, [p, pausa, vel, acabou, festa]); // eslint-disable-line
   const gols = narr ? narr.lances.filter((x) => x.tipo === "gol" && x.t <= t) : [];
@@ -1185,6 +1196,8 @@ function AoVivo({ estado, c = "liga", r, d, plano, k, onSair, onProxima }) {
   const stats = narr ? estatisticasAte(narr, t) : null;
   const ultimaRodada = !proximoJogo(estado, k); // o clube não tem mais jogos na temporada
   const minAtual = Math.min(90, Math.floor(t));
+  // Placar dos pênaltis até agora (a última cobrança já mostrada)
+  const penAgora = narr?.pen ? narr.lances.filter((x) => x.tipo === "penalti" && x.t <= t).pop()?.parcial || (t > 91 ? [0, 0] : null) : null;
 
   return (
     <div id="sim-ao-vivo" style={meu ? (() => { const ea = corVisivel(meu[0]); return { "--ea": ea, "--eb": corVisivel(meu[1], ea) }; })() : undefined}>
@@ -1198,6 +1211,7 @@ function AoVivo({ estado, c = "liga", r, d, plano, k, onSair, onProxima }) {
             <span className="av-time"><Escudo k={meu[1]} z={52} /><b>{nomeClube(meu[1])}</b></span>
           </div>
         ) : <p className="av-folga">Seu clube folga nesta rodada. Acompanhe os outros jogos.</p>}
+        {penAgora && <span className="av-pen num" id="av-pen">Pênaltis {penAgora[0]} – {penAgora[1]}</span>}
         <span className={"av-relogio" + (acabou ? " fim" : "")} id="av-relogio">{!acabou && <i aria-hidden="true"></i>}{passo.rot}</span>
         <div className="av-linha" aria-hidden="true">
           <i style={{ width: (minAtual / 90) * 100 + "%" }}></i>
@@ -1213,7 +1227,7 @@ function AoVivo({ estado, c = "liga", r, d, plano, k, onSair, onProxima }) {
             <div className="card av-feed" id="av-feed">
               {feed.map((x) => (
                 <div className={"av-ev av-" + x.tipo + (x.lado === ladoMeu ? " av-meu" : "")} key={x.n}>
-                  <b className="num">{x.tipo === "marco" ? (x.marco === "inicio" ? "0'" : x.marco === "intervalo" ? "INT" : "FIM") : minutoDoLance(x)}</b>
+                  <b className="num">{x.tipo === "marco" ? (x.marco === "inicio" ? "0'" : x.marco === "intervalo" ? "INT" : x.marco === "penaltis" ? "PÊN" : "FIM") : x.tipo === "penalti" ? "PÊN" : minutoDoLance(x)}</b>
                   <span className="av-ico"><IconeLance x={x} /></span>
                   {x.tipo === "gol" ? (
                     <span><strong>GOL do {nomeClube(meu[x.lado])}!</strong> {x.txt}{x.assist && <span className="mute"> · assistência de {nomeJog(plano, x.assist)}</span>}</span>

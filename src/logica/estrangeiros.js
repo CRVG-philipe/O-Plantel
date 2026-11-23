@@ -21,7 +21,13 @@ import { nacionalidadesDe } from "./nacionalidades.js";
 // Os nomes dos países são comparados sem acento, porque o arquivo de regras usa a grafia do Brasil ("Polônia",
 // "Romênia") e os jogadores, a de Portugal ("Polónia", "Roménia"). "Tcheca" e "Checa" são o mesmo país.
 const APELIDOS_PAIS = { "republica tcheca": "republica checa", tchequia: "republica checa" };
-const chavePais = (n) => { const k = norm(String(n || "").trim()); return APELIDOS_PAIS[k] || k; };
+// (em cache: são poucos países e isto roda muitas vezes na janela da IA e na escalação)
+const cacheChave = new Map();
+const chavePais = (n) => {
+  let k = cacheChave.get(n);
+  if (k === undefined) { k = norm(String(n || "").trim()); k = APELIDOS_PAIS[k] || k; cacheChave.set(n, k); }
+  return k;
+};
 
 let cacheUE = { de: null, set: new Set() };
 function paisesUE() {

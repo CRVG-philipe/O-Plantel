@@ -7,6 +7,7 @@ import { lerCriterioEscalar, lerFiltroCaixa, lerPlanos, lerTimes, salvarCriterio
 import { ehTimeCriado, novaChaveDeTime, registrarTimes } from "./logica/times.js";
 import { lerFiltrosDaUrl, urlDosFiltros, urlTemLista } from "./logica/lista.js";
 import { ehEmprestadoFora, jogador, novoPlano } from "./logica/elenco.js";
+import { idParaAbrir, nomeDoPlano, novoIdDePlano, planosDoClube } from "./logica/planos.js";
 import { escalarSozinho, completarTime } from "./logica/escalacao.js";
 import { usarMoeda } from "./logica/dinheiro.js";
 import { buscarCotacao, lerCotacaoSalva, lerMoeda, salvarMoeda } from "./logica/cotacao.js";
@@ -65,14 +66,14 @@ export default function Plantel() {
   const [times, setTimesEstado] = useState(() => { const t = lerTimes(); registrarTimes(t); return t; });
   function setTimes(t) { registrarTimes(t); salvarTimes(t); setTimesEstado(t); }
   const [db, setDb] = useState(lerPlanos);       // tudo que está salvo no navegador
-  const [aberto, setAberto] = useState(null);    // clube do plano aberto (null = tela de escolha)
+  const [aberto, setAberto] = useState(null);    // id do plano aberto (null = tela de escolha); ver logica/planos.js
   const [aba, setAba] = useState("elenco");
   // Simulador da temporada: página própria por cima do plano (botão "Simular temporada" no topo)
   const [simulador, setSimulador] = useState(false);
   // Tela antes do plano: "inicio", "pais", "divisao", "clube" ou "lista" (Lista de jogadores).
   // O site sempre abre no início, a não ser que o endereço traga filtros da Lista (?liga=BRA&pos=CA).
   // País, liga e clube começam no último clube aberto (para quem volta a ele).
-  const ultimo = db.last && D.CL[db.last] ? D.CL[db.last] : null;
+  const ultimo = db.last && D.CL[db.plans[db.last]?.club] ? D.CL[db.plans[db.last].club] : null;
   const [tela, setTela] = useState(() => (urlTemLista(window.location.search) ? "lista" : "inicio"));
   // Filtros da Lista de jogadores (começam pelos da URL, se houver)
   const [lista, setLista] = useState(() => lerFiltrosDaUrl(window.location.search));
@@ -108,9 +109,9 @@ export default function Plantel() {
   const plano = aberto ? db.plans[aberto] : null;
 
   // ---------- ações ----------
-  // Grava um plano (no estado e no navegador) e marca como o último aberto
-  function gravar(p) {
-    const novo = { ...db, plans: { ...db.plans, [p.club]: p }, last: p.club };
+  // Grava um plano (no estado e no navegador) e marca como o último aberto. id = o do plano (padrão: o aberto)
+  function gravar(p, id = aberto ?? p.club) {
+    const novo = { ...db, plans: { ...db.plans, [id]: p }, last: id };
     setDb(novo);
     salvarPlanos(novo);
   }
@@ -132,23 +133,50 @@ export default function Plantel() {
     timerAviso.current = setTimeout(() => setAviso((a) => ({ ...a, on: false })), 1800);
   }
 
+  // Abre o clube: o plano dele que foi aberto por último (ou o 1º); sem nenhum, cria o Plano 1
   function abrirClube(k) {
-    const p = db.plans[k] ? structuredClone(db.plans[k]) : novoPlano(k);
+    abrirPlano(idParaAbrir(db, k) || novoIdDePlano(db, k), k);
+  }
+  // Abre um plano pelo id (k = clube, para criar um plano novo quando o id ainda não existe)
+  function abrirPlano(id, k = db.plans[id]?.club, base = db) {
+    const p = base.plans[id] ? structuredClone(base.plans[id]) : novoPlano(k);
     p.custom = p.custom || [];
     if (!Object.keys(p.xi).length) escalarSozinho(p, criterio);
     completarTime(p);
-    gravar(p);
-    setAberto(k);
+    const novo = { ...base, plans: { ...base.plans, [id]: p }, last: id };
+    setDb(novo);
+    salvarPlanos(novo);
+    setAberto(id);
     setAba("elenco");
     setSimulador(false);
     window.scrollTo(0, 0);
     if (p.budget === null) abrirPainel("orcamento", { primeiro: true });
   }
 
+  // Plano novo de um clube (padrão: o do plano aberto): do zero (elenco original) ou cópia do plano aberto. Abre o novo.
+  function novoPlanoDoClube(copiar = false, k = plano?.club) {
+    const id = novoIdDePlano(db, k);
+    const p = copiar ? structuredClone(plano) : novoPlano(k);
+    delete p.nome; // o nome padrão vem do id ("Plano 2"); dá para renomear depois
+    if (!copiar && times[k]) p.budget = times[k].caixa;
+    fecharPainel();
+    abrirPlano(id, k, { ...db, plans: { ...db.plans, [id]: p } });
+    mostrarAviso(copiar ? `${nomeDoPlano(id, p)}: cópia do ${nomeDoPlano(aberto, plano)}` : `${nomeDoPlano(id, p)} do ${D.CL[k].n} criado`);
+    setTela("inicio");
+  }
+  // Muda o nome de um plano (vazio = volta a "Plano N")
+  function renomearPlano(id, nome) {
+    const p = { ...db.plans[id], nome: nome.trim().slice(0, 40) };
+    if (!p.nome) delete p.nome;
+    const novo = { ...db, plans: { ...db.plans, [id]: p } };
+    setDb(novo);
+    salvarPlanos(novo);
+  }
+
   // Sai do plano e volta para a tela inicial (país, liga e clube ficam no clube que estava aberto)
   function trocarClube() {
     fecharPainel();
-    const k = aberto;
+    const k = plano.club;
     setAberto(null);
     setSimulador(false);
     setTela("inicio");
@@ -158,27 +186,38 @@ export default function Plantel() {
     window.scrollTo(0, 0);
   }
 
-  // Exclui um plano salvo (só é chamado depois da confirmação no PainelExcluirPlano)
-  function excluirPlano(k) {
+  // Exclui um plano salvo pelo id (só é chamado depois da confirmação no PainelExcluirPlano). Se era o aberto, abre
+  // outro plano do mesmo clube ou volta ao início.
+  function excluirPlano(id) {
+    const p = db.plans[id];
+    if (!p) return;
     const plans = { ...db.plans };
-    delete plans[k];
+    delete plans[id];
     const novo = { ...db, plans };
-    if (novo.last === k) delete novo.last; // não aponta mais para um plano que não existe
+    if (novo.last === id) delete novo.last; // não aponta mais para um plano que não existe
     setDb(novo);
     salvarPlanos(novo);
     fecharPainel();
-    mostrarAviso("Plano do " + D.CL[k].n + " excluído");
+    const varios = planosDoClube(db, p.club).length > 1;
+    mostrarAviso((varios ? nomeDoPlano(id, p) + " do " : "Plano do ") + D.CL[p.club].n + " excluído");
+    if (aberto === id) {
+      const outro = planosDoClube(novo, p.club)[0];
+      if (outro) abrirPlano(outro[0], p.club, novo);
+      else { setAberto(null); setSimulador(false); setTela("inicio"); }
+    }
   }
 
   function reiniciarClube() {
-    const p = novoPlano(aberto);
+    const k = plano.club;
+    const p = novoPlano(k);
+    if (plano.nome) p.nome = plano.nome;
     escalarSozinho(p, criterio);
     // Time criado: volta ao caixa inicial dele (não pergunta o orçamento de novo)
-    if (times[aberto]) p.budget = times[aberto].caixa;
+    if (times[k]) p.budget = times[k].caixa;
     gravar(p);
     setAba("elenco");
-    mostrarAviso("Progresso do " + D.CL[aberto].n + " reiniciado");
-    if (!times[aberto]) abrirPainel("orcamento", { primeiro: true });
+    mostrarAviso("Progresso do " + D.CL[k].n + " reiniciado");
+    if (!times[k]) abrirPainel("orcamento", { primeiro: true });
   }
 
   // Jogador do próprio elenco abre "vender/emprestar" (ou, se veio emprestado, "manter/devolver/comprar");
@@ -194,7 +233,7 @@ export default function Plantel() {
     const k = novaChaveDeTime();
     setTimes({ ...times, [k]: dados });
     const p = { ...novoPlano(k), budget: dados.caixa };
-    gravar(p);
+    gravar(p, k);
     setFiltrosEstado((f) => ({ ...f, fit: true })); // monta o elenco vendo só quem cabe no caixa
     fecharPainel();
     setAberto(k);
@@ -206,7 +245,14 @@ export default function Plantel() {
   function salvarTime(k, dados) {
     const antes = times[k];
     setTimes({ ...times, [k]: dados });
-    if (db.plans[k] && antes && antes.caixa !== dados.caixa) gravar({ ...db.plans[k], budget: dados.caixa });
+    // Caixa inicial mudou: o orçamento de todos os planos do time acompanha
+    if (antes && antes.caixa !== dados.caixa) {
+      const plans = { ...db.plans };
+      for (const [id, p] of planosDoClube(db, k)) plans[id] = { ...p, budget: dados.caixa };
+      const novo = { ...db, plans };
+      setDb(novo);
+      salvarPlanos(novo);
+    }
     fecharPainel();
     mostrarAviso(dados.n + " salvo");
   }
@@ -214,15 +260,15 @@ export default function Plantel() {
   function excluirTime(k) {
     const n = times[k]?.n || "Time";
     const plans = { ...db.plans };
-    delete plans[k];
+    for (const [id] of planosDoClube(db, k)) delete plans[id];
     const novoDb = { ...db, plans };
-    if (novoDb.last === k) delete novoDb.last;
+    if (novoDb.last && !plans[novoDb.last]) delete novoDb.last;
     setDb(novoDb);
     salvarPlanos(novoDb);
     const t = { ...times };
     delete t[k];
     setTimes(t);
-    if (aberto === k) setAberto(null);
+    if (plano && plano.club === k) setAberto(null);
     fecharPainel();
     mostrarAviso(n + " excluído");
   }
@@ -289,7 +335,7 @@ export default function Plantel() {
 
   // Cor de destaque: do clube aberto ou do clube mostrado no carrossel (na Lista de jogadores, nenhuma)
   const naLista = !aberto && tela === "lista";
-  const clubeDaCor = aberto || (naLista ? null : clubes[indice]?.k);
+  const clubeDaCor = plano?.club || (naLista ? null : clubes[indice]?.k);
   useEffect(() => { aplicarCor(clubeDaCor); }, [clubeDaCor]);
 
   // Endereço: na Lista de jogadores, os filtros ficam na URL; fora dela, a URL fica limpa
@@ -314,10 +360,10 @@ export default function Plantel() {
   // ---------- tela ----------
   // "app" é o pacote de dados e ações que cada componente recebe
   const app = {
-    db, plano, aba, tela, pais, liga, indice, clubes, busca, chip, limite, filtros, moeda, cotacao, criterio, times, lista,
+    db, plano, planoId: aberto, aba, tela, pais, liga, indice, clubes, busca, chip, limite, filtros, moeda, cotacao, criterio, times, lista,
     setIndice, setBusca, setChip, setLimite, setFiltros, setCriterio, trocarMoeda, tema, alternarTema, setLista,
     criarTime, salvarTime, excluirTime, irMenu, abrirLista, abrirClubeNaEscolha, abrirSimulador, fecharSimulador,
-    abrirClube, trocarClube, reiniciarClube, excluirPlano, abrirJogador, abrirPainel, fecharPainel,
+    abrirClube, abrirPlano, novoPlanoDoClube, renomearPlano, trocarClube, reiniciarClube, excluirPlano, abrirJogador, abrirPainel, fecharPainel,
     mudar, irPara, passo, planejarClube, escolherPais, escolherDivisao, voltar, aviso: mostrarAviso,
   };
   const Aba = ABAS[aba];

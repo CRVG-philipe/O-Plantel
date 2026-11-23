@@ -1,7 +1,7 @@
 // Testes da janela da IA no simulador (src/logica/simulacao/mercadoIA.js): contratações dos clubes da IA antes da temporada.
 import fs from "node:fs";
 import { beforeAll, expect, test } from "vitest";
-import { D, carregarDados } from "../src/logica/dados.js";
+import { D, carregarDados, saoRivais } from "../src/logica/dados.js";
 import { MAX_CONTRATACOES, dadosParaWorker, difsDoMercado, elencoDepois, gastosDaJanela, janelaDoResto, listaTransferencias } from "../src/logica/simulacao/mercadoIA.js";
 import { jogadoresDo } from "../src/logica/simulacao/escalar.js";
 import { criarEstado, juntarResto, montarTimes, pedidoDoResto, rodarMercado } from "../src/logica/simulacao/temporada.js";
@@ -123,7 +123,9 @@ test("janela da IA: a janela inteira (fase 1 + resto do mundo) leva menos de 2 s
   const plano = planoDe(porNome("ENG", "Arsenal")), e = criarEstado(plano, { semente: 3, semPrevisaoCopas: true });
   const t0 = performance.now();
   const m = rodarMercado(e, plano);
+  const t1 = performance.now();
   janelaDoResto(pedidoDoResto({ ...e, mercadoIA: m }, plano));
+  console.log("fase 1", Math.round(t1 - t0), "ms; resto do mundo", Math.round(performance.now() - t1), "ms");
   expect(performance.now() - t0).toBeLessThan(2000);
 });
 
@@ -131,4 +133,19 @@ test("janela da IA no Web Worker: os dados enviados levam a dupla nacionalidade 
   const d = dadosParaWorker();
   const j = D.ALL.find((p) => p.n === "Jorginho" && D.CL[p.club].n === "Flamengo");
   expect(d.ALL.find((x) => x[0] === j.id)[7]).toBe("Itália/Brasil");
+});
+test("janela da IA: transferência entre rivais é raríssima (rivais.json; todos os nomes batem com o data.json)", () => {
+  expect(D.RIVAIS_FALTANDO).toEqual([]);
+  expect(saoRivais(porNome("BRA", "Flamengo"), porNome("BRA", "Fluminense"))).toBe(true);
+  expect(saoRivais(porNome("BRA", "Palmeiras"), porNome("BRA", "Corinthians"))).toBe(true);
+  expect(saoRivais(porNome("BRA", "Flamengo"), porNome("BRA", "Palmeiras"))).toBe(false);
+  let total = 0, entreRivais = 0;
+  for (const [lg, nome] of [["BRA", "Flamengo"], ["ENG", "Arsenal"], ["ESP", "Sevilla"]])
+    for (const semente of [1, 2, 3]) {
+      const e = completo(planoDe(porNome(lg, nome)), semente);
+      for (const t of listaTransferencias(e.mercadoIA)) { total++; if (saoRivais(t.de, t.para)) entreRivais++; }
+    }
+  console.log("transferências", total, "entre rivais", entreRivais);
+  expect(total).toBeGreaterThan(3000);
+  expect(entreRivais / total).toBeLessThan(0.002);
 });

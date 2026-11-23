@@ -24,6 +24,7 @@ const ATUAL = JSON.parse(fs.readFileSync("public/temporada-atual.json", "utf8"))
 const FORMATOS = JSON.parse(fs.readFileSync("public/formatos-ligas.json", "utf8"));   // simulador: formato de cada liga
 const COPAS = JSON.parse(fs.readFileSync("public/copas.json", "utf8"));               // simulador: copas
 const NACS = JSON.parse(fs.readFileSync("public/nacionalidades.json", "utf8"));       // dupla nacionalidade
+const RIVAIS = JSON.parse(fs.readFileSync("public/rivais.json", "utf8"));             // clássicos (janela da IA)
 let semEstimados = false; // true = simula o valores-estimados.json fora do ar
 const CHAVE = "plantel:v2";
 // Cotação que a "API de mentira" devolve nos testes
@@ -52,6 +53,7 @@ beforeEach(() => {
     if (String(url).includes("formatos-ligas")) return { ok: true, json: async () => structuredClone(FORMATOS) };
     if (String(url).includes("copas")) return { ok: true, json: async () => structuredClone(COPAS) };
     if (String(url).includes("nacionalidades")) return { ok: true, json: async () => structuredClone(NACS) };
+    if (String(url).includes("rivais")) return { ok: true, json: async () => structuredClone(RIVAIS) };
     if (String(url).includes("overall")) return { ok: true, json: async () => structuredClone(OVERALL) };
     if (String(url).includes("valores-estimados")) {
       if (semEstimados) throw new Error("fora do ar");
@@ -1481,4 +1483,60 @@ test("dupla nacionalidade na tela: Jorginho (Flamengo) com as bandeiras da Itál
   // Sem o selo "Estrangeiro" (ele não ocupa vaga no Brasileirão)
   const piton = [...document.querySelectorAll("#mList .row")].find((r) => r.querySelector(".nm")?.textContent.startsWith("Lucas Piton"));
   expect(piton.querySelector(".selo-est")).toBe(null);
+});
+test("vários planos do mesmo clube: novo do zero, duplicar, renomear, trocar, cada um com a sua temporada e excluir", async () => {
+  const k = DATA.clubs.find((c) => c.lg === "BRA" && c.n === "Flamengo").k;
+  // Plano antigo (sem o campo nome): continua sendo o Plano 1, com a mesma chave
+  localStorage.setItem(CHAVE, JSON.stringify({ plans: { [k]: { club: k, budget: 50, st: {}, ins: [], form: "4-3-3", xi: {}, custom: [] } }, last: k }));
+  render(<App />);
+  clique(await screen.findByRole("button", { name: /2027/ }));
+  const salvo = () => JSON.parse(localStorage.getItem(CHAVE));
+  // Vende alguém no Plano 1
+  clique(document.querySelector("#elenco .row, main .row"));
+  clique(noPainel().getByRole("button", { name: /Vender/ }));
+  clique(noPainel().getByRole("button", { name: "Salvar" }));
+  const p1 = salvo().plans[k];
+  expect(Object.keys(p1.st).length).toBe(1);
+  // Menu do clube: "Novo plano do zero" cria o Plano 2 (chave "<clube>~2"), com o elenco original
+  clique(document.querySelector("#chg"));
+  expect(document.querySelectorAll("#planos-clube .plano-linha").length).toBe(1);
+  clique(document.querySelector("#novo-plano"));
+  // novo plano de clube real pede o orçamento
+  clique(document.querySelector("#ok"));
+  let db = salvo();
+  expect(Object.keys(db.plans).sort()).toEqual([k, k + "~2"].sort());
+  expect(db.last).toBe(k + "~2");
+  expect(db.plans[k + "~2"].club).toBe(k);
+  expect(Object.keys(db.plans[k + "~2"].st).length).toBe(0);
+  expect(JSON.stringify(db.plans[k])).toBe(JSON.stringify(p1)); // o Plano 1 não mudou
+  expect(document.querySelector("#plano-aberto").textContent).toBe("Plano 2");
+  // Duplicar e renomear
+  fireEvent.keyDown(document, { key: "Escape" });
+  clique(document.querySelector("#chg"));
+  clique(document.querySelector("#duplicar-plano"));
+  db = salvo();
+  expect(db.plans[k + "~3"]).toBeTruthy();
+  clique(document.querySelector("#chg"));
+  fireEvent.change(document.querySelector("#nome-plano"), { target: { value: "Sem estrela" } });
+  clique(document.querySelector("#salvar-nome-plano"));
+  expect(salvo().plans[k + "~3"].nome).toBe("Sem estrela");
+  expect(document.querySelectorAll("#planos-clube .plano-linha").length).toBe(3);
+  // Trocar para o Plano 1 pela lista
+  clique(document.querySelector("#abrir-plano-" + k));
+  expect(salvo().last).toBe(k);
+  expect(document.querySelector("#plano-aberto").textContent).toBe("Plano 1");
+  // Cada plano tem a sua temporada no simulador ("plantel:sim" pela chave do plano)
+  clique(document.querySelector("#simular-temporada"));
+  clique(document.querySelector("#sim-voltar"));
+  expect(Object.keys(JSON.parse(localStorage.getItem("plantel:sim")))).toEqual([k]);
+  // Início: os 3 planos aparecem; excluir o Plano 2 pela lixeira
+  clique(document.querySelector("#menu"));
+  expect(document.querySelectorAll(".ini-plano-linha").length).toBe(3);
+  expect(document.querySelector("#plano-" + k + "\\~3").textContent).toContain("Sem estrela");
+  clique(screen.getByRole("button", { name: "Excluir Plano 2 do Flamengo" }));
+  clique(document.querySelector("#confirmar-excluir-plano"));
+  expect(Object.keys(salvo().plans).sort()).toEqual([k, k + "~3"].sort());
+  // Etapa do clube: "Novo plano do Flamengo" existe quando já há plano
+  clique(document.querySelector("#plano-" + k + "\\~3"));
+  expect(salvo().last).toBe(k + "~3");
 });

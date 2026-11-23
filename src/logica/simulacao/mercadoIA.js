@@ -21,7 +21,9 @@
 //   - Preferência pela afinidade entre as ligas (a mesma do "Recomendados" do Mercado) e por idade entre 20 e 31.
 //   - Limite de estrangeiros (regras-estrangeiros.json): clube já no limite só contrata quem não ocupa vaga.
 //   - Proibidos: o elenco do clube do usuário, quem o usuário contratou no plano, emprestados e quem já mudou de clube.
-import { D } from "../dados.js";
+//   - Rivais (public/rivais.json, D.RIVAIS): transferência entre clubes rivais é raríssima: o par (jogador, comprador) só
+//     entra na lista em 2% dos casos (sorteio fixo pela semente) e, mesmo assim, perde 0,3 na nota.
+import { D, saoRivais } from "../dados.js";
 import { embaralhar, rngDe } from "./aleatorio.js";
 import { forcaRapida, jogadoresDo } from "./escalar.js";
 import { ehEstrangeiro, regraDaLiga } from "../estrangeiros.js";
@@ -34,6 +36,7 @@ import { ovrDe } from "./motor.js";
 export const MAX_CONTRATACOES = 4;
 export const FAIXA_VALOR = [0.03, 0.25]; // valor do reforço ÷ valor do elenco do comprador
 export const MAIS_RICO = 1.5; // valor do elenco da origem ÷ valor do elenco do comprador (máximo)
+export const CHANCE_RIVAL = 0.02; // chance de um jogador de clube rival entrar na lista de alvos
 export const TETO_OVR = 5; // o reforço tem no máximo a média dos titulares do comprador + 5
 const RODADAS = MAX_CONTRATACOES;
 // Grupos de posição e quantos titulares cada um tem (4-3-3)
@@ -175,7 +178,9 @@ function rodar({ semente, rotulo, compradores, primeiro = [], ligaDe, proibidos,
           if (o >= top[0]) continue;
           if (o >= (top[2] ?? 0) && !(naoMaisFraca && I.vE > valorDoElenco(de))) continue;
           if (noLimite && ehEstrangeiro(p, I.lg)) continue;
-          const nota = 0.45 * af + 0.25 * (p.a >= 20 && p.a <= 31 ? 1 : 0.2) + 0.3 * Math.min(1, Math.max(0, o - tit) / 6);
+          const rival = saoRivais(de, k);
+          if (rival && rngDe(semente, "rival", p.id, k)() >= CHANCE_RIVAL) continue;
+          const nota = (rival ? -0.3 : 0) + 0.45 * af + 0.25 * (p.a >= 20 && p.a <= 31 ? 1 : 0.2) + 0.3 * Math.min(1, Math.max(0, o - tit) / 6);
           if (top3.length === 3 && nota <= top3[2].nota) continue;
           top3.push({ p, nota });
           top3.sort((a, b) => b.nota - a.nota || a.p.id.localeCompare(b.p.id));
@@ -266,7 +271,7 @@ export function gastosDaJanela(mercado) {
 // Dados que o worker precisa (enviados uma vez): ligas, clubes, regras de estrangeiros e os jogadores (só os campos usados)
 export function dadosParaWorker() {
   return {
-    LG: D.LG, ESTRANGEIROS: D.ESTRANGEIROS,
+    LG: D.LG, ESTRANGEIROS: D.ESTRANGEIROS, RIVAIS: [...D.RIVAIS].map(([k, s]) => [k, [...s]]),
     CLUBS: D.CLUBS.map((c) => [c.k, c.lg, c.n]),
     // nat vai com todas as nacionalidades (data.json + nacionalidades.json), para o limite de estrangeiros valer igual no worker
     ALL: D.ALL.map((p) => [p.id, p.club, p.lg, p.pos, p.v, p.ovr ?? null, p.a, nacionalidadesDe(p).join("/"), p.emp ? 1 : 0]),
@@ -275,6 +280,7 @@ export function dadosParaWorker() {
 // No worker: monta o D mínimo com esses dados
 export function montarDadosNoWorker(d) {
   D.LG = d.LG; D.ESTRANGEIROS = d.ESTRANGEIROS;
+  D.RIVAIS = new Map((d.RIVAIS || []).map(([k, l]) => [k, new Set(l)]));
   D.CLUBS = d.CLUBS.map(([k, lg, n]) => ({ k, lg, n }));
   D.CL = Object.fromEntries(D.CLUBS.map((c) => [c.k, c]));
   D.ALL = d.ALL.map(([id, club, lg, pos, v, ovr, a, nat, emp]) => ({ id, club, lg, pos, v, ovr, a, nat, emp: !!emp }));

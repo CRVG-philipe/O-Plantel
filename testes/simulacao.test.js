@@ -11,6 +11,7 @@ import { comporLiga, ligaNaTemporada, projecaoAtual, resolverPendencias, rotuloL
 import { classificacao, fecharRodada, garantirRodada, montarEsqueleto, titulos } from "../src/logica/simulacao/formatos.js";
 import { campeaoDe, criarEstado, datasDe, esqCopa, jogarProximoJogo, jogoAoVivo, montarTimes, narracao, simularAte, tabelaAtual, totalRodadas } from "../src/logica/simulacao/temporada.js";
 import { FRASES, estatisticasAte } from "../src/logica/simulacao/narracao.js";
+import { disputarPenaltis, ladoDosPenaltis } from "../src/logica/simulacao/penaltis.js";
 import { finaisPendentes } from "../src/logica/simulacao/copas.js";
 import { elencoAtual, novoPlano } from "../src/logica/elenco.js";
 import { nivel } from "../src/logica/compatibilidade.js";
@@ -635,4 +636,36 @@ test("lance a lance: 8 a 14 lances além dos gols, 6+ frases por tipo, gol pela 
   const ca = golsPorTipo.CA || {};
   expect((ca.area || 0)).toBeGreaterThan((ca.foraArea || 0));
   if (golsPorTipo.ZAG) expect((golsPorTipo.ZAG.cabeca || 0) + (golsPorTipo.ZAG.penalti || 0)).toBeGreaterThan(0);
+});
+test("pênaltis: disputa de verdade (5 cobranças e morte súbita), guardada no confronto e igual para a mesma semente", () => {
+  // Disputa avulsa: 5 cobranças cada (ou menos, se decidir antes) e morte súbita em par
+  const A = ladoDosPenaltis(escalarClube(porNome("BRA", "Flamengo"), "BRA")), B = ladoDosPenaltis(escalarClube(porNome("BRA", "Palmeiras"), "BRA"));
+  let vA = 0;
+  for (let s = 0; s < 2000; s++) {
+    const d = disputarPenaltis(rngDe(5, s), A, B);
+    const [x, y] = d.placar;
+    expect(x).not.toBe(y);
+    expect(d.vence).toBe(x > y ? 0 : 1);
+    const n = [0, 1].map((l) => d.cob.filter((c) => c[0] === l).length);
+    expect(Math.abs(n[0] - n[1])).toBeLessThanOrEqual(1);
+    if (n[0] > 5 || n[1] > 5) expect(n[0]).toBe(n[1]); // morte súbita: os dois batem
+    expect(d.cob.filter((c) => c[0] === 0 && c[2]).length).toBe(x);
+    expect(d.cob.every((c) => c[1])).toBe(true); // com jogadores, cada cobrança tem batedor
+    if (d.vence === 0) vA++;
+  }
+  // Perto de 50% (times parecidos), nunca um "sorteio" decidido só pela força
+  expect(vA / 2000).toBeGreaterThan(0.4);
+  expect(vA / 2000).toBeLessThan(0.6);
+  // Numa temporada com mata-mata (Liga MX: playoffs), quem empatou no agregado tem a disputa guardada
+  const k = porNome("MEX", D.CLUBS.find((c) => c.lg === "MEX").n), P = planoDe(k);
+  let achou = 0;
+  for (const semente of [1, 2, 3, 4, 5, 6]) {
+    const E = simularAte(criarEstado(P, { semente, semPrevisaoCopas: true }), P, 999);
+    for (const ch of Object.values(E.chaves)) for (const [i, pen] of Object.entries(ch.pen || {})) {
+      achou++;
+      expect(pen.placar[0]).not.toBe(pen.placar[1]);
+      expect(ch.vence[i]).toBe(ch.pares[i][pen.placar[0] > pen.placar[1] ? 0 : 1]);
+    }
+  }
+  expect(achou).toBeGreaterThan(0);
 });

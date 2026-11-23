@@ -927,3 +927,23 @@ button.sim-jogo-linha:not(:disabled):hover{background:var(--sf2)}
 .fls{display:inline-flex;align-items:center;vertical-align:-1px}
 .fls .fl{vertical-align:0}
 .fls .fl+.fl{margin-left:3px}
+
+/* Disputa por pênaltis */
+.av-pen{display:inline-block;margin:-4px 0 8px;padding:3px 10px;border-radius:999px;background:rgba(255,255,255,.16);font-size:13px;font-weight:700}
+.av-penalti.av-ev>span:last-child{font-weight:500}
+.sim-pen-n{font-weight:600;opacity:.75}
+.sim-conf-pen{color:var(--mute)}
+.sim-jogo-pen{display:block;text-align:center;font-size:12px;color:var(--mute);margin:-4px 0 6px}
+
+/* Vários planos do mesmo clube (PainelClube, Topo, tela inicial e etapa do clube) */
+.planos-clube{display:flex;flex-direction:column;gap:0;margin:6px 0 4px}
+.plano-linha{display:flex;align-items:center;gap:8px}
+.plano-linha .opt{flex:1;min-width:0}
+.plano-excluir{flex:none;width:40px;height:40px;margin-bottom:8px;background:var(--sf2);color:var(--mute)}
+.plano-nome{margin-top:6px}
+.plano-nome-l{display:flex;gap:8px;align-items:center;margin-top:6px}
+.plano-nome-l input{margin-top:0!important;flex:1;min-width:0}
+.plano-nome-l .btn{flex:none;min-height:48px}
+.clubNome .plano-aberto{display:block;font-size:11px;font-weight:600;opacity:.7;line-height:1.1}
+.ini-plano-nome{font-weight:600;opacity:.75}
+.esc-novo-plano{display:block;margin:14px auto 0;border:0;background:none;color:inherit;font:inherit;font-size:14px;font-weight:600;opacity:.85;text-decoration:underline;text-underline-offset:3px;cursor:pointer}

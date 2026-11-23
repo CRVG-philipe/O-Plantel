@@ -12,6 +12,7 @@ import { D } from "../dados.js";
 import { rngDe } from "./aleatorio.js";
 import { gerarCalendario } from "./calendario.js";
 import { sortearPlacar } from "./motor.js";
+import { disputaDoSorteio } from "./penaltis.js";
 import { temporadaRapida } from "./tabela.js";
 import { escalarClube } from "./escalar.js";
 import { terminarAtual, dataAtual } from "./atual.js";
@@ -62,11 +63,12 @@ function jogoUnico(rng, a, b, forca) {
   const vence = x >= y ? a : b;
   return { vence, texto: `${nome(a)} ${x}×${y} ${nome(b)} → ${nome(vence)}` };
 }
-// Final em campo neutro; empate: pênaltis (50%)
+// Final em campo neutro; empate: disputa por pênaltis
 function finalNeutra(rng, a, b, forca) {
   const [x, y] = sortearPlacar(rng, forca(a), forca(b), true);
-  const vence = x > y ? a : x < y ? b : rng() < 0.5 ? a : b;
-  return { vence, texto: `Final: ${nome(a)} ${x}×${y} ${nome(b)}${x === y ? " (pênaltis)" : ""} → ${nome(vence)}` };
+  const d = x === y ? disputaDoSorteio(rng(), forca(a), forca(b)) : null;
+  const vence = x > y ? a : x < y ? b : d.vence === 0 ? a : b;
+  return { vence, texto: `Final: ${nome(a)} ${x}×${y} ${nome(b)}${d ? ` (${d.placar[0]}×${d.placar[1]} nos pênaltis)` : ""} → ${nome(vence)}` };
 }
 // Playoff entre clubes da mesma liga, já em ordem de classificação (melhor primeiro).
 // Se não for potência de 2, os piores jogam antes um jogo único; depois, ida e volta; a final é única, em campo neutro.

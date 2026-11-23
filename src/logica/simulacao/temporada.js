@@ -38,7 +38,9 @@ import { comporLiga, contextoProjecao, ligaNaTemporada, movimentos, pares, proje
 import { classificacao, confronto, esqueletoDe, fecharRodada, garantirRodada, tabelaDe, tabelasDoSplit, titulos } from "./formatos.js";
 import { campeaoCopa, classificarCopas, copasDaLiga, defCopa, esqueletoCopa, fecharRodadaCopa, garantirRodadaCopa, ligasComCopa, nomeCopa, participantesDe, posicoesCopa, resolverFinais } from "./copas.js";
 import { elencoDepois, janelaDaTemporada, proibidosDoPlano } from "./mercadoIA.js";
-import { narrarJogo } from "./narracao.js";
+import { narrarJogo, narrarPenaltis } from "./narracao.js";
+import { disputarPenaltis, ladoDosPenaltis } from "./penaltis.js";
+import { short } from "../formato.js";
 
 export const VERSAO = 5;
 export const N_PREVISAO = 300;
@@ -269,7 +271,9 @@ export function simularDatas(estado, plano, ate) {
     estatComp: Object.fromEntries(Object.entries(estado.estatComp || {}).map(([c, s]) => [c, { ...s }])) };
   const E = esqueleto(estado), mundoT = timesDoMundo(plano, estado);
   const forcaLiga = Object.fromEntries(estado.composicao.clubes.map((k) => [k, mundoT.forca(k)]));
-  const sorteio = sorteioDe(estado), penaltis = (e, i) => rngDe(estado.semente, "penaltis", e, i)();
+  // Disputa por pênaltis com os titulares de cada time (penaltis.js), com a semente da etapa e do confronto
+  const sorteio = sorteioDe(estado);
+  const penaltis = (...semente) => (e, i, a, b) => disputarPenaltis(rngDe(...semente, e, i), ladoDosPenaltis(mundoT.t(a)), ladoDosPenaltis(mundoT.t(b)));
   const mundo = mundoDe(estado, novo.copas, forcaRapida);
   const jogar = (c, r, jogos, semente) => jogos.map(([x, y, neutro], i) => {
     const jogo = jogarPartida(rngDe(...semente, i), mundoT.t(x), mundoT.t(y), !!neutro);
@@ -290,13 +294,13 @@ export function simularDatas(estado, plano, ate) {
       const jogos = garantirRodada(novo, E, r, sorteio);
       if (!jogos) break;
       novo.resultados.push(jogar("liga", r, jogos, [estado.semente, r]));
-      fecharRodada(novo, E, r, forcaLiga, penaltis);
+      fecharRodada(novo, E, r, forcaLiga, penaltis(estado.semente, "penaltis"));
       novo.rodadaAtual = r + 1;
     } else {
       const jogos = garantirRodadaCopa(c, r, mundo);
       if (!jogos) break;
       novo.copas[c].resultados.push(jogar(c, r, jogos, [estado.semente, "copa", c, r]));
-      fecharRodadaCopa(c, r, mundo, (e, i) => rngDe(estado.semente, "penaltis", c, e, i)());
+      fecharRodadaCopa(c, r, mundo, penaltis(estado.semente, "penaltis", c));
     }
     novo.dataAtual = d + 1;
   }
@@ -409,6 +413,37 @@ export function jogoAoVivo(estado, plano, r, i, comp = "liga") {
   const times = [jogo[0], jogo[1]].map((k) => timeDe(plano, k, naLiga(k) ? estado.liga : D.CL[k]?.lg, fora, estado.mercadoIA || null));
   const rng = comp === "liga" ? rngDe(estado.semente, "lances", r, i) : rngDe(estado.semente, "lances", comp, r, i);
   return narrarJogo(rng, jogo, times, (id) => jogadorSim(plano, id), (k) => nomeClube(k));
+}
+// Disputa por pênaltis que decidiu o confronto deste jogo (se ele foi o último do confronto e terminou nos pênaltis), do
+// ponto de vista do jogo: { placar: [casa, fora], cob: [[lado (0 casa), id, 1|0]], vence } ou null
+export function penaltisDoJogo(estado, comp, r, i) {
+  const E = comp === "liga" ? esqueleto(estado) : esqCopa(estado, comp);
+  const e = E.etapas.find((x) => x.inicio <= r && r < x.inicio + x.rodadas);
+  if (!e || (e.tipo !== "mata" && e.tipo !== "ko") || r !== e.inicio + e.rodadas - 1) return null;
+  const ch = comp === "liga" ? estado.chaves?.[e.i] : estado.copas?.[comp]?.chaves?.[e.i];
+  const pen = ch?.pen?.[i], jogo = resultadosDe(estado, comp)[r]?.[i];
+  if (!pen || !jogo) return null;
+  const casaEhA = jogo[0] === ch.pares[i][0];
+  return {
+    placar: casaEhA ? pen.placar : [pen.placar[1], pen.placar[0]],
+    cob: pen.cob.map(([l, id, ok]) => [casaEhA ? l : 1 - l, id, ok]),
+    vence: ch.vence?.[i] || null,
+  };
+}
+// Lance a lance com a disputa por pênaltis no fim (se houve), para o jogo ao vivo
+export function jogoAoVivoCompleto(estado, plano, r, i, comp = "liga") {
+  const narr = jogoAoVivo(estado, plano, r, i, comp);
+  const pen = narr && penaltisDoJogo(estado, comp, r, i);
+  if (!pen) return narr ? { ...narr, pen: null } : null;
+  const jogo = resultadosDe(estado, comp)[r][i];
+  const rng = rngDe(estado.semente, "lances-pen", comp, r, i);
+  const naLiga = (k) => estado.composicao.clubes.includes(k);
+  const fora = idsDoPlano(plano);
+  const times = [jogo[0], jogo[1]].map((k) => timeDe(plano, k, naLiga(k) ? estado.liga : D.CL[k]?.lg, fora, estado.mercadoIA || null));
+  const goleiro = (lado) => { const g = times[lado].onze.find((x) => x.p?.pos === "GOL")?.p; return g ? short(g.n) : "o goleiro"; };
+  const fim = narr.lances.find((x) => x.marco === "fim");
+  const lances = narr.lances.map((x) => (x === fim ? { ...x, txt: `Fim do tempo normal: ${nomeClube(jogo[0])} ${jogo[2]} × ${jogo[3]} ${nomeClube(jogo[1])}. A decisão vai para os pênaltis!` } : x));
+  return { ...narr, lances: [...lances, ...narrarPenaltis(rng, pen, (id) => jogadorSim(plano, id), (k) => nomeClube(k), jogo[0], jogo[1], goleiro)], pen };
 }
 // Só os lances (sem os marcos de começo, intervalo e fim), em ordem
 export const narracao = (estado, plano, r, i, comp = "liga") => (jogoAoVivo(estado, plano, r, i, comp)?.lances || []).filter((x) => x.tipo !== "marco");

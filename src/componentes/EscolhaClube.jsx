@@ -11,6 +11,7 @@ import { CONTINENTES, PAISES } from "../logica/constantes.js";
 import { corDeFundo, norm } from "../logica/formato.js";
 import { dinheiro, calcularDinheiro } from "../logica/dinheiro.js";
 import { elencoAtual, saidas } from "../logica/elenco.js";
+import { nomeDoPlano, numeroDoId, planosDoClube } from "../logica/planos.js";
 import { Escudo, LogoLiga } from "./Imagens.jsx";
 import SeletorMoeda from "./SeletorMoeda.jsx";
 import Rodape from "./Rodape.jsx";
@@ -99,9 +100,11 @@ function useDeslizar(fn) {
 function TelaInicio({ app, cor }) {
   const { db } = app;
   const comValor = D.ALL.filter((p) => p.v > 0 && !p.vEst).length; // só valores reais (sem os estimados)
-  // Planos salvos de clubes reais (os times criados ficam em "Meus times"): o último aberto primeiro, depois em ordem alfabética
-  const planos = Object.values(db.plans).filter((p) => D.CL[p.club] && !D.CL[p.club].criado)
-    .sort((a, b) => (b.club === db.last) - (a.club === db.last) || D.CL[a.club].n.localeCompare(D.CL[b.club].n));
+  // Planos salvos de clubes reais (os times criados ficam em "Meus times"): o último aberto primeiro, depois em ordem
+  // alfabética e, no mesmo clube, Plano 1, Plano 2... ([id, plano]; ver logica/planos.js)
+  const planos = Object.entries(db.plans).filter(([, p]) => p && D.CL[p.club] && !D.CL[p.club].criado)
+    .sort(([ia, a], [ib, b]) => (ib === db.last) - (ia === db.last) || D.CL[a.club].n.localeCompare(D.CL[b.club].n) || numeroDoId(ia) - numeroDoId(ib));
+  const nDoClube = (k) => planos.filter(([, p]) => p.club === k).length;
   return (
     <>
       <h1 className="ini-titulo">Monte o elenco<br />do seu time<br />para 2027</h1>
@@ -134,21 +137,21 @@ function TelaInicio({ app, cor }) {
         <>
           <p className="ini-rotulo">Seus planos</p>
           <div className="ini-planos">
-            {planos.map((p) => {
-              const c = D.CL[p.club];
+            {planos.map(([id, p]) => {
+              const c = D.CL[p.club], comNome = nDoClube(p.club) > 1 || !!p.nome;
               return (
                 // Cartão (abre o plano) e, ao lado, a lixeira (pede confirmação antes de excluir)
-                <div key={p.club} className="ini-plano-linha">
-                  <button className="esc-card ini-plano" onClick={() => app.abrirClube(p.club)}>
+                <div key={id} className="ini-plano-linha">
+                  <button className="esc-card ini-plano" id={"plano-" + id} onClick={() => app.abrirPlano(id)}>
                     <span className="ini-badge"><Escudo k={p.club} z={28} /></span>
                     <span className="ini-plano-txt">
-                      <b>{c.n} {D.LG[c.lg].plan}</b>
+                      <b>{c.n} {D.LG[c.lg].plan}{comNome && <span className="ini-plano-nome"> · {nomeDoPlano(id, p)}</span>}</b>
                       <span>+{p.ins.length} chegam · −{saidas(p).length} saem · <span className="sem-quebra">caixa {dinheiro(calcularDinheiro(p).caixa)}</span></span>
                     </span>
                     <span aria-hidden="true">›</span>
                   </button>
-                  <button className="esc-round ini-excluir" aria-label={`Excluir plano do ${c.n}`} title="Excluir plano"
-                    onClick={() => app.abrirPainel("excluirPlano", { k: p.club })}>
+                  <button className="esc-round ini-excluir" aria-label={`Excluir ${comNome ? nomeDoPlano(id, p) : "plano"} do ${c.n}`} title="Excluir plano"
+                    onClick={() => app.abrirPainel("excluirPlano", { k: id })}>
                     <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3" />
                     </svg>
@@ -272,7 +275,7 @@ function EtapaClube({ app, cor }) {
   const c = clubes[indice], anterior = clubes[(indice - 1 + n) % n], proximo = clubes[(indice + 1) % n];
   const L = D.LG[c.lg];
   const valorTotal = D.ALL.reduce((s, p) => s + (p.club === c.k ? p.v : 0), 0); // com os valores estimados
-  const salvo = db.plans[c.k]; // já existe plano deste clube?
+  const nPlanos = planosDoClube(db, c.k).length; // quantos planos deste clube já existem
   const deslizar = useDeslizar(app.passo);
   // Animação da troca: lembra o clube anterior e para que lado foi (1 = próximo, -1 = anterior, 0 = acabou de abrir).
   // O escudo novo entra por esse lado, o antigo sai pelo outro, e o texto vem logo atrás.
@@ -305,10 +308,15 @@ function EtapaClube({ app, cor }) {
       <div className="esc-acao esc-acoes">
         <button className="esc-round" aria-label="Clube anterior" onClick={() => app.passo(-1)}>‹</button>
         <button className="esc-cta" style={{ color: cor }} onClick={() => app.abrirClube(c.k)}>
-          {salvo ? "Continuar meu plano" : "Planejar " + L.plan}
+          {nPlanos ? "Continuar meu plano" : "Planejar " + L.plan}
         </button>
         <button className="esc-round" aria-label="Próximo clube" onClick={() => app.passo(1)}>›</button>
       </div>
+      {nPlanos > 0 && (
+        <button className="esc-novo-plano" id="novo-plano-clube" onClick={() => app.novoPlanoDoClube(false, c.k)}>
+          + Novo plano do {c.n}{nPlanos > 1 ? ` (você tem ${nPlanos})` : ""}
+        </button>
+      )}
     </div>
   );
 }

@@ -16,7 +16,29 @@ import { norm } from "./formato.js";
 //   D.FORMATOS formato de cada liga na temporada simulada (formatos-ligas.json, campo "ligas") ou null
 //   D.COPAS   copas da temporada simulada (copas.json: { copas, por_liga, fora_nesta_versao }) ou null
 export const D = { DATA: null, CLUBS: [], LEAGUES: [], LG: {}, CL: {}, ALL: [], BYID: {}, APELIDOS: {}, EMP: {}, ESTRANGEIROS: null, ACESSO: null, ZONAS: null,
-  ATUAL: null, ATUAL_DATA: "", FORMATOS: null, COPAS: null, NACS: new Map() };
+  ATUAL: null, ATUAL_DATA: "", FORMATOS: null, COPAS: null, NACS: new Map(), RIVAIS: new Map(), RIVAIS_FALTANDO: [] };
+
+// Rivais (public/rivais.json: { grupos: [["BRA|Flamengo", "BRA|Fluminense", ...], ...] }): cada grupo são clubes rivais
+// entre si. Vira D.RIVAIS = Map(clube → Set de rivais). Nomes que não batem com o data.json ficam em D.RIVAIS_FALTANDO.
+async function carregarRivais() {
+  try {
+    const r = await fetch("rivais.json").then((x) => x.json());
+    return Array.isArray(r?.grupos) ? r.grupos : [];
+  } catch (e) {
+    return [];
+  }
+}
+function montarRivais(grupos) {
+  const porNome = new Map(D.CLUBS.map((c) => [c.lg + "|" + c.n, c.k]));
+  const mapa = new Map(), faltando = [];
+  for (const g of grupos) {
+    const ks = g.map((x) => { const k = porNome.get(x); if (!k) faltando.push(x); return k; }).filter(Boolean);
+    for (const a of ks) for (const b of ks) if (a !== b) { if (!mapa.has(a)) mapa.set(a, new Set()); mapa.get(a).add(b); }
+  }
+  D.RIVAIS = mapa;
+  D.RIVAIS_FALTANDO = faltando;
+}
+export const saoRivais = (a, b) => !!D.RIVAIS?.get(a)?.has(b);
 
 // Dupla nacionalidade (public/nacionalidades.json: { "Nome|AAAA-MM-DD": ["Itália", "Brasil"] }, nome e nascimento iguais
 // aos do data.json). Fica num Map à parte (D.NACS); o data.json não muda. Se falhar ou vier estranho, segue sem ele.
@@ -189,9 +211,9 @@ function montarEmprestimos(E) {
 }
 
 export async function carregarDados() {
-  const [DATA, APELIDOS, ESTIMADOS, EMPRESTIMOS, OVERALL, AJUSTES, ESTRANGEIROS, ACESSO, ZONAS, ATUAL, FORMATOS, COPAS, NACS] = await Promise.all([fetch("data.json").then((r) => r.json()),
+  const [DATA, APELIDOS, ESTIMADOS, EMPRESTIMOS, OVERALL, AJUSTES, ESTRANGEIROS, ACESSO, ZONAS, ATUAL, FORMATOS, COPAS, NACS, RIVAIS] = await Promise.all([fetch("data.json").then((r) => r.json()),
     carregarApelidos(), carregarEstimados(), carregarEmprestimos(), carregarOverall(), carregarAjustesOverall(), carregarRegrasEstrangeiros(),
-    carregarAcesso(), carregarZonas(), carregarLigasDe("temporada-atual.json"), carregarLigasDe("formatos-ligas.json"), carregarCopas(), carregarNacionalidades()]);
+    carregarAcesso(), carregarZonas(), carregarLigasDe("temporada-atual.json"), carregarLigasDe("formatos-ligas.json"), carregarCopas(), carregarNacionalidades(), carregarRivais()]);
   Object.assign(D, { DATA, APELIDOS, ESTRANGEIROS, ACESSO, ZONAS, NACS, LG: {}, CL: {}, ALL: [], BYID: {}, EMP: {} }); // começa do zero
   D.ATUAL = ATUAL?.ligas || null;
   D.ATUAL_DATA = ATUAL?.atualizado || "";
@@ -234,4 +256,5 @@ export async function carregarDados() {
     });
   });
   montarEmprestimos(EMPRESTIMOS || {});
+  montarRivais(RIVAIS || []);
 }

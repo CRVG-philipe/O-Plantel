@@ -15,6 +15,7 @@ import { D } from "../dados.js";
 import { gerarCalendario } from "./calendario.js";
 import { embaralhar, rngDe } from "./aleatorio.js";
 import { novaLinha, registrarJogo, ordenarTabela } from "./tabela.js";
+import { disputaDoSorteio } from "./penaltis.js";
 
 const PADRAO = { fases: [{ tipo: "pontos", turnos: 2 }], campeao: "pontos", confirmado: true };
 export const formatoDa = (lg) => D.FORMATOS?.[lg] || PADRAO;
@@ -346,16 +347,18 @@ export function garantirRodada(st, E, r, sorteio) {
 }
 
 // Depois da última rodada de uma fase de mata-mata: guarda quem passou (pênaltis decididos aqui, para não mudarem depois)
-export function fecharRodada(st, E, r, forca, sorte) {
+// penaltis(e, i, a, b) = a disputa ({ vence: 0 (a) | 1 (b), placar, cob }, ver penaltis.js) ou um número entre 0 e 1
+// (aí a disputa é feita só com as forças, com esse número como semente). A disputa fica em ch.pen[i] = { placar: [a, b], cob }.
+export function fecharRodada(st, E, r, forca, penaltis) {
   const e = E.etapas.find((x) => x.inicio <= r && r < x.inicio + x.rodadas);
   if (!e || e.tipo !== "mata" || r !== e.inicio + e.rodadas - 1) return;
   const ch = st.chaves[e.i];
-  ch.vence = ch.pares.map(([a, b], i) => vencedorPar(st, E, e, i, a, b, forca, sorte));
+  ch.vence = ch.pares.map(([a, b], i) => vencedorPar(st, E, e, i, a, b, forca, penaltis, ch));
 }
 
-// Quem passa num confronto: agregado; empate = melhor campanha (ida e volta com "vantagem", fora da final) ou pênaltis
-// (50% + 2% por ponto de força de diferença, entre 35% e 65%)
-function vencedorPar(st, E, e, i, a, b, forca, sorte) {
+// Quem passa num confronto: agregado; empate = melhor campanha (ida e volta com "vantagem", fora da final) ou disputa
+// por pênaltis (penaltis.js)
+function vencedorPar(st, E, e, i, a, b, forca, penaltis, ch) {
   let ga = 0, gb = 0;
   for (let r = e.inicio; r < e.inicio + e.rodadas; r++) {
     const j = st.resultados[r]?.[i];
@@ -365,8 +368,10 @@ function vencedorPar(st, E, e, i, a, b, forca, sorte) {
   if (ga !== gb) return ga > gb ? a : b;
   const mg = E.mata[e.mg];
   if (mg.cfg.vantagem === "melhor_campanha" && e.jogos === "ida_volta" && !e.final) return a;
-  const p = Math.min(0.65, Math.max(0.35, 0.5 + 0.02 * ((forca[a] ?? 70) - (forca[b] ?? 70))));
-  return sorte(e.i, i) < p ? a : b;
+  const x = penaltis(e.i, i, a, b);
+  const d = typeof x === "number" ? disputaDoSorteio(x, forca[a] ?? 70, forca[b] ?? 70) : x;
+  (ch.pen ??= {})[i] = { placar: d.placar, cob: d.cob };
+  return d.vence === 0 ? a : b;
 }
 
 // Placar agregado de um confronto, para a tela: { a, b, jogos: [[gc, gf]...], ga, gb, vence, penaltis }
@@ -384,7 +389,7 @@ export function confronto(st, E, e, i) {
     ga += x; gb += y; jogos.push([j[0], j[2], j[3]]);
   }
   const vence = ch.vence?.[i] || null;
-  return { a, b, ga, gb, jogos, jogados, vence, penaltis: !!vence && ga === gb && !(E.mata[e.mg].cfg.vantagem === "melhor_campanha" && e.jogos === "ida_volta" && !e.final) };
+  return { a, b, ga, gb, jogos, jogados, vence, penaltis: !!vence && ga === gb && !(E.mata[e.mg].cfg.vantagem === "melhor_campanha" && e.jogos === "ida_volta" && !e.final), pen: ch.pen?.[i] || null };
 }
 
 // ---------- Campeões ----------

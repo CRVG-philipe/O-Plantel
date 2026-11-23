@@ -96,6 +96,23 @@ export const FRASES = {
     "Fim de papo! O árbitro apita o fim.",
     "Apito final do árbitro!",
   ],
+  // Disputa por pênaltis
+  penGol: [
+    "{a} bate no canto e converte.",
+    "{a} desloca {g} e marca.",
+    "{a} cobra forte, no alto: gol.",
+    "{a} bate com categoria, rasteiro, e converte.",
+    "{a} espera o goleiro e toca no outro canto.",
+    "{a} enche o pé e a bola estufa a rede.",
+  ],
+  penPerde: [
+    "{g} defende a cobrança de {a}!",
+    "{a} bate para fora!",
+    "{a} acerta a trave!",
+    "{a} isola a cobrança por cima do gol!",
+    "{g} adivinha o canto e pega a cobrança de {a}!",
+    "{a} bate fraco e {g} segura!",
+  ],
   // Gols
   cabeca: [
     "Escanteio na área e {a} sobe mais alto para cabecear no canto!",
@@ -241,6 +258,22 @@ export function narrarJogo(rng, jogo, times, jogador, nomeTime) {
   const posseCasa = Math.round(Math.min(68, Math.max(32, 50 + 1.8 * d + 2 + (rng() - 0.5) * 6)));
   const base = { posse: [posseCasa, 100 - posseCasa], faltas: [6 + Math.floor(rng() * 7), 6 + Math.floor(rng() * 7)] };
   return { lances, acrescimos, base };
+}
+
+// Disputa por pênaltis para o jogo ao vivo: pen = { placar: [casa, fora], cob: [[lado, id, 1|0]] } (já do ponto de vista
+// do jogo: lado 0 = mandante). Cada cobrança vira um lance { tipo: "penalti", ok, lado, t } depois do fim do tempo normal,
+// mais um marco final. goleiro(lado) = nome do goleiro do lado (o que defende a cobrança do outro lado).
+export function narrarPenaltis(rng, pen, jogador, nomeTime, casa, fora, goleiro) {
+  const nomeP = (id) => { const p = id && jogador(id); return p ? short(p.n) : "O batedor"; };
+  const parcial = [0, 0];
+  const lances = pen.cob.map(([lado, id, ok], k) => {
+    parcial[lado] += ok;
+    const txt = frase(rng, ok ? "penGol" : "penPerde", { a: nomeP(id), g: goleiro(1 - lado) });
+    return { min: 90, acr: 0, t: 91 + (k + 1) / 100, tipo: "penalti", lado, autor: id, ok: !!ok, parcial: [...parcial], txt, n: 1000 + k };
+  });
+  const [x, y] = pen.placar, vence = x > y ? casa : fora;
+  lances.push({ min: 90, acr: 0, t: 91 + (pen.cob.length + 1) / 100, tipo: "marco", marco: "penaltis", txt: `${nomeTime(vence)} vence nos pênaltis por ${Math.max(x, y)} a ${Math.min(x, y)}!`, n: 1999 });
+  return lances;
 }
 
 // Estatísticas até o instante t (inclusive), contadas a partir dos lances: { posse, final, alvo, esc, faltas, cartoes }

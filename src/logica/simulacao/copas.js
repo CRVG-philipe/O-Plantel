@@ -15,6 +15,7 @@ import { roundRobin } from "./formatos.js";
 import { novaLinha, registrarJogo, ordenarTabela } from "./tabela.js";
 import { forcaRapida } from "./escalar.js";
 import { sortearPlacar } from "./motor.js";
+import { disputaDoSorteio } from "./penaltis.js";
 
 export const defCopa = (id) => D.COPAS?.copas?.[id] || null;
 export const nomeCopa = (id) => defCopa(id)?.nome || id;
@@ -22,7 +23,6 @@ export const copasDaLiga = (lg) => (D.COPAS?.por_liga?.[lg] || []).filter((id) =
 export const ligasComCopa = (id) => Object.entries(D.COPAS?.por_liga || {}).filter(([, l]) => l.includes(id)).map(([lg]) => lg);
 const NOME_FASE = { 2: "Final", 4: "Semifinal", 8: "Quartas", 16: "Oitavas", 32: "16 avos", 64: "32 avos", 128: "64 avos" };
 const pot2 = (x) => 2 ** Math.floor(Math.log2(x));
-const limitar = (p) => Math.min(0.65, Math.max(0.35, p));
 // País de cada clube (em cache: é chamado milhões de vezes nos sorteios da previsão)
 const cachePais = new Map();
 const paisDe = (k) => {
@@ -44,9 +44,9 @@ export function resolverFinais(semente, escolhas = {}, forca = forcaRapida) {
     if (esc === a || esc === b) { out[p.id] = { modo: "escolher", vence: esc, vice: esc === a ? b : a }; continue; }
     const rng = rngDe(semente, "final2026", p.id);
     const [x, y] = sortearPlacar(rng, forca(a), forca(b), true);
-    let vence = x > y ? a : y > x ? b : null;
-    const pen = !vence;
-    if (pen) vence = rng() < limitar(0.5 + 0.02 * (forca(a) - forca(b))) ? a : b;
+    let vence = x > y ? a : y > x ? b : null, pen = null;
+    if (!vence) { const d = disputaDoSorteio(rng(), forca(a), forca(b)); vence = d.vence === 0 ? a : b; pen = d.placar; }
+    // pen = placar dos pênaltis [a, b] (ou null); saves antigos têm true/false
     out[p.id] = { modo: "simular", vence, vice: vence === a ? b : a, placar: [x, y], pen };
   }
   return out;
@@ -477,8 +477,9 @@ export function garantirRodadaCopa(id, r, mundo) {
   return c.agenda[r]?.jogos || null;
 }
 
-// Depois da última rodada de uma fase de mata-mata: quem passou (agregado; empate = pênaltis)
-export function fecharRodadaCopa(id, r, mundo, sorte) {
+// Depois da última rodada de uma fase de mata-mata: quem passou (agregado; empate = disputa por pênaltis, guardada em
+// ch.pen[i] = { placar: [a, b], cob }). penaltis(e, i, a, b) = a disputa ou um número (ver fecharRodada em formatos.js).
+export function fecharRodadaCopa(id, r, mundo, penaltis) {
   const c = mundo.copas[id], E = mundo.esq[id];
   const e = E.etapas.find((x) => x.inicio <= r && r < x.inicio + x.rodadas);
   if (!e || e.tipo !== "ko" || r !== e.inicio + e.rodadas - 1) return;
@@ -487,7 +488,10 @@ export function fecharRodadaCopa(id, r, mundo, sorte) {
     let ga = 0, gb = 0;
     for (let x = e.inicio; x <= r; x++) { const j = c.resultados[x]?.[i]; if (!j) return null; if (j[0] === a) { ga += j[2]; gb += j[3]; } else { ga += j[3]; gb += j[2]; } }
     if (ga !== gb) return ga > gb ? a : b;
-    return sorte(e.i, i) < limitar(0.5 + 0.02 * (mundo.forca(a) - mundo.forca(b))) ? a : b;
+    const x0 = penaltis(e.i, i, a, b);
+    const d = typeof x0 === "number" ? disputaDoSorteio(x0, mundo.forca(a), mundo.forca(b)) : x0;
+    (ch.pen ??= {})[i] = { placar: d.placar, cob: d.cob };
+    return d.vence === 0 ? a : b;
   });
 }
 
@@ -506,7 +510,7 @@ export function confrontoCopa(c, e, j) {
     ga += p; gb += q; jogos.push([x[0], x[2], x[3]]);
   }
   const vence = ch.vence?.[j] || null;
-  return { a, b, ga, gb, jogos, jogados, vence, penaltis: !!vence && ga === gb };
+  return { a, b, ga, gb, jogos, jogados, vence, penaltis: !!vence && ga === gb, pen: ch.pen?.[j] || null };
 }
 export const campeaoCopa = (c, E) => { const e = E.etapas[E.etapas.length - 1]; const ch = e && c.chaves[e.i]; return ch?.vence?.[0] || (ch && !ch.pares.length ? ch.passam[0] : null) || null; };
 

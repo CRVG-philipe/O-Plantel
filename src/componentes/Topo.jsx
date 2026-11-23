@@ -8,6 +8,7 @@ import { Escudo } from "./Imagens.jsx";
 import SeletorMoeda from "./SeletorMoeda.jsx";
 import { rotuloLiga } from "../logica/simulacao/composicao.js";
 import BotaoTema from "./BotaoTema.jsx";
+import { nomeDoPlano, planosDoClube } from "../logica/planos.js";
 
 const ABAS = [["elenco", "Elenco"], ["mercado", "Mercado"], ["time", "Time"], ["resumo", "Resumo"]];
 
@@ -42,7 +43,11 @@ export default function Topo({ app }) {
             {plano && (
               <button className="clubBtn" id="chg" aria-label="Trocar clube" onClick={() => app.abrirPainel("clube")}>
                 <Escudo k={plano.club} />
-                <span className="clubNome" style={{ maxWidth: "40vw", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.n}</span>
+                <span className="clubNome" style={{ maxWidth: "40vw", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {c.n}
+                  {/* Com mais de um plano do clube (ou um nome dado), mostra qual está aberto */}
+                  {(planosDoClube(app.db, plano.club).length > 1 || plano.nome) && <small className="plano-aberto" id="plano-aberto">{nomeDoPlano(app.planoId, plano)}</small>}
+                </span>
               </button>
             )}
           </span>
