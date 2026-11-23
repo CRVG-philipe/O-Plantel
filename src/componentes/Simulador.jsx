@@ -1,12 +1,12 @@
 // Página do simulador da temporada (botão "Simular temporada", no topo do plano). Lógica em src/logica/simulacao/;
 // o estado fica em "plantel:sim". Versão 2 (etapa 1): temporada atual real e formatos especiais das ligas (split, playoffs,
-// Apertura/Clausura...). Etapa 2: copas. Etapa 3: mercado da IA (aba Mercado, em MercadoIA.jsx). Sem lesões ou suspensões.
+// Apertura/Clausura...). Etapa 2: copas. Etapa 3: janela da IA (card "Janela da IA" no Resumo antes da temporada e
+// selo "Novo" no elenco dos clubes, que abre ao tocar num clube da tabela). Sem lesões ou suspensões.
 //   Resumo        antes da temporada (previsão, quem chega e quem sai, vagas em aberto), durante (campanha e próximo jogo)
 //                 e no fim (campeão, sua campanha, seleção da temporada no campinho, faixas)
 //   Tabela        seletor de fase (pontos, split, grupos, torneios, anual) com as faixas; mata-mata como chaveamento
 //   Jogos         placares de cada rodada; tocar num jogo mostra os gols
 //   Estatísticas  artilharia, assistências, melhores notas e os números do seu clube
-//   Mercado       a janela de transferências dos clubes da IA, as propostas pelos seus jogadores e os interruptores
 //   Ao vivo       o seu jogo minuto a minuto (gols, substituições e lances), com velocidade 1x a 8x
 import { useEffect, useMemo, useState } from "react";
 import { D } from "../logica/dados.js";
@@ -14,18 +14,22 @@ import { FORMS, corDoSetor } from "../logica/constantes.js";
 import { rotuloVaga } from "../logica/compatibilidade.js";
 import { short } from "../logica/formato.js";
 import { Escudo, LogoLiga } from "./Imagens.jsx";
-import { Avatar, Pos } from "./Jogador.jsx";
+import { Avatar, Ovr, Pos } from "./Jogador.jsx";
+import { dinheiro } from "../logica/dinheiro.js";
+import { elencoAtual } from "../logica/elenco.js";
+import { novaSemente } from "../logica/simulacao/aleatorio.js";
+import { chegaram, difsDoMercado, elencoDepois, listaTransferencias } from "../logica/simulacao/mercadoIA.js";
+import { calcularResto } from "../logica/simulacao/janelaResto.js";
 import { Cabecalho } from "./Painel.jsx";
 import Rodape from "./Rodape.jsx";
-import MercadoIA from "./MercadoIA.jsx";
 import { idPar, opcoesDaPendencia, pares, rotuloLiga, temporadaAtual, vagasDaPendencia, zonasDaLiga } from "../logica/simulacao/composicao.js";
 import { formatoDa } from "../logica/simulacao/formatos.js";
 import { atualDa, dataAtual } from "../logica/simulacao/atual.js";
 import { campanhaCopa, comoEntra, defCopa, finaisPendentes, nomeCopa, participantesDe, vistasCopa } from "../logica/simulacao/copas.js";
-import { escalarClube } from "../logica/simulacao/escalar.js";
+import { escalarClube, idsDoPlano } from "../logica/simulacao/escalar.js";
 import {
   VELOCIDADES, assinaturaDoPlano, calcularPrevisaoCopas, campeaoDe, copasDe, criarEstado, datasDe, esqCopa, jogadorSim, jogarProximoJogo,
-  jogosDaRodada, jogosDaRodadaCopa, lerSim, lerVelocidade, linhasEstatisticas, minimoJogos, narracao, nomeClube, nomeDaData, nomeDaRodada,
+  jogosDaRodada, jogosDaRodadaCopa, juntarResto, lerSim, pedidoDoResto, timeNaTemporada, lerVelocidade, linhasEstatisticas, minimoJogos, narracao, nomeClube, nomeDaData, nomeDaRodada,
   nomeDaRodadaCopa, proximoJogo, resultadosDe, salvarSim, salvarVelocidade, selecaoDaTemporada, simularAte, simularDatas, tabelaAtual,
   titulosDe, totalDatas, totalRodadas, vistaAtual, vistasTabela,
 } from "../logica/simulacao/temporada.js";
@@ -58,7 +62,7 @@ function carregar(plano) {
   return novo;
 }
 
-const ABAS = [["resumo", "Resumo"], ["tabela", "Tabela"], ["jogos", "Jogos"], ["estat", "Estatísticas", "Números"], ["mercado", "Mercado"]];
+const ABAS = [["resumo", "Resumo"], ["tabela", "Tabela"], ["jogos", "Jogos"], ["estat", "Estatísticas"]];
 // Nome curto de uma copa para botões: sem o ano ("Copa Libertadores 2027" → "Libertadores")
 export const copaCurta = (id) => nomeCopa(id).replace(/\s+\d{4}(\/\d{2})?$/, "").replace(/^Copa (?!do |del |de )/, "");
 // Texto do botão de jogar: "Jogar rodada 15", "Jogar Libertadores"
@@ -86,9 +90,11 @@ export default function Simulador({ app }) {
   const ids = copasDe(estado);
 
   const guardar = (e) => { salvarSim(k, e); setEstado(e); };
-  // (o mercado da IA guarda os interruptores, a semente própria e as respostas às propostas)
+  // Para resultados que chegam depois (previsão das copas, janela do resto do mundo): aplica sobre o estado mais novo
+  const atualizar = (fn) => setEstado((e) => { const n = fn(e); if (n !== e) salvarSim(k, n); return n; });
+  // (a janela da IA guarda o interruptor e a semente própria, do "Refazer janela")
   const criar = (mudar = {}) => criarEstado(plano, { semente: estado.semente, escolhas: estado.escolhas, substitui: estado.substitui, escolhasFinais: estado.escolhasFinais || {}, semPrevisaoCopas: true,
-    mercadoOpcoes: estado.mercadoOpcoes, mercadoSemente: estado.mercadoSemente ?? null, respostasMercado: estado.respostasMercado || {}, ...mudar });
+    mercadoAtivo: estado.mercadoAtivo !== false, mercadoSemente: estado.mercadoSemente ?? null, ...mudar });
   // Refaz antes de começar, com a mesma semente (as vagas e a previsão só mudam pelo que foi mexido)
   const refazer = (mudar = {}) => guardar(criar(mudar));
   const ir = (v) => { setVista(v); setAoVivo(null); window.scrollTo(0, 0); };
@@ -115,9 +121,22 @@ export default function Simulador({ app }) {
   // Previsão das copas: calculada logo depois de a tela aparecer (é a parte mais demorada)
   useEffect(() => {
     if (estado.previsaoCopas || !ids.length) return;
-    const t = setTimeout(() => guardar({ ...estado, previsaoCopas: calcularPrevisaoCopas(estado, plano) }), 30);
+    const t = setTimeout(() => {
+      const p = calcularPrevisaoCopas(estado, plano), copas = estado.copas;
+      atualizar((e) => (e.copas === copas && !e.previsaoCopas ? { ...e, previsaoCopas: p } : e));
+    }, 30);
     return () => clearTimeout(t);
   }, [estado]); // eslint-disable-line
+  // Janela da IA, fase 2 (o resto do mundo): no Web Worker, logo depois de a tela abrir
+  useEffect(() => {
+    if (!estado.mercadoIA || estado.mercadoIA.resto) return;
+    let vivo = true;
+    const t = setTimeout(() => {
+      const pedido = pedidoDoResto(estado, plano);
+      calcularResto(pedido).then((novas) => { if (vivo) atualizar((e) => juntarResto(e, pedido.transf, novas)); });
+    }, 60);
+    return () => { vivo = false; clearTimeout(t); };
+  }, [estado.mercadoIA]); // eslint-disable-line
 
   const mudou = dataAt > 0 && estado.assinatura !== assinatura;
   const pos = tabela.findIndex((l) => l.k === k) + 1;
@@ -161,8 +180,7 @@ export default function Simulador({ app }) {
           {aoVivo === null && (
             <div className="tabs simp-abas" role="tablist" style={{ "--i": indice, "--n": ABAS.length }}>
               <span className="ind" aria-hidden="true"></span>
-              {/* no celular, "Estatísticas" não cabe com 5 abas: vira "Números" */}
-              {ABAS.map(([v, nome, curto]) => <button key={v} role="tab" id={"sv-" + v} aria-selected={vista === v} onClick={() => ir(v)}>{curto ? <><span className="so-largo">{nome}</span><span className="so-celular">{curto}</span></> : nome}</button>)}
+              {ABAS.map(([v, nome]) => <button key={v} role="tab" id={"sv-" + v} aria-selected={vista === v} onClick={() => ir(v)}>{nome}</button>)}
             </div>
           )}
         </div>
@@ -184,13 +202,12 @@ export default function Simulador({ app }) {
                 </span>
               </div>
             )}
-            {vista === "resumo" && (dataAt === 0 ? <Antes estado={estado} k={k} refazer={refazer} app={app} irMercado={() => ir("mercado")} />
+            {vista === "resumo" && (dataAt === 0 ? <Antes estado={estado} k={k} refazer={refazer} app={app} />
               : fim ? <Fim estado={estado} tabela={tabela} k={k} plano={plano} />
                 : <Andamento estado={estado} tabela={tabela} k={k} total={total} plano={plano} jogarAoVivo={jogarAoVivo} verJogos={() => ir("jogos")} />)}
-            {vista === "tabela" && <><Comps /><Tabela key={compTab} estado={estado} k={k} comp={compTab} /></>}
+            {vista === "tabela" && <><Comps /><Tabela key={compTab} estado={estado} k={k} comp={compTab} onClube={(x) => app.abrirPainel("simElenco", { estado, x })} /></>}
             {vista === "jogos" && <><Comps /><Jogos key={compTab} estado={estado} total={total} k={k} plano={plano} jogarAoVivo={jogarAoVivo} comp={compTab} /></>}
             {vista === "estat" && <><Comps comTotal /><Estatisticas estado={estado} k={k} plano={plano} comp={comp} /></>}
-            {vista === "mercado" && <MercadoIA estado={estado} k={k} plano={plano} app={app} refazer={refazer} atualizar={(fn) => guardar(fn(estado))} aberto={dataAt === 0} />}
           </>
         )}
       </main>
@@ -267,7 +284,7 @@ const textoMov = (x, entra) => {
 };
 
 // ---------- Resumo: antes da temporada ----------
-function Antes({ estado, k, refazer, app, irMercado }) {
+function Antes({ estado, k, refazer, app }) {
   const { composicao: comp, previsao, liga } = estado;
   const meu = previsao[k];
   const temQueda = Object.values(previsao).some((x) => x.queda > 0), temAcesso = Object.values(previsao).some((x) => x.acesso > 0);
@@ -318,7 +335,7 @@ function Antes({ estado, k, refazer, app, irMercado }) {
 
       {!!D.CL[k]?.criado && <Substituto estado={estado} k={k} refazer={refazer} />}
 
-      <ResumoMercado estado={estado} plano={app.plano} irMercado={irMercado} />
+      <JanelaIA estado={estado} k={k} refazer={refazer} app={app} />
 
       <section className="sec" id="sim-composicao">
         <h2><span>Quem chega e quem sai</span><span>{comp.clubes.length} clubes</span></h2>
@@ -377,23 +394,115 @@ function Antes({ estado, k, refazer, app, irMercado }) {
   );
 }
 
-// Mercado da IA no Resumo (antes da temporada): o resumo da janela, as propostas e quem pode se aposentar
-function ResumoMercado({ estado, plano, irMercado }) {
+// Janela da IA (Resumo antes da temporada): o interruptor, as 5 maiores contratações e "Ver todas" (lista completa com
+// filtro por liga; os clubes da sua liga ficam destacados)
+const POR_PAGINA_JANELA = 50;
+function JanelaIA({ estado, k, refazer, app }) {
   const m = estado.mercadoIA;
-  const props = (m?.propostas || []).filter((x) => D.BYID[x.id] && !(plano.st || {})[x.id]).length;
-  const compras = m ? m.transf.filter((t) => t[4] === "c" && estado.composicao.clubes.includes(t[2])).length : 0;
+  const lista = useMemo(() => listaTransferencias(m), [m]);
+  const rivais = useMemo(() => new Set(estado.composicao.clubes), [estado.composicao]);
+  const [todas, setTodas] = useState(false);
+  const [liga, setLiga] = useState("");
+  const [n, setN] = useState(POR_PAGINA_JANELA);
+  // Liga do clube na temporada simulada: a sua liga para os clubes dela; quem sai dela (cai ou sobe) vai para a liga nova
+  const saem = useMemo(() => Object.fromEntries((estado.composicao.saem || []).map((s) => [s.k, s.para])), [estado.composicao]);
+  const ligaDe = (x) => (rivais.has(x) ? estado.liga : x in saem ? saem[x] : D.CL[x]?.lg);
+  const ligas = useMemo(() => [...new Set(lista.flatMap((t) => [ligaDe(t.de), ligaDe(t.para)]))].filter((lg) => D.LG[lg])
+    .sort((a, b) => (a === estado.liga ? -1 : b === estado.liga ? 1 : D.LG[a].n.localeCompare(D.LG[b].n))), [lista]); // eslint-disable-line
+  const filtrada = liga ? lista.filter((t) => ligaDe(t.de) === liga || ligaDe(t.para) === liga) : lista;
+  const ligar = () => refazer({ mercadoAtivo: !m });
+  const refazerJanela = () => { refazer({ mercadoSemente: novaSemente() }); app.aviso("Janela da IA sorteada de novo"); };
   return (
-    <>
-      {m?.avisos?.map((t) => <p className="sim-aviso sim-mi-aviso" key={t}>{t}</p>)}
-      <button className="card sim-atual-bt" id="sim-ver-mercado" onClick={irMercado}>
-        <span><b>Mercado da IA{props ? ` · ${props} ${props > 1 ? "propostas" : "proposta"} para você` : ""}</b>
-          <small>{m ? `Os rivais fizeram ${compras} ${compras === 1 ? "compra" : "compras"} antes da temporada. A previsão já conta com os elencos novos.` : "Desligado: os outros clubes jogam com o elenco de hoje."}</small></span>
-        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M9 5l7 7-7 7" /></svg>
-      </button>
-    </>
+    <section className="sec" id="sim-janela">
+      <h2><span>Janela da IA</span><span>{m ? `${lista.length} contratações${m.resto ? "" : " · calculando o resto do mundo…"}` : "desligada"}</span></h2>
+      <div className="card sim-janela">
+        <button className="sim-int" id="janela-ativa" role="switch" aria-checked={!!m} onClick={ligar}>
+          <span className="sim-int-txt"><b>Clubes da IA contratam</b>
+            <small>{m ? "Antes da 1ª rodada, cada clube faz de 0 a 4 contratações. A previsão e os jogos já usam os elencos novos." : "Desligado: os outros clubes jogam com o elenco de hoje."}</small></span>
+          <span className="sim-int-bola" aria-hidden="true"><i></i></span>
+        </button>
+        {m && (
+          <>
+            <div className="sim-janela-top" id="janela-top">
+              {lista.length ? lista.slice(0, 5).map((t) => <LinhaJanela key={t.id} t={t} k={k} rivais={rivais} />)
+                : <div className="empty" style={{ padding: 16 }}>Nenhuma contratação.</div>}
+            </div>
+            <div className="sim-janela-bts">
+              <button className="btn" id="janela-todas" aria-expanded={todas} onClick={() => setTodas(!todas)}>{todas ? "Mostrar menos" : `Ver todas (${lista.length})`}</button>
+              <button className="btn" id="janela-refazer" onClick={refazerJanela}>Refazer janela</button>
+            </div>
+          </>
+        )}
+      </div>
+      {m && todas && (
+        <div className="sim-janela-todas" id="janela-lista">
+          <select id="janela-liga" aria-label="Liga" value={liga} onChange={(e) => { setLiga(e.target.value); setN(POR_PAGINA_JANELA); }}>
+            <option value="">Todas as ligas ({lista.length})</option>
+            {ligas.map((lg) => <option key={lg} value={lg}>{D.LG[lg].n}{lg === estado.liga ? " (sua liga)" : ""}</option>)}
+          </select>
+          <div className="card">
+            {filtrada.length ? filtrada.slice(0, n).map((t) => <LinhaJanela key={t.id} t={t} k={k} rivais={rivais} />)
+              : <div className="empty" style={{ padding: 16 }}>Nenhuma contratação nesta liga.</div>}
+          </div>
+          {filtrada.length > n && <button className="btn sim-janela-mais" id="janela-mais" onClick={() => setN(n + POR_PAGINA_JANELA)}>Ver mais ({filtrada.length - n})</button>}
+          <p className="note sim-leg">Destacados: clubes da sua liga. Preço = valor de mercado. Toque num clube na Tabela para ver o elenco dele, com o selo "Novo" em quem chegou.</p>
+        </div>
+      )}
+    </section>
   );
 }
 
+function LinhaJanela({ t, k, rivais }) {
+  const destaque = rivais.has(t.de) || rivais.has(t.para);
+  return (
+    <div className={"sim-janela-linha" + (destaque ? " sim-janela-rival" : "") + (t.de === k || t.para === k ? " meu" : "")}>
+      <Avatar p={t.p} z={36} />
+      <span className="sim-janela-jog">
+        <b className="sim-nome">{short(t.p.n)}</b>
+        <span className="sim-janela-rota">
+          <Escudo k={t.de} z={16} /><span className="sim-nome">{nomeClube(t.de)}</span>
+          <span className="sim-janela-seta" aria-hidden="true">→</span>
+          <Escudo k={t.para} z={16} /><span className="sim-nome">{nomeClube(t.para)}</span>
+        </span>
+      </span>
+      <span className="sim-janela-valor"><b className="num">{dinheiro(t.valor)}</b><span className="sim-janela-sub"><Pos pos={t.p.pos} /><Ovr p={t.p} /></span></span>
+    </div>
+  );
+}
+
+// Elenco de um clube na temporada simulada (tocar no clube na Tabela): titulares, banco e o resto, com o selo "Novo"
+// em quem chegou na janela da IA e a lista de quem saiu
+export function PainelElencoSim({ app, estado, x }) {
+  const plano = app.plano, m = estado.mercadoIA;
+  const time = useMemo(() => timeNaTemporada(estado, plano, x), [estado, plano, x]);
+  const novos = chegaram(x, m), saiu = [...(difsDoMercado(m)[x]?.s || [])].map((id) => D.BYID[id]).filter(Boolean);
+  const fora = x === plano.club ? new Set() : idsDoPlano(plano);
+  const todos = x === plano.club ? elencoAtual(plano).filter(Boolean) : elencoDepois(x, m).filter((p) => !fora.has(p.id));
+  const usados = new Set([...time.onze.map((s) => s.p?.id), ...time.banco.map((p) => p.id)]);
+  const resto = todos.filter((p) => !usados.has(p.id)).sort((a, b) => (b.ovr || 0) - (a.ovr || 0));
+  const Linha = ({ p, vaga }) => (
+    <div className="sim-elenco-linha">
+      <Avatar p={p} z={30} />
+      <span className="sim-nome sim-elenco-nome">{short(p.n)}</span>
+      {novos.has(p.id) && <span className="sim-selo sim-novo" title={`Chegou do ${nomeClube(p.club)} na janela da IA`}>Novo</span>}
+      {vaga && rotuloVaga(vaga) !== p.pos && <span className="mute sim-elenco-vaga" title="Vaga no time">{rotuloVaga(vaga)}</span>}
+      <Pos pos={p.pos} /><Ovr p={p} />
+    </div>
+  );
+  return (
+    <>
+      <Cabecalho titulo={nomeClube(x)} sub={`${time.form} · força ${dec(time.forca)} · ${todos.length} jogadores${novos.size ? ` · ${novos.size} ${novos.size > 1 ? "chegaram" : "chegou"}` : ""}`} onFechar={app.fecharPainel} />
+      <div className="sim-elenco" id="sim-elenco">
+        <span className="sim-rot">Titulares</span>
+        {time.onze.map((s, i) => (s.p ? <Linha key={i} p={s.p} vaga={s.vaga} /> : <div className="sim-elenco-linha mute" key={i}>{rotuloVaga(s.vaga)} vazia</div>))}
+        <span className="sim-rot">Banco</span>
+        {time.banco.map((p) => <Linha key={p.id} p={p} />)}
+        {resto.length > 0 && <><span className="sim-rot">Fora dos relacionados</span>{resto.map((p) => <Linha key={p.id} p={p} />)}</>}
+        {saiu.length > 0 && <p className="note sim-elenco-saiu">Saíram na janela: {saiu.map((p) => `${short(p.n)} (${nomeClube(m.transf.find((t) => t[0] === p.id)?.[1])})`).join(", ")}</p>}
+      </div>
+    </>
+  );
+}
 // Participantes de cada copa, separados por onde entram
 function gruposDeParticipantes(id, p) {
   if (id === "LIB") return [["Fase de grupos", p.grupos], ["Pré-Libertadores", p.pre]];
@@ -717,7 +826,7 @@ function Fim({ estado, tabela, k, plano }) {
 // ---------- Tabela ----------
 // Seletor de fase (Fase de pontos | Split | Playoffs, ou Apertura | Clausura | Anual...) e, em cada fase,
 // as tabelas (com as faixas onde valem) e o chaveamento dos mata-matas.
-function Tabela({ estado, k, comp = "liga" }) {
+function Tabela({ estado, k, comp = "liga", onClube }) {
   // Liga: as fases do formato. Copa: grupos ou fase de liga e os chaveamentos (pré, mata-mata...).
   const vistas = useMemo(() => (comp === "liga" ? vistasTabela(estado) : vistasCopa(comp, estado.copas[comp], esqCopa(estado, comp))), [estado, comp]);
   const [id, setId] = useState(() => {
@@ -738,7 +847,7 @@ function Tabela({ estado, k, comp = "liga" }) {
         </div>
       )}
       {v.blocos.map((b, i) => (
-        b.tipo === "tabela" ? <TabelaBloco key={i} b={b} k={k} primeira={i === 0} />
+        b.tipo === "tabela" ? <TabelaBloco key={i} b={b} k={k} primeira={i === 0} onClube={onClube} />
           : b.tipo === "chave" ? <Chave key={i} b={b} k={k} />
             : <div className="card" key={i}><div className="empty" style={{ padding: 16 }}>{b.texto}</div></div>
       ))}
@@ -747,7 +856,8 @@ function Tabela({ estado, k, comp = "liga" }) {
   );
 }
 
-function TabelaBloco({ b, k, primeira }) {
+// Tocar no clube abre o elenco dele na temporada (com o selo "Novo" em quem chegou na janela da IA)
+function TabelaBloco({ b, k, primeira, onClube }) {
   return (
     <section className="sec sim-bloco">
       {b.titulo && <h2><span>{b.titulo}</span><span>{b.linhas.length} clubes</span></h2>}
@@ -758,7 +868,9 @@ function TabelaBloco({ b, k, primeira }) {
             {b.linhas.map((l, i) => (
               <tr key={l.k} className={l.k === k ? "meu" : ""}>
                 <td className="zp" style={{ "--z": b.zonas?.[i]?.cor || "transparent" }} title={b.zonas?.[i]?.nome}>{(b.inicio || 0) + i + 1}</td>
-                <td className="cl"><span><Escudo k={l.k} z={20} /><span className="sim-nome">{nomeClube(l.k)}</span></span></td>
+                <td className="cl">{onClube
+                  ? <button className="sim-tab-clube" onClick={() => onClube(l.k)} title="Ver elenco"><Escudo k={l.k} z={20} /><span className="sim-nome">{nomeClube(l.k)}</span></button>
+                  : <span><Escudo k={l.k} z={20} /><span className="sim-nome">{nomeClube(l.k)}</span></span>}</td>
                 <td><b>{l.pts}</b></td><td>{l.j}</td><td>{l.v}</td><td>{l.e}</td><td>{l.d}</td><td>{sinal(l.gp - l.gc)}</td>
                 <td className="ult"><Ultimos l={l} /></td>
               </tr>

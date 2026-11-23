@@ -1,314 +1,280 @@
-// Mercado da IA: a janela de transferências dos outros clubes antes da temporada simulada (e, se ligada, uma janela no
-// meio dela). Só mexe nos clubes da IA que jogam a temporada (a liga do usuário e as copas); o resto do mundo só vende.
-// O elenco do plano do usuário nunca é mexido: a IA faz propostas e ele decide.
+// Mercado da IA (versão simples, 23/11/2026): no começo da temporada simulada, os clubes da IA fazem algumas
+// contratações realistas de jogadores de outros clubes do mundo. Nada além disso: sem vendas por iniciativa própria,
+// dispensas, renovações, aposentadorias, propostas ao usuário ou evolução.
 //
-// Passo a passo (tudo com a semente do mercado: mesma semente = mesmas transferências):
-//   1. Contratos e aposentadoria: contrato que acaba antes da temporada → 45% renova (+15% se tiver mais de 30 anos,
-//      +15% se o overall estiver abaixo da média do elenco), senão fica livre. Aposentadoria: 36–37 anos 25%, 38+ 60%.
-//   2. Carências de cada clube: grupos de posição com menos de 2 jogadores "bons" (overall ≥ média dos 11 titulares − 4;
-//      no gol, menos de 2 goleiros) e a posição de um titular que saiu.
-//   3. 4 rodadas de compras: em cada rodada, cada clube tenta no máximo 1 compra para a maior carência (sem carência,
-//      às vezes um reforço). Alvos: jogadores de outros clubes ou livres que sejam bons para ele e caibam no orçamento,
-//      na ordem da afinidade entre as ligas (a mesma do "Recomendados" do Mercado) e do ganho de overall por euro.
-//      Preço = valor × 1,1 a 1,5 (mais caro se o vendedor for de liga mais forte ou tiver contrato longo); livre = 0.
-//      Chance de o negócio sair: maior se o comprador for de liga mais forte; menor para o melhor jogador do vendedor,
-//      para quem chegou nesta janela, quando o vendedor ficaria sem 2 jogadores no grupo e quando o vendedor é bem mais
-//      forte que o comprador (o jogador não quer "descer").
-//   4. Fechamento: menos de 2 goleiros ou menos de 22 jogadores → contrata livres; mais de 30 → dispensa os mais fracos.
-//   5. Propostas pelos jogadores do usuário (até 3) e evolução dos jogadores (opcional).
+// Uma janela só, antes da 1ª rodada, com a semente da simulação (mesma semente = mesmas contratações):
+//   Fase 1 (na hora): os clubes que jogam a temporada simulada (a liga do usuário e as copas dela), com os da liga do
+//          usuário primeiro. É ela que muda os elencos usados pela previsão e pelo motor.
+//   Fase 2 (Web Worker, depois de a tela abrir): o resto do mundo. Para não mudar os elencos da temporada depois da
+//          previsão, ela não compra jogadores dos clubes da fase 1.
+//
+// Regras de cada clube comprador:
+//   - De 0 a 4 contratações (média ~2): mais quando o caixa é grande em relação ao valor do elenco e quando há posições
+//     fracas. Caixa = a estimativa do site (caixaSugerido: média do valor dos elencos da liga). Gasto total ≤ caixa.
+//   - Posição: o grupo onde há menos de 2 jogadores ou onde o titular é mais fraco em relação à média dos titulares.
+//   - Reforço: melhor que esse titular ou, no mínimo, um reserva bom (overall ≥ média dos titulares − 3).
+//   - Valor de mercado entre 3% e 25% do valor do elenco do comprador; preço = valor de mercado.
+//   - Clube de origem com elenco de no máximo 1,5× o valor do elenco do comprador.
+//   - Conservador (pedido de 23/11/2026, mais rígido que a regra "o melhor só sai para liga mais forte"): o melhor
+//     jogador da origem nunca sai; o 2º e o 3º melhores só saem para um clube de elenco mais valioso, de liga igual ou
+//     mais forte; e o reforço não passa de média dos titulares do comprador + 5.
+//   - Preferência pela afinidade entre as ligas (a mesma do "Recomendados" do Mercado) e por idade entre 20 e 31.
+//   - Limite de estrangeiros (regras-estrangeiros.json): clube já no limite só contrata quem não ocupa vaga.
+//   - Proibidos: o elenco do clube do usuário, quem o usuário contratou no plano, emprestados e quem já mudou de clube.
 import { D } from "../dados.js";
 import { embaralhar, rngDe } from "./aleatorio.js";
 import { forcaRapida, jogadoresDo } from "./escalar.js";
 import { ehEstrangeiro, regraDaLiga } from "../estrangeiros.js";
 import { afinidade } from "../afinidade.js";
 import { elencoAtual } from "../elenco.js";
+import { caixaSugerido } from "../times.js";
 import { ovrDe } from "./motor.js";
 
-// Interruptores (todos guardados no estado da temporada): ativo = "Clubes da IA contratam"; propostas = "Receber
-// propostas"; meio = "Janela do meio"; evolucao = "Evolução entre temporadas"
-export const OPCOES_MERCADO = { ativo: true, propostas: true, meio: false, evolucao: false };
+export const MAX_CONTRATACOES = 4;
+export const FAIXA_VALOR = [0.03, 0.25]; // valor do reforço ÷ valor do elenco do comprador
+export const MAIS_RICO = 1.5; // valor do elenco da origem ÷ valor do elenco do comprador (máximo)
+export const TETO_OVR = 5; // o reforço tem no máximo a média dos titulares do comprador + 5
+const RODADAS = MAX_CONTRATACOES;
+// Grupos de posição e quantos titulares cada um tem (4-3-3)
 export const GRUPOS = { GOL: ["GOL"], ZAG: ["ZAG"], LAT: ["LD", "LE"], MEIO: ["VOL", "MC", "MEI"], PONTA: ["PE", "PD", "ME", "MD"], ATA: ["CA", "SA"] };
+const TITULARES = { GOL: 1, ZAG: 2, LAT: 2, MEIO: 3, PONTA: 2, ATA: 1 };
 const GRUPO_DE = Object.fromEntries(Object.entries(GRUPOS).flatMap(([g, ps]) => ps.map((p) => [p, g])));
 export const grupoDe = (pos) => GRUPO_DE[pos] || "MEIO";
-export const MIN_ELENCO = 22, MAX_ELENCO = 30, MAX_MOV = 5, RODADAS = 4;
-// Tipos de transferência (guardados como letra, para o "plantel:sim" não crescer à toa)
-export const TIPOS = { c: "compra", l: "livre", r: "renovação", a: "aposentadoria", d: "dispensa" };
 
-const media = (l) => (l.length ? l.reduce((s, x) => s + x, 0) / l.length : 0);
-const top11 = (ps) => media(ps.map(ovrDe).sort((a, b) => b - a).slice(0, 11));
-// Força de cada liga (média da força rápida dos clubes), para "liga mais forte"
-const cacheLiga = new Map();
-function forcaLiga(lg) {
-  if (!cacheLiga.has(lg)) cacheLiga.set(lg, media(D.CLUBS.filter((c) => c.lg === lg).map((c) => forcaRapida(c.k))));
-  return cacheLiga.get(lg);
+// ---------- Dados de apoio (em cache; refeitos quando os dados são recarregados) ----------
+let cache = { de: null };
+function apoio() {
+  if (cache.de === D.ALL) return cache;
+  // Candidatos por grupo de posição e por liga, cada lista do mais barato para o mais caro
+  const porGrupo = Object.fromEntries(Object.keys(GRUPOS).map((g) => [g, new Map()]));
+  for (const p of D.ALL) {
+    if (!(p.v > 0) || p.emp || !D.CL[p.club] || D.CL[p.club].criado) continue;
+    const m = porGrupo[grupoDe(p.pos)], lg = D.CL[p.club].lg;
+    if (!m.has(lg)) m.set(lg, []);
+    m.get(lg).push(p);
+  }
+  Object.values(porGrupo).forEach((m) => m.forEach((l) => l.sort((a, b) => a.v - b.v)));
+  cache = { de: D.ALL, porGrupo, valor: new Map(), caixa: new Map(), liga: new Map(), ordem: new Map() };
+  return cache;
 }
-// Meses de contrato a partir da data dos dados ("20/11/2026")
-function mesesDeContrato(ctr) {
-  if (!ctr) return 0;
-  const [, mes, ano] = (D.DATA?.updated || "01/11/2026").split("/").map(Number);
-  return (+ctr.slice(0, 4) - ano) * 12 + (+ctr.slice(5, 7) - mes);
+// Valor do elenco do clube no data.json
+export function valorDoElenco(k) {
+  const c = apoio();
+  if (!c.valor.has(k)) c.valor.set(k, jogadoresDo(k).reduce((s, p) => s + (p.v || 0), 0));
+  return c.valor.get(k);
+}
+// Caixa do clube: a estimativa que o site usa (média do valor dos elencos da liga)
+export function caixaDaIA(lg) {
+  const c = apoio();
+  if (!c.caixa.has(lg)) c.caixa.set(lg, caixaSugerido(lg));
+  return c.caixa.get(lg);
+}
+function forcaDaLiga(lg) {
+  const c = apoio();
+  if (!c.liga.has(lg)) {
+    const l = D.CLUBS.filter((x) => x.lg === lg).map((x) => forcaRapida(x.k));
+    c.liga.set(lg, l.length ? l.reduce((s, x) => s + x, 0) / l.length : 0);
+  }
+  return c.liga.get(lg);
+}
+// Ligas de origem em ordem de afinidade para a liga do comprador: [[liga, afinidade]]
+function ligasPorAfinidade(lg) {
+  const c = apoio();
+  if (!c.ordem.has(lg)) c.ordem.set(lg, Object.keys(D.LG).map((x) => [x, afinidade(lg, x)]).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])));
+  return c.ordem.get(lg);
+}
+// Primeiro índice da lista (ordenada por valor) com valor ≥ v
+function inicio(lista, v) {
+  let a = 0, b = lista.length;
+  while (a < b) { const m = (a + b) >> 1; if (lista[m].v < v) a = m + 1; else b = m; }
+  return a;
 }
 
-// Roda a janela. ativos = clubes da IA da temporada simulada (sem o do usuário); ligaDe(k) = liga do clube na temporada.
-// respostas = { "<id>|<clube>": "recusada" | "contra-recusada" } (propostas já respondidas não voltam).
-export function rodarJanela({ semente, plano, liga, ativos, ligaDe, opcoes = OPCOES_MERCADO, respostas = {} }) {
-  const rng = rngDe(semente, "mercado");
-  const k0 = plano.club;
-  const doUsuario = new Set(elencoAtual(plano).filter(Boolean).map((p) => p.id));
+// Ids que a IA não pode levar: o elenco original do clube do usuário e tudo o que está no plano (inclui as compras)
+export function proibidosDoPlano(plano) {
+  return [...new Set([...jogadoresDo(plano.club).map((p) => p.id), ...elencoAtual(plano).filter(Boolean).map((p) => p.id), ...(plano.ins || []).map((x) => x.id)])];
+}
+
+// ---------- Motor da janela ----------
+// compradores: clubes que compram ("primeiro" = os que escolhem antes em todas as rodadas); bloqueados: clubes de quem
+// não se compra; antes: transferências da fase anterior (para montar os elencos). Devolve [[id, para], ...].
+function rodar({ semente, rotulo, compradores, primeiro = [], ligaDe, proibidos, bloqueados, antes = [] }) {
+  const rng = rngDe(semente, "janela", rotulo);
+  const { porGrupo } = apoio();
   const P = (id) => D.BYID[id];
-  const elencos = new Map(), clubeAtual = new Map(); // elenco de cada clube (Set de ids) e o clube de cada jogador que mudou
+  const movidos = new Set(antes.map((t) => t[0]));
+  const elencos = new Map(), melhor = new Map();
+  // Elenco de cada clube (Set de ids), sem quem o usuário contratou
   const elenco = (k) => {
-    if (!elencos.has(k)) elencos.set(k, new Set(jogadoresDo(k).filter((p) => !doUsuario.has(p.id)).map((p) => p.id)));
+    if (!elencos.has(k)) elencos.set(k, new Set(jogadoresDo(k).filter((p) => !proibidos.has(p.id)).map((p) => p.id)));
     return elencos.get(k);
   };
-  const ativosSet = new Set(ativos);
-  const info = {}; // por clube ativo: orçamento, gasto, vendas, chegadas, saídas, grupos que perderam titular
-  for (const k of ativos) {
-    const sq = [...elenco(k)].map(P);
-    info[k] = { orc: Math.round(0.25 * sq.reduce((s, p) => s + (p.v || 0), 0) * 100) / 100, extra: 0, gasto: 0, vendas: 0, chegadas: 0, saidas: 0, perdeu: new Set(), chegou: new Set(), tentou: new Set() };
-  }
-  // extra = preço das vendas que o usuário combinou com o clube (o negócio já está fechado, então a verba vem junto)
-  const disponivel = (k) => info[k].orc + info[k].extra + 0.6 * info[k].vendas - info[k].gasto;
-  const transf = []; // { id, de, para, valor, tipo }
-  const livres = new Map(); // id → { preco, de, t (índice da transferência de saída) }
-  let noMeio = false; // true durante a janela do meio
-
-  // Jogadores que o usuário vendeu no plano: vão para o clube de destino (se houver) ou ficam livres com o valor da venda
-  for (const [id, x] of Object.entries(plano.st || {})) {
-    const p = P(id);
-    if (!p || (x.s !== "vende" && x.s !== "libera")) continue;
-    const preco = x.s === "vende" ? +x.fee || 0 : 0;
-    if (x.para && ativosSet.has(x.para)) {
-      elenco(x.para).add(id); clubeAtual.set(id, x.para);
-      info[x.para].gasto += preco; info[x.para].extra += preco; info[x.para].chegadas++; info[x.para].chegou.add(id);
-      transf.push({ id, de: k0, para: x.para, valor: preco, tipo: "c" });
-    } else livres.set(id, { preco, de: k0, t: transf.push({ id, de: k0, para: null, valor: preco, tipo: "l" }) - 1 });
-  }
-
-  // 1. Contratos e aposentadoria (só nos clubes ativos; emprestados ficam como estão)
-  for (const k of ativos) {
-    const sq = [...elenco(k)].map(P), m = media(sq.map(ovrDe));
-    for (const p of sq) {
-      if (p.emp) continue;
-      const aposenta = p.a >= 38 ? rng() < 0.6 : p.a >= 36 ? rng() < 0.25 : false;
-      if (aposenta) { elenco(k).delete(p.id); transf.push({ id: p.id, de: k, para: null, valor: 0, tipo: "a" }); continue; }
-      if (!p.end26) continue;
-      const renova = rng() < 0.45 + (p.a > 30 ? 0.15 : 0) + (ovrDe(p) < m ? 0.15 : 0);
-      if (renova) transf.push({ id: p.id, de: k, para: k, valor: 0, tipo: "r" });
-      else { elenco(k).delete(p.id); livres.set(p.id, { preco: 0, de: k, t: transf.push({ id: p.id, de: k, para: null, valor: 0, tipo: "l" }) - 1 }); }
-    }
-  }
-
-  // Candidatos por grupo de posição, do maior overall para o menor (todos os jogadores do site + os livres)
-  const porGrupo = Object.fromEntries(Object.keys(GRUPOS).map((g) => [g, []]));
-  for (const p of D.ALL) if (!doUsuario.has(p.id)) porGrupo[grupoDe(p.pos)].push(p);
-  Object.values(porGrupo).forEach((l) => l.sort((a, b) => ovrDe(b) - ovrDe(a)));
-  const aposentados = new Set(transf.filter((t) => t.tipo === "a").map((t) => t.id));
-  const clubeDo = (p) => (livres.has(p.id) ? null : clubeAtual.get(p.id) ?? (D.CL[p.club] ? p.club : null));
-
-  const carencias = (k) => {
-    const sq = [...elenco(k)].map(P), M = top11(sq), bons = {};
-    for (const g of Object.keys(GRUPOS)) bons[g] = 0;
-    for (const p of sq) { const g = grupoDe(p.pos); if (g === "GOL" || ovrDe(p) >= M - 4) bons[g]++; }
-    const lista = Object.keys(GRUPOS).filter((g) => bons[g] < 2 || info[k]?.perdeu.has(g)).sort((a, b) => bons[a] - bons[b]);
-    return { M, lista, bons };
+  for (const [id, para] of antes) { const p = P(id); if (p) { elenco(p.club).delete(id); elenco(para).add(id); } }
+  // Os 3 maiores overalls do elenco atual do clube (do maior para o menor)
+  const melhoresDe = (k) => {
+    if (!melhor.has(k)) melhor.set(k, [...elenco(k)].map((id) => ovrDe(P(id))).sort((a, b) => b - a).slice(0, 3));
+    return melhor.get(k);
   };
 
-  // Uma tentativa de compra do clube k para o grupo g. Devolve true se contratou.
-  function tentar(k, g, M, reforco = false) {
-    const lgK = ligaDe(k), regra = regraDaLiga(lgK), limEst = regra.relacionados ?? Infinity;
-    const sq = [...elenco(k)].map(P), estrangeiros = sq.filter((p) => ehEstrangeiro(p, lgK)).length;
-    const alvoMin = reforco ? M + 1 : M - 4, alvoMax = M + 7, verba = disponivel(k);
-    const cands = [];
-    for (const p of porGrupo[g]) {
-      const o = ovrDe(p);
-      if (o > alvoMax) continue;
-      if (o < alvoMin) break;
-      // Emprestados não são vendidos pelo clube onde estão (inclusive os do usuário emprestados a outros clubes)
-      if (aposentados.has(p.id) || doUsuario.has(p.id) || info[k].tentou.has(p.id) || (p.emp && !livres.has(p.id))) continue;
-      const de = clubeDo(p);
-      if (de === k || de === k0) continue; // nem do próprio clube, nem do clube do usuário (emprestados por ele)
-      const livre = livres.has(p.id);
-      if (!livre && !de) continue;
-      const preco = livre ? livres.get(p.id).preco : Math.max(0.1, Math.min((p.v || 0) * 1.5, (p.v || 0) * (1.1 + (forcaLiga(D.CL[de].lg) > forcaLiga(lgK) + 1 ? 0.2 : 0) + (mesesDeContrato(p.ctr) > 24 ? 0.2 : 0))));
-      if (preco > verba) continue;
-      const est = ehEstrangeiro(p, lgK);
-      if (est && estrangeiros >= limEst + 3) continue; // no limite: não deixa passar de vagas + 3
-      if (!livre && de && info[de] && (info[de].saidas >= MAX_MOV || elenco(de).size <= MIN_ELENCO)) continue;
-      const origem = livre ? D.CL[livres.get(p.id).de]?.lg || lgK : D.CL[de].lg;
-      const ganho = Math.max(0.5, o - (M - 4));
-      // Jogador de um clube bem mais forte dificilmente aceita descer (pesa na escolha e na chance)
-      const desce = !livre && forcaRapida(de) > M + 4;
-      const nota = 0.6 * afinidade(lgK, origem) + 0.4 * Math.min(1, ganho / Math.max(preco, 0.3) / 6) - (est && estrangeiros >= limEst ? 0.25 : 0) - (desce ? 0.2 : 0) + rng() * 0.1;
-      cands.push({ p, de, preco, livre, nota, desce });
-      if (cands.length >= 40) break;
+  // Situação de um clube: média dos titulares e os grupos em ordem de carência
+  const situacao = (k) => {
+    const sq = [...elenco(k)].map(P).filter(Boolean), por = {};
+    for (const g of Object.keys(GRUPOS)) por[g] = [];
+    for (const p of sq) por[grupoDe(p.pos)].push(ovrDe(p));
+    const tits = {};
+    let soma = 0, n = 0;
+    for (const g of Object.keys(GRUPOS)) {
+      const l = por[g].sort((a, b) => b - a).slice(0, TITULARES[g]);
+      tits[g] = l.length < TITULARES[g] ? 0 : l[l.length - 1]; // o titular mais fraco do grupo (0 = falta titular)
+      l.forEach((x) => { soma += x; n++; });
     }
-    if (!cands.length) return false;
-    cands.sort((a, b) => b.nota - a.nota);
-    const c = cands[Math.min(cands.length - 1, Math.floor(rng() * Math.min(3, cands.length)))];
-    info[k].tentou.add(c.p.id);
-    // Chance de o negócio sair
-    let chance = 0.9;
-    if (!c.livre) {
-      const vend = [...elenco(c.de)].map(P), gv = grupoDe(c.p.pos), Mv = top11(vend);
-      const melhor = vend.every((x) => ovrDe(x) <= ovrDe(c.p));
-      const ficaSem2 = vend.filter((x) => x.id !== c.p.id && grupoDe(x.pos) === gv && (gv === "GOL" || ovrDe(x) >= Mv - 4)).length < 2;
-      chance = 0.55 + (forcaLiga(lgK) > forcaLiga(D.CL[c.de].lg) + 1 ? 0.2 : 0) + (c.preco >= (c.p.v || 0) * 1.4 ? 0.1 : 0)
-        - (melhor ? 0.35 : 0) - (info[c.de]?.chegou.has(c.p.id) ? 0.45 : 0) - (ficaSem2 ? 0.3 : 0) - (c.desce ? 0.35 : 0);
-    }
-    if (rng() >= Math.min(0.95, Math.max(0.05, chance))) return false;
-    // Fechou: muda de clube
-    const id = c.p.id;
-    if (c.livre) {
-      const l = livres.get(id);
-      livres.delete(id);
-      // Na pré-temporada, a saída dele ganha o destino; na janela do meio, vira uma transferência nova (livre → clube)
-      if (!noMeio) { transf[l.t].para = k; transf[l.t].valor = c.preco; }
-      else transf.push({ id, de: l.de, para: k, valor: c.preco, tipo: "l" });
-    } else {
-      elenco(c.de).delete(id);
-      transf.push({ id, de: c.de, para: k, valor: Math.round(c.preco * 100) / 100, tipo: "c" });
-      if (info[c.de]) {
-        info[c.de].vendas += c.preco; info[c.de].saidas++;
-        const Mv = top11([...elenco(c.de)].map(P));
-        if (ovrDe(c.p) >= Mv) info[c.de].perdeu.add(grupoDe(c.p.pos)); // o vendedor repõe na vez dele
-      }
-    }
-    elenco(k).add(id); clubeAtual.set(id, k);
-    info[k].gasto += c.preco; info[k].chegadas++; info[k].chegou.add(id); info[k].perdeu.delete(g);
-    return true;
-  }
-
-  // 3. Rodadas de compras: os clubes da liga do usuário primeiro, depois os outros (ordem sorteada a cada rodada)
-  const rodadas = (n) => {
-    const daLiga = ativos.filter((k) => ligaDe(k) === liga);
-    for (let r = 0; r < n; r++) {
-      const ordem = [...embaralhar(rng, ativos.filter((k) => daLiga.includes(k))), ...embaralhar(rng, ativos.filter((k) => !daLiga.includes(k)))];
-      for (const k of ordem) {
-        if (info[k].chegadas >= MAX_MOV || elenco(k).size >= MAX_ELENCO) continue;
-        const { M, lista } = carencias(k);
-        if (lista.length) tentar(k, lista[0], M);
-        else if (rng() < 0.35) tentar(k, Object.keys(GRUPOS).filter((g) => g !== "GOL")[Math.floor(rng() * 5)], M, true);
-      }
-    }
+    const M = n ? soma / n : 60;
+    // Carência: falta gente (menos de 2, ou menos que os titulares) ou titular abaixo da média dos titulares
+    const lista = Object.keys(GRUPOS).map((g) => ({ g, tit: tits[g], falta: por[g].length < Math.max(2, TITULARES[g]), gap: tits[g] - M }))
+      .sort((a, b) => (b.falta - a.falta) || (a.gap - b.gap));
+    const carentes = lista.filter((x) => x.falta || x.gap < -2).length;
+    return { M, lista, carentes, sq };
   };
-  rodadas(RODADAS);
 
-  // 4. Fechamento: goleiros, mínimo e máximo de jogadores
-  // Livres que cabem no orçamento do clube (quase todos custam 0; os vendidos pelo usuário custam o valor da venda)
-  const melhorLivre = (k, filtro) => [...livres.keys()].map(P).filter((p) => p && filtro(p) && livres.get(p.id).preco <= disponivel(k)).sort((a, b) => ovrDe(b) - ovrDe(a))[0];
-  const contratarLivre = (k, p) => {
-    const l = livres.get(p.id);
-    livres.delete(p.id); transf[l.t].para = k; transf[l.t].valor = l.preco; info[k].gasto += l.preco;
-    elenco(k).add(p.id); clubeAtual.set(p.id, k); info[k].chegou.add(p.id);
-  };
-  for (const k of ativos) {
-    const goleiros = () => [...elenco(k)].map(P).filter((p) => p.pos === "GOL").length;
-    for (let t = 0; t < 3 && goleiros() < 2; t++) { const p = melhorLivre(k, (x) => x.pos === "GOL"); if (!p) break; contratarLivre(k, p); }
-    for (let t = 0; t < 30 && elenco(k).size < MIN_ELENCO; t++) {
-      const { lista } = carencias(k);
-      const p = melhorLivre(k, (x) => !lista.length || lista.includes(grupoDe(x.pos))) || melhorLivre(k, () => true);
-      if (!p) break;
-      contratarLivre(k, p);
-    }
-    if (elenco(k).size > MAX_ELENCO) {
-      const sq = [...elenco(k)].map(P);
-      const gol = sq.filter((p) => p.pos === "GOL").length;
-      const fora = sq.filter((p) => !info[k].chegou.has(p.id) && !p.emp).sort((a, b) => ovrDe(a) - ovrDe(b) || a.a - b.a);
-      let golFora = 0;
-      for (const p of fora) {
-        if (elenco(k).size <= MAX_ELENCO) break;
-        if (p.pos === "GOL" && gol - golFora <= 2) continue;
-        if (p.pos === "GOL") golFora++;
-        elenco(k).delete(p.id);
-        transf.push({ id: p.id, de: k, para: null, valor: 0, tipo: "d" });
+  const info = new Map();
+  for (const k of compradores) {
+    const lg = ligaDe(k), vE = valorDoElenco(k), caixa = caixaDaIA(lg), s = situacao(k);
+    // Quantas contratações o clube quer: mais com caixa grande (em relação ao elenco) e com posições fracas
+    const folga = vE > 0 ? Math.min(2, caixa / vE) : 0;
+    const alvo = Math.max(0, Math.min(MAX_CONTRATACOES, Math.round(0.6 + 0.45 * Math.min(3, s.carentes) + 0.45 * folga + (rng() - 0.5) * 2.4)));
+    info.set(k, { lg, vE, caixa, gasto: 0, feitas: 0, alvo, porGrupo: {}, desistiu: false });
+  }
+
+  const transf = [];
+  function tentar(k) {
+    const I = info.get(k), { M, lista, sq } = situacao(k);
+    const regra = regraDaLiga(I.lg), limite = regra.inscritos ?? regra.relacionados ?? Infinity;
+    const noLimite = sq.filter((p) => ehEstrangeiro(p, I.lg)).length >= limite;
+    const forcaK = forcaDaLiga(I.lg);
+    const min = FAIXA_VALOR[0] * I.vE, max = Math.min(FAIXA_VALOR[1] * I.vE, I.caixa - I.gasto);
+    if (max < min || max <= 0) return false;
+    // O grupo mais carente; se não houver reforço possível, o seguinte (até o 3º; no máximo 2 contratações por grupo)
+    for (const { g, tit } of lista.slice(0, 3)) {
+      if ((I.porGrupo[g] || 0) >= 2) continue;
+      const piso = Math.min(tit + 1, M - 3);
+      // Os 3 melhores candidatos (nota = afinidade das ligas 45% + idade 25% + ganho sobre o titular 30%). As ligas vão
+      // da maior afinidade para a menor; para quando nenhuma liga seguinte consegue passar o 3º colocado.
+      const top3 = [];
+      for (const [lgDe, af] of ligasPorAfinidade(I.lg)) {
+        if (top3.length === 3 && top3[2].nota >= 0.45 * af + 0.55) break;
+        const L = porGrupo[g].get(lgDe);
+        if (!L) continue;
+        const naoMaisFraca = forcaK >= forcaDaLiga(lgDe);
+        for (let i = inicio(L, min); i < L.length && L[i].v <= max; i++) {
+          const p = L[i], de = p.club, o = ovrDe(p);
+          if (o < piso || o > M + TETO_OVR || de === k || movidos.has(p.id) || proibidos.has(p.id) || bloqueados.has(de)) continue;
+          if (valorDoElenco(de) > MAIS_RICO * I.vE) continue;
+          // O melhor da origem nunca sai; o 2º e o 3º só para clube mais rico, de liga igual ou mais forte
+          const top = melhoresDe(de);
+          if (o >= top[0]) continue;
+          if (o >= (top[2] ?? 0) && !(naoMaisFraca && I.vE > valorDoElenco(de))) continue;
+          if (noLimite && ehEstrangeiro(p, I.lg)) continue;
+          const nota = 0.45 * af + 0.25 * (p.a >= 20 && p.a <= 31 ? 1 : 0.2) + 0.3 * Math.min(1, Math.max(0, o - tit) / 6);
+          if (top3.length === 3 && nota <= top3[2].nota) continue;
+          top3.push({ p, nota });
+          top3.sort((a, b) => b.nota - a.nota || a.p.id.localeCompare(b.p.id));
+          if (top3.length > 3) top3.pop();
+        }
       }
+      if (!top3.length) continue;
+      const { p } = top3[Math.floor(rng() * top3.length)];
+      // Fechou: o jogador sai da origem e entra no comprador (preço = valor de mercado)
+      elenco(p.club).delete(p.id); melhor.delete(p.club);
+      elenco(k).add(p.id); melhor.delete(k);
+      movidos.add(p.id);
+      I.gasto += p.v; I.feitas++; I.porGrupo[g] = (I.porGrupo[g] || 0) + 1;
+      transf.push([p.id, k]);
+      return true;
+    }
+    return false;
+  }
+
+  // Rodadas: em cada uma, cada clube que ainda quer reforço tenta 1 contratação (os "primeiro" escolhem antes)
+  const antesDeTodos = compradores.filter((k) => primeiro.includes(k)), outros = compradores.filter((k) => !primeiro.includes(k));
+  for (let r = 0; r < RODADAS; r++) {
+    for (const k of [...embaralhar(rng, antesDeTodos), ...embaralhar(rng, outros)]) {
+      const I = info.get(k);
+      if (I.feitas >= I.alvo || I.desistiu) continue;
+      if (!tentar(k)) I.desistiu = true;
     }
   }
-
-  // 5a. Propostas pelos jogadores do usuário (clubes com carência no grupo do jogador, que caiba no orçamento)
-  // (sorteio próprio: recusar uma proposta não muda o resto do mercado)
-  const propostas = [];
-  if (opcoes.propostas) {
-    const rng = rngDe(semente, "propostas");
-    const meus = elencoAtual(plano).filter((p) => p && D.BYID[p.id] && !(plano.st || {})[p.id]);
-    for (const k of embaralhar(rng, ativos)) {
-      if (propostas.length >= 3) break;
-      const { M, lista } = carencias(k);
-      const p = embaralhar(rng, meus).find((x) => lista.includes(grupoDe(x.pos)) && ovrDe(x) >= M - 4 && ovrDe(x) <= M + 8 && (x.v || 0) * 1.1 <= disponivel(k)
-        && !propostas.some((y) => y.id === x.id) && !respostas[x.id + "|" + k]);
-      if (!p) continue;
-      propostas.push({ id: p.id, k, valor: Math.round(Math.max(0.1, (p.v || 0) * (1.1 + rng() * 0.3)) * 10) / 10 });
-    }
-  }
-
-  // 5b. Evolução dos jogadores (opcional): overall novo só dentro do simulador
-  let ovrs = null;
-  if (opcoes.evolucao) {
-    ovrs = {};
-    const todos = new Set([...ativos.flatMap((k) => [...elenco(k)]), ...doUsuario]);
-    for (const id of todos) {
-      const p = P(id) || (plano.custom || []).find((c) => c.id === id);
-      if (!p || p.ovr == null) continue;
-      const r = rngDe(semente, "evolucao", id), a = p.a || 25;
-      const d = a <= 21 ? 1 + Math.floor(r() * 3) : a <= 28 ? Math.floor(r() * 3) - 1 : a <= 32 ? Math.floor(r() * 3) - 2 : -1 - Math.floor(r() * 3);
-      if (d) ovrs[id] = Math.max(40, Math.min(p.ovr + 4, p.ovr + d));
-    }
-  }
-
-  const gastos = Object.fromEntries(ativos.map((k) => [k, [Math.round((info[k].orc + info[k].extra) * 100) / 100, Math.round(info[k].gasto * 100) / 100, Math.round(info[k].vendas * 100) / 100]]));
-
-  // Janela do meio (opcional): mais 2 rodadas de compras, valendo a partir da metade da temporada
-  let meio = null;
-  if (opcoes.meio) {
-    const n0 = transf.length;
-    noMeio = true;
-    ativos.forEach((k) => { info[k].chegadas = 0; info[k].saidas = 0; info[k].tentou.clear(); });
-    rodadas(2);
-    meio = { transf: transf.slice(n0).map(compacta) };
-    noMeio = false;
-    transf.length = n0;
-  }
-
-  // Avisos para o clube do usuário: quem pode se aposentar
-  const avisos = elencoAtual(plano).filter((p) => p && p.a >= 36).map((p) => `${p.n} tem ${p.a} anos e pode se aposentar.`);
-  // Guardado compacto: transferências como [id, de, para, valor, tipo]; renovações só como a lista de ids (de = para = clube)
-  const ren = transf.filter((t) => t.tipo === "r").map((t) => t.id);
-  return { semente, opcoes, transf: transf.filter((t) => t.tipo !== "r").map(compacta), ren, propostas, ovrs, meio, avisos, gastos };
+  return transf;
 }
 
-const compacta = (t) => [t.id, t.de, t.para, Math.round((t.valor || 0) * 100) / 100, t.tipo];
+// Fase 1: os clubes da IA que jogam a temporada (liga + copas). liga = liga do usuário (os clubes dela escolhem antes)
+export function janelaDaTemporada({ semente, plano, liga, ativos, ligaDe }) {
+  const proibidos = new Set(proibidosDoPlano(plano));
+  const transf = rodar({ semente, rotulo: "temporada", compradores: ativos, primeiro: ativos.filter((k) => ligaDe(k) === liga), ligaDe, proibidos, bloqueados: new Set([plano.club]) });
+  return { semente, transf, resto: false };
+}
 
-// Diferenças de elenco tiradas das transferências, na ordem: { k: { e: Set(entraram), s: Set(saíram) } } (calculadas uma vez
-// por mercado). fase "meio" = pré-temporada + janela do meio.
+// Fase 2: o resto do mundo (no Web Worker; também funciona direto, como nos testes). Não compra dos clubes da fase 1
+// nem do clube do usuário. Devolve só as transferências novas.
+export function janelaDoResto({ semente, proibidos, k0, ativos, transf }) {
+  const fase1 = new Set([...ativos, k0]);
+  const compradores = D.CLUBS.map((c) => c.k).filter((k) => !fase1.has(k) && !D.CL[k].criado);
+  return rodar({ semente, rotulo: "resto", compradores, ligaDe: (k) => D.CL[k].lg, proibidos: new Set(proibidos), bloqueados: fase1, antes: transf });
+}
+
+// ---------- Leitura ----------
+// Diferenças de elenco: { k: { e: Set(chegaram), s: Set(saíram) } } (em cache por mercado)
 const cacheDifs = new WeakMap();
-export function difsDoMercado(mercado, fase = "inicio") {
-  if (!mercado) return {};
-  if (!cacheDifs.has(mercado)) cacheDifs.set(mercado, {});
-  const c = cacheDifs.get(mercado);
-  if (c[fase]) return c[fase];
+export function difsDoMercado(mercado) {
+  if (!mercado?.transf) return {};
+  if (cacheDifs.has(mercado)) return cacheDifs.get(mercado);
   const difs = {}, de = (k) => (difs[k] ??= { e: new Set(), s: new Set() });
-  const lista = fase === "meio" ? [...mercado.transf, ...(mercado.meio?.transf || [])] : mercado.transf;
-  for (const [id, a, b] of lista) {
-    if (a === b) continue;
-    if (a) { const d = de(a); d.e.has(id) ? d.e.delete(id) : d.s.add(id); }
-    if (b) { const d = de(b); d.s.has(id) ? d.s.delete(id) : d.e.add(id); }
+  for (const [id, para] of mercado.transf) {
+    const p = D.BYID[id];
+    if (!p || !D.CL[para]) continue;
+    de(p.club).s.add(id);
+    de(para).e.add(id);
   }
-  return (c[fase] = difs);
+  cacheDifs.set(mercado, difs);
+  return difs;
 }
-
-// Elenco de um clube depois do mercado (fase "inicio" ou "meio"): lista de jogadores
-export function elencoDepois(k, mercado, fase = "inicio") {
-  const base = jogadoresDo(k);
-  const dif = mercado && difsDoMercado(mercado, fase === "meio" && mercado.meio ? "meio" : "inicio")[k];
+// Elenco de um clube depois da janela (lista de jogadores)
+export function elencoDepois(k, mercado) {
+  const base = jogadoresDo(k), dif = difsDoMercado(mercado)[k];
   if (!dif) return base;
   return [...base.filter((p) => !dif.s.has(p.id)), ...[...dif.e].map((id) => D.BYID[id]).filter(Boolean)];
 }
-
-// Transferências para a tela: [{ id, p, de, para, valor, tipo, meio }] (renovações por último)
+// Ids de quem chegou ao clube nesta janela (selo "Novo")
+export const chegaram = (k, mercado) => difsDoMercado(mercado)[k]?.e || new Set();
+// Transferências para a tela: [{ id, p, de, para, valor }], da mais cara para a mais barata
 export function listaTransferencias(mercado) {
-  if (!mercado) return [];
-  const conv = (meio) => ([id, de, para, valor, tipo]) => ({ id, p: D.BYID[id], de, para, valor, tipo, meio });
-  const ren = (mercado.ren || []).map((id) => [id, D.BYID[id]?.club, D.BYID[id]?.club, 0, "r"]);
-  return [...mercado.transf.map(conv(false)), ...(mercado.meio?.transf || []).map(conv(true)), ...ren.map(conv(false))].filter((t) => t.p);
+  if (!mercado?.transf) return [];
+  return mercado.transf.map(([id, para]) => { const p = D.BYID[id]; return p && D.CL[para] ? { id, p, de: p.club, para, valor: p.v } : null; })
+    .filter(Boolean).sort((a, b) => b.valor - a.valor || a.id.localeCompare(b.id));
+}
+// Gasto de cada clube na janela: { k: [gasto, caixa, contratações] }
+export function gastosDaJanela(mercado) {
+  const g = {};
+  for (const t of listaTransferencias(mercado)) {
+    const x = (g[t.para] ??= [0, caixaDaIA(D.CL[t.para].lg), 0]);
+    x[0] += t.valor; x[2]++;
+  }
+  return g;
+}
+
+// ---------- Web Worker ----------
+// Dados que o worker precisa (enviados uma vez): ligas, clubes, regras de estrangeiros e os jogadores (só os campos usados)
+export function dadosParaWorker() {
+  return {
+    LG: D.LG, ESTRANGEIROS: D.ESTRANGEIROS,
+    CLUBS: D.CLUBS.map((c) => [c.k, c.lg, c.n]),
+    ALL: D.ALL.map((p) => [p.id, p.club, p.lg, p.pos, p.v, p.ovr ?? null, p.a, p.nat, p.emp ? 1 : 0]),
+  };
+}
+// No worker: monta o D mínimo com esses dados
+export function montarDadosNoWorker(d) {
+  D.LG = d.LG; D.ESTRANGEIROS = d.ESTRANGEIROS;
+  D.CLUBS = d.CLUBS.map(([k, lg, n]) => ({ k, lg, n }));
+  D.CL = Object.fromEntries(D.CLUBS.map((c) => [c.k, c]));
+  D.ALL = d.ALL.map(([id, club, lg, pos, v, ovr, a, nat, emp]) => ({ id, club, lg, pos, v, ovr, a, nat, emp: !!emp }));
+  D.BYID = Object.fromEntries(D.ALL.map((p) => [p.id, p]));
 }

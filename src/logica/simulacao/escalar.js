@@ -86,9 +86,9 @@ export function forcaRapida(k) {
 
 // Time de um clube que não é o seu. "fora" = ids que não podem jogar por ele (contratados pelo seu plano).
 // "lg" = liga em que ele joga na temporada simulada (a regra de estrangeiros é a dela).
-// "elenco" (opcional) = lista de jogadores depois do mercado da IA; "ovrs" (opcional) = overalls com evolução { id: overall }
-export function escalarClube(k, lg, fora = new Set(), elenco = null, ovrs = null) {
-  const sq = comOvrs((elenco || jogadoresDo(k)).filter((p) => p && !fora.has(p.id)), ovrs);
+// "elenco" (opcional) = lista de jogadores depois da janela da IA
+export function escalarClube(k, lg, fora = new Set(), elenco = null) {
+  const sq = (elenco || jogadoresDo(k)).filter((p) => p && !fora.has(p.id));
   const pontas = sq.filter((p) => p.pos === "PE" || p.pos === "PD").length;
   const form = pontas >= 2 ? "4-3-3" : "4-4-2";
   const regra = regraDaLiga(lg);
@@ -104,11 +104,8 @@ export function escalarClube(k, lg, fora = new Set(), elenco = null, ovrs = null
 
 // Time do seu clube, a partir do plano: a escalação da aba Time; vagas vazias são completadas sozinhas.
 // Banco: os reservas escolhidos na aba Time (na ordem das vagas) e, se faltar para chegar a 7, os melhores que sobraram.
-// Jogadores com o overall trocado pela evolução (cópias: o resto do site não muda)
-export const comOvrs = (lista, ovrs) => (ovrs ? lista.map((p) => (ovrs[p.id] != null ? { ...p, ovr: ovrs[p.id] } : p)) : lista);
-
-export function escalarPlano(plano, k = plano.club, ovrs = null) {
-  const sq = comOvrs(elencoAtual(plano).filter(Boolean), ovrs);
+export function escalarPlano(plano, k = plano.club) {
+  const sq = elencoAtual(plano).filter(Boolean);
   const porId = new Map(sq.map((p) => [p.id, p]));
   const ids = new Set(sq.map((p) => p.id)), usados = new Set();
   const onze = FORMS[plano.form].map(([vaga], i) => {

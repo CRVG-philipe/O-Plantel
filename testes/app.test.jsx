@@ -1406,50 +1406,47 @@ test("simulador com formato especial (Argentina): seletor Apertura | Clausura | 
   expect(document.querySelector("#sim-campeao").textContent).toContain("Campeão da Liga Profesional 2027");
   expect(document.querySelector("#sim-titulos").textContent).toMatch(/Apertura 2027: .+Clausura 2027: /);
 }, 60000);
-test("simulador: aba Mercado (interruptores, transferências, filtros, propostas e aposentadoria)", async () => {
+test("simulador: janela da IA (card no Resumo, Ver todas com filtro, Refazer, interruptor e selo Novo no elenco)", async () => {
   const k = DATA.clubs.find((c) => c.lg === "BRA" && c.n === "Flamengo").k;
   localStorage.setItem(CHAVE, JSON.stringify({ plans: { [k]: { club: k, budget: 50, st: {}, ins: [], form: "4-3-3", xi: {}, custom: [] } }, last: k }));
   render(<App />);
   clique(await screen.findByRole("button", { name: /2027/ }));
   clique(document.querySelector("#simular-temporada"));
-  // Resumo: o cartão do mercado leva à aba
-  expect(document.querySelector("#sim-ver-mercado").textContent).toMatch(/Mercado da IA/);
-  clique(document.querySelector("#sim-ver-mercado"));
-  expect(document.querySelector("#sv-mercado").getAttribute("aria-selected")).toBe("true");
-  // Interruptores: contratam e propostas ligados; janela do meio e evolução desligados
-  const est = (id) => document.querySelector("#mi-" + id).getAttribute("aria-checked");
-  expect(["ativo", "propostas", "meio", "evolucao"].map(est)).toEqual(["true", "true", "false", "false"]);
-  // Lista de compras dos rivais e o resumo por clube
-  expect(document.querySelectorAll("#mi-lista .sim-mi-linha").length).toBeGreaterThan(0);
-  expect(document.querySelectorAll("#sim-mi-rivais .sim-mi-rival-l").length).toBe(19);
-  clique(document.querySelector("#sim-mi-rivais .sim-mi-rival-l"));
-  expect(document.querySelector("#mi-por-clube")).toBeTruthy();
-  expect(document.querySelector("#mi-clube").value).not.toBe("");
-  clique(document.querySelector("#mic-ren"));
-  expect(document.querySelectorAll("#mi-lista .sim-mi-linha").length + document.querySelectorAll("#mi-lista .empty").length).toBeGreaterThan(0);
-  // Propostas: refaz o mercado até aparecer uma e aceita (vira uma venda no plano, com o clube de destino)
-  for (let i = 0; i < 6 && !document.querySelector("[id^=prop-aceitar-]"); i++) clique(document.querySelector("#mi-refazer"));
-  const bt = document.querySelector("[id^=prop-aceitar-]");
-  expect(bt).toBeTruthy();
-  const id = bt.id.replace("prop-aceitar-", "");
+  const sim = () => JSON.parse(localStorage.getItem("plantel:sim"))[k];
+  // Sem aba Mercado; o card "Janela da IA" no Resumo com as 5 maiores contratações
+  expect(document.querySelector("#sv-mercado")).toBe(null);
+  expect(document.querySelector("#janela-ativa").getAttribute("aria-checked")).toBe("true");
+  expect(document.querySelectorAll("#janela-top .sim-janela-linha").length).toBe(5);
+  // A fase 2 (resto do mundo) chega depois e entra na lista
+  await waitFor(() => expect(sim().mercadoIA.resto).toBe(true), { timeout: 15000 });
+  const n1 = sim().mercadoIA.transf.length;
+  expect(n1).toBeGreaterThan(500);
+  expect(Object.keys(sim().mercadoIA).sort()).toEqual(["resto", "semente", "transf"]);
+  // "Ver todas": lista completa, filtro por liga (a sua primeiro) e destaque para a sua liga
+  clique(document.querySelector("#janela-todas"));
+  expect(document.querySelectorAll("#janela-lista .sim-janela-linha").length).toBe(50);
+  const sel = document.querySelector("#janela-liga");
+  expect(sel.options[1].textContent).toContain("(sua liga)");
+  fireEvent.change(sel, { target: { value: "BRA" } });
+  const linhas = [...document.querySelectorAll("#janela-lista .sim-janela-linha")];
+  expect(linhas.length).toBeGreaterThan(0);
+  expect(linhas.every((l) => l.classList.contains("sim-janela-rival") || l.classList.contains("meu"))).toBe(true);
+  // Tabela: tocar num clube abre o elenco dele, com o selo "Novo" em quem chegou
+  const novos = Object.entries(sim().mercadoIA.transf.reduce((a, [, para]) => ({ ...a, [para]: (a[para] || 0) + 1 }), {}));
+  const clubeNovo = DATA.clubs.find((c) => c.lg === "BRA" && c.k !== k && novos.some(([x]) => x === c.k));
+  clique(document.querySelector("#sv-tabela"));
+  const bt = [...document.querySelectorAll("#sim-tabela .sim-tab-clube")].find((b) => b.textContent === clubeNovo.n);
   clique(bt);
-  const P = JSON.parse(localStorage.getItem(CHAVE)).plans[k];
-  expect(P.st[id].s).toBe("vende");
-  expect(P.st[id].para).toBeTruthy();
-  expect(P.st[id].fee).toBeGreaterThan(0);
-  await waitFor(() => expect(document.querySelector("#prop-aceitar-" + id)).toBe(null));
-  // Desligar "Clubes da IA contratam": sem lista, e o Resumo avisa
-  clique(document.querySelector("#mi-ativo"));
-  expect(est("ativo")).toBe("false");
-  expect(document.querySelector("#mi-lista")).toBe(null);
-  expect(document.querySelector("#mi-meio").disabled).toBe(true);
+  expect(document.querySelector("#sim-elenco")).toBeTruthy();
+  expect(document.querySelectorAll("#sim-elenco .sim-novo").length).toBe(novos.find(([x]) => x === clubeNovo.k)[1]);
+  fireEvent.keyDown(document, { key: "Escape" });
+  // "Refazer janela" sorteia outra; o interruptor desliga (sem lista e sem selo)
   clique(document.querySelector("#sv-resumo"));
-  expect(document.querySelector("#sim-ver-mercado").textContent).toContain("Desligado");
-  // Depois de começar, os interruptores ficam travados
-  clique(document.querySelector("#sv-mercado"));
-  clique(document.querySelector("#mi-ativo"));
-  clique(document.querySelector("#sim-fim"));
-  clique(document.querySelector("#sv-mercado"));
-  expect(document.querySelector("#mi-ativo").disabled).toBe(true);
-  expect(JSON.parse(localStorage.getItem("plantel:sim"))[k].mercadoIA.transf.length).toBeGreaterThan(0);
+  const antes = JSON.stringify(sim().mercadoIA.transf.slice(0, 20));
+  clique(document.querySelector("#janela-refazer"));
+  expect(JSON.stringify(sim().mercadoIA.transf.slice(0, 20))).not.toBe(antes);
+  clique(document.querySelector("#janela-ativa"));
+  expect(sim().mercadoIA).toBe(null);
+  expect(document.querySelector("#janela-ativa").getAttribute("aria-checked")).toBe("false");
+  expect(document.querySelector("#janela-top")).toBe(null);
 }, 90000);

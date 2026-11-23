@@ -827,11 +827,8 @@ button.sim-jogo-linha:not(:disabled):hover{background:var(--sf2)}
 .sim-copa-linha+.sim-copa-linha{border-top:1px solid var(--line)}
 .sim-copa-campeao{display:inline-flex;align-items:center;gap:6px;flex:none;max-width:45%;font-size:12.5px;color:var(--mute)}
 .sim-final-res{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0;font-size:13.5px}
-/* ---------- Simulador: mercado da IA (aba Mercado, MercadoIA.jsx) ---------- */
-.sim-ints{padding:4px 0}
+/* ---------- Simulador: janela da IA (card no Resumo antes da temporada e elenco dos clubes) ---------- */
 .sim-int{display:flex;align-items:center;gap:14px;width:100%;border:0;background:none;padding:12px 14px;text-align:left;color:inherit;font:inherit}
-.sim-int+.sim-int{border-top:1px solid var(--line)}
-.sim-int:disabled{opacity:.5;cursor:default}
 .sim-int-txt{flex:1;min-width:0}
 .sim-int-txt b{display:block;font-size:14.5px}
 .sim-int-txt small{display:block;font-size:12.5px;color:var(--mute);margin-top:2px}
@@ -839,50 +836,31 @@ button.sim-jogo-linha:not(:disabled):hover{background:var(--sf2)}
 .sim-int-bola i{position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .2s}
 .sim-int[aria-checked=true] .sim-int-bola{background:var(--clubVis)}
 .sim-int[aria-checked=true] .sim-int-bola i{transform:translateX(18px);background:var(--clubVisInk)}
-.sim-mi-refazer{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:10px 14px 12px;border-top:1px solid var(--line)}
-.sim-mi-refazer .note{margin:0}
-.sim-mi-nota{margin:0;padding:10px 14px 12px;border-top:1px solid var(--line)}
-.sim-mi-filtros{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
-.sim-mi-cats{display:flex;flex-wrap:wrap;margin:0;max-width:100%}
-.sim-mi-cats button{padding:0 11px}
-.sim-mi-cats .num{font-size:11.5px;opacity:.7;margin-left:2px}
-.sim-mi-sels{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.sim-mi-sels select{min-width:0;min-height:38px;border:0;border-radius:10px;background:var(--sf);box-shadow:0 0 0 1px var(--line);padding:0 10px;font-weight:600;font-size:13.5px;color:var(--ink)}
-.sim-mi-lista{overflow:hidden}
-.sim-mi-linha{display:flex;align-items:center;gap:10px;padding:8px 14px}
-.sim-mi-linha+.sim-mi-linha{border-top:1px solid var(--line)}
-.sim-mi-linha.sim-mi-rival{background:color-mix(in srgb,var(--clubVis) 6%,transparent)}
-.sim-mi-linha.meu{background:color-mix(in srgb,var(--clubVis) 14%,transparent)}
-.sim-mi-jog{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
-.sim-mi-jog b{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.sim-mi-sub{display:flex;align-items:center;gap:6px;font-size:12px}
-.sim-mi-rota{flex:none;display:flex;align-items:center;gap:5px}
-.sim-mi-seta{color:var(--mute);font-size:13px}
-.sim-mi-sem{font-size:11px;color:var(--mute);background:var(--sf2);border-radius:6px;padding:2px 6px}
-.sim-mi-valor{flex:none;width:86px;display:flex;flex-direction:column;align-items:flex-end;text-align:right}
-.sim-mi-valor b{font-size:13.5px}
-.sim-mi-valor small{font-size:11.5px;color:var(--mute)}
-.sim-mi-mais{display:block;width:100%;margin-top:8px}
-.sim-mi-clube{margin-bottom:12px}
-.sim-mi-clube-cab{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:8px}
-.sim-mi-clube-cab b{font-size:15px}
-.sim-mi-clube-cab .note{margin:0;width:100%}
-.sim-mi-mini{display:flex;align-items:center;gap:8px;padding:6px 14px;font-size:13px}
-.sim-mi-mini .sim-nome{flex:1}
-.sim-mi-clube .card .note{padding:4px 14px 10px;margin:0}
-.sim-mi-rival-l{display:flex;align-items:center;gap:9px;width:100%;border:0;background:none;padding:8px 14px;font:inherit;font-size:14px;color:inherit;text-align:left}
-.sim-mi-rival-l+.sim-mi-rival-l{border-top:1px solid var(--line)}
-.sim-mi-rival-l:hover{background:var(--sf2)}
-.sim-mi-rival-l .sim-nome{flex:1}
-.sim-mi-rival-l .num{min-width:28px;text-align:right;font-size:13px}
-.sim-mi-gasto{min-width:72px!important;color:var(--mute)}
-.sim-prop{padding:12px 14px;margin-bottom:10px}
-.sim-prop-cab{display:flex;align-items:center;gap:12px}
-.sim-prop-txt{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:10px 0;font-size:14px}
-.sim-prop-bts{display:flex;flex-wrap:wrap;gap:8px}
-.sim-prop-bts .btn{flex:1 1 auto}
-.sim-mi-aviso{margin-top:-6px}
-@media (max-width:420px){
-  .sim-mi-valor{width:70px}
-  .sim-mi-seta{display:none}
-}
+.sim-janela{overflow:hidden}
+.sim-janela-top{border-top:1px solid var(--line)}
+.sim-janela-linha{display:flex;align-items:center;gap:10px;padding:8px 14px}
+.sim-janela-linha+.sim-janela-linha{border-top:1px solid var(--line)}
+.sim-janela-linha.sim-janela-rival{background:color-mix(in srgb,var(--clubVis) 7%,transparent)}
+.sim-janela-linha.meu{background:color-mix(in srgb,var(--clubVis) 14%,transparent)}
+.sim-janela-jog{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.sim-janela-jog>b{font-size:14px}
+.sim-janela-rota{display:flex;align-items:center;gap:5px;min-width:0;font-size:12.5px;color:var(--mute)}
+.sim-janela-rota .sim-nome{flex:0 1 auto}
+.sim-janela-seta{flex:none}
+.sim-janela-valor{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:3px}
+.sim-janela-valor b{font-size:13.5px}
+.sim-janela-sub{display:flex;align-items:center;gap:5px}
+.sim-janela-bts{display:flex;flex-wrap:wrap;gap:8px;padding:10px 14px 12px;border-top:1px solid var(--line)}
+.sim-janela-bts .btn{flex:1 1 auto}
+.sim-janela-todas{margin-top:10px}
+.sim-janela-todas select{display:block;width:100%;min-height:40px;margin-bottom:8px;border:0;border-radius:10px;background:var(--sf);box-shadow:0 0 0 1px var(--line);padding:0 10px;font-weight:600;font-size:13.5px;color:var(--ink)}
+.sim-janela-mais{display:block;width:100%;margin-top:8px}
+.sim-tab-clube{display:flex;align-items:center;gap:8px;min-width:0;width:100%;border:0;background:none;padding:0;font:inherit;color:inherit;text-align:left;cursor:pointer}
+.sim-tab-clube:hover .sim-nome{text-decoration:underline}
+.sim-elenco{display:flex;flex-direction:column}
+.sim-elenco .sim-rot{margin:12px 0 4px}
+.sim-elenco-linha{display:flex;align-items:center;gap:8px;padding:5px 0;font-size:14px}
+.sim-elenco-nome{flex:1}
+.sim-elenco-vaga{font-size:12px}
+.sim-novo{background:color-mix(in srgb,var(--pos) 16%,var(--sf));color:var(--pos);font-weight:700}
+.sim-elenco-saiu{margin-top:12px}
