@@ -623,7 +623,8 @@ test("visual do Mercado e das abas: bandeira, setor, nota, caixa, atalho / e ind
   clique(screen.getByRole("tab", { name: "Mercado" }));
   expect(document.querySelector("#tabs").style.getPropertyValue("--i")).toBe("1");
   // Cards do topo: média de idade e chegam/saem coloridos
-  expect(document.querySelectorAll("#sum .stat").length).toBe(3);
+  expect(document.querySelectorAll("#sum .stat").length).toBe(4); // caixa, jogadores, chegam/saem e "Simular temporada"
+  expect(document.querySelector("#sum #simular-temporada").textContent).toContain("Simular temporada");
   expect(document.querySelector("#sum .media").textContent).toMatch(/^ · média \d+,\d anos$/);
   // Atalho "/" põe o cursor na busca
   fireEvent.keyDown(document, { key: "/" });
@@ -1230,26 +1231,29 @@ test("aba Time: tocar em um jogador e depois em outro troca os dois de posição
   clique(screen.getByRole("button", { name: `1º reserva de Centroavante: ${ca}` }));
   expect(noPainel().getByRole("button", { name: "Promover a titular" })).toBeTruthy();
 });
-test("aba Temporada: composição, previsão, simular rodada, elenco mudou, fim da temporada e 'Simular de novo'", async () => {
+test("simulador da temporada: página própria, previsão, vagas em aberto, jogo ao vivo, elenco mudou, fim e 'Simular de novo'", async () => {
   localStorage.setItem(CHAVE, JSON.stringify({ plans: { T5981: { club: "T5981", budget: 50, st: {}, ins: [], form: "4-3-3", xi: {}, custom: [] } }, last: "T5981" }));
   render(<App />);
   clique(await screen.findByRole("button", { name: /Flamengo 2027/ }));
   const antes = JSON.stringify(salvo());
-  clique(screen.getByRole("tab", { name: "Temporada" }));
+  // O plano tem 4 abas; o simulador abre pelo botão "Simular temporada", numa página própria
+  expect(screen.getAllByRole("tab").map((t) => t.textContent)).toEqual(["Elenco", "Mercado", "Time", "Resumo"]);
+  clique(document.querySelector("#simular-temporada"));
+  expect(document.querySelector("#simulador")).toBeTruthy();
+  expect(document.querySelector("#sum")).toBeNull(); // sem os cards do plano
   const BRA = DATA.leagues.find((l) => l.k === "BRA").n;
   expect(document.querySelector("#sim-liga").textContent).toBe(BRA + " 2027");
   expect(document.querySelector("#sim-status").textContent).toBe("Antes da temporada · 38 rodadas");
-  // Composição: Novorizontino sobe (confirmado) e a Chapecoense cai; vagas em aberto com "Simular" e "Escolher"
+  // Previsão do seu clube e de todos
+  expect(document.querySelector("#sim-prev-meu").textContent).toMatch(/\d+ºprevisão\d+%chance de título\d+%risco de queda/);
+  expect(document.querySelectorAll("#sim-previsao .sim-prev").length).toBe(20);
+  // Quem chega e quem sai: Novorizontino sobe (confirmado) e a Chapecoense cai
   const comp = document.querySelector("#sim-composicao").textContent;
   expect(comp).toContain("Grêmio Novorizontino");
   expect(comp).toContain("Chapecoense");
-  expect(document.querySelector("#pend-BRA-BRB")).toBeTruthy();
-  expect(within(document.querySelector("#pend-BRA-BRB")).getByRole("button", { name: "Simular" }).getAttribute("aria-pressed")).toBe("true");
-  // Previsão do seu clube
-  expect(document.querySelector("#sim-prev-meu").textContent).toMatch(/previsão: \d+º; chance de título \d+%; risco de queda/);
-  expect(document.querySelectorAll("#sim-previsao .kv").length).toBe(20);
-  // "Escolher" no rebaixamento: marca 3 clubes e eles caem
+  // Vagas em aberto: "Escolher" no rebaixamento, marcando 3 clubes
   const pend = () => document.querySelector("#pend-BRA-BRB");
+  expect(within(pend()).getByRole("button", { name: "Simular" }).getAttribute("aria-pressed")).toBe("true");
   clique(within(pend()).getByRole("button", { name: "Escolher" }));
   const marcados = () => [...pend().querySelectorAll(".sim-op[aria-pressed=true]")].map((b) => b.textContent);
   expect(marcados().length).toBe(3); // começa com o resultado da simulação
@@ -1258,42 +1262,64 @@ test("aba Temporada: composição, previsão, simular rodada, elenco mudou, fim 
   expect(marcados().sort()).toEqual(["Corinthians", "Grêmio", "Internacional"]);
   const sim = () => JSON.parse(localStorage.getItem("plantel:sim")).T5981;
   expect(sim().escolhas["BRA>BRB"].modo).toBe("escolher");
-  expect(document.querySelector("#sim-composicao").textContent).toContain("Corinthians");
-  // Simular a próxima rodada: o placar do seu jogo aparece em Rodadas; nada muda no plano (plantel:v2)
-  clique(document.querySelector("#sim-prox"));
-  expect(document.querySelector("#sim-status").textContent).toMatch(/^Rodada 1 de 38 · Flamengo em \d+º$/);
+  // Selo "escolhido" com classe própria (".esc" é a tela de escolha de clube e esticava o selo)
+  expect(document.querySelectorAll("#sim-composicao .sim-selo-escolhido").length).toBe(3);
+  expect(document.querySelector("#simulador .esc")).toBeNull();
+  // Jogo ao vivo: "Jogar rodada 1" mostra o jogo; "Pular" vai ao fim com o placar salvo e todos os gols na narração
+  clique(document.querySelector("#sim-aovivo"));
   expect(sim().rodadaAtual).toBe(1);
-  expect(sim().resultados[0].length).toBe(10);
-  expect(JSON.stringify(salvo())).toBe(antes);
-  clique(document.querySelector("#sv-rodadas"));
-  expect(document.querySelector("#sim-jogo-meu .sim-placar b").textContent).toMatch(/^\d+ × \d+$/);
-  expect(document.querySelectorAll("#sim-rodadas .sim-jogo").length).toBe(9);
-  clique(document.querySelector("#sv-tabela"));
+  expect(document.querySelector("#sim-ao-vivo")).toBeTruthy();
+  expect(document.querySelector("#av-placar").textContent).toBe("0–0"); // começa no 0'
+  clique(document.querySelector("#av-pular"));
+  const meu = sim().resultados[0].find((j) => j[0] === "T5981" || j[1] === "T5981");
+  expect(document.querySelector("#av-placar").textContent).toBe(`${meu[2]}–${meu[3]}`);
+  expect(document.querySelector("#av-relogio").textContent).toBe("Fim de jogo");
+  expect([...document.querySelectorAll("#av-feed .av-gol")].length).toBe(meu[2] + meu[3]);
+  expect(document.querySelector("#av-feed").textContent).toContain("Começa o jogo!");
+  expect(meu[5].length).toBeGreaterThan(0); // as substituições do seu jogo ficam salvas
+  expect(JSON.stringify(salvo())).toBe(antes); // nada muda no plano (plantel:v2)
+  clique(document.querySelector("#av-sair")); // "Ver tabela"
   expect(document.querySelectorAll("#sim-tabela tbody tr").length).toBe(20);
   expect(document.querySelector("#sim-tabela tr.meu").textContent).toContain("Flamengo");
   expect(document.querySelector("#sim-legenda").textContent).toContain("Rebaixamento");
+  // Jogos: o seu jogo aparece primeiro, aberto, com os gols
+  clique(document.querySelector("#sv-jogos"));
+  expect(document.querySelector("#rod-n").textContent).toBe("Rodada 1 de 38");
+  expect(document.querySelector("#sim-jogo-meu .sim-placar-n").textContent).toBe(`${meu[2]} × ${meu[3]}`);
+  expect(document.querySelectorAll("#sim-rodadas .sim-jogo").length).toBe(10);
+  // "Mais opções": só a próxima rodada, sem assistir
+  clique(document.querySelector("#sim-opcoes"));
+  clique(noPainel().getByText("Simular só a próxima rodada"));
+  expect(sim().rodadaAtual).toBe(2);
   // O elenco mudou (contratação no Mercado): aviso para reiniciar; "Continuar assim" mantém a rodada
+  clique(document.querySelector("#sim-voltar"));
   clique(screen.getByRole("tab", { name: "Mercado" }));
   clique(document.querySelector("#mList .row"));
   clique(noPainel().getByRole("button", { name: /^Contratar/ }));
-  clique(screen.getByRole("tab", { name: "Temporada" }));
+  clique(document.querySelector("#simular-temporada"));
   expect(document.querySelector("#sim-mudou").textContent).toContain("Seu elenco mudou — reiniciar a temporada?");
   clique(document.querySelector("#sim-continuar"));
   expect(document.querySelector("#sim-mudou")).toBeNull();
-  expect(sim().rodadaAtual).toBe(1);
-  // Até a rodada 10, depois até o fim
-  fireEvent.change(document.querySelector("#sim-ate-n"), { target: { value: "10" } });
-  clique(document.querySelector("#sim-ate"));
+  expect(sim().rodadaAtual).toBe(2);
+  // Até a rodada 10 (Mais opções), depois até o fim
+  clique(document.querySelector("#sim-opcoes"));
+  fireEvent.change(noPainel().getByLabelText("Simular até a rodada"), { target: { value: "10" } });
+  clique(noPainel().getByRole("button", { name: "Simular" }));
   expect(sim().rodadaAtual).toBe(10);
+  expect(document.querySelector("#sim-andamento")).toBeTruthy();
   clique(document.querySelector("#sim-fim"));
   expect(sim().rodadaAtual).toBe(38);
-  clique(document.querySelector("#sv-geral"));
   expect(document.querySelector("#sim-campeao").textContent).toContain("Campeão da " + BRA + " 2027");
+  expect(document.querySelectorAll("#sim-selecao .sim-campo-jog").length).toBe(11);
   expect(document.querySelectorAll("#sim-selecao .kv").length).toBe(11);
   expect(document.querySelector("#sim-prev-res").textContent).toMatch(/Resultado\d+º/);
+  // Estatísticas: artilharia, notas e o seu clube
   clique(document.querySelector("#sv-estat"));
-  expect(document.querySelectorAll("#sim-artilharia .kv").length).toBe(10);
-  expect(document.querySelectorAll("#sim-meu-clube .kv").length).toBeGreaterThan(11);
+  expect(document.querySelectorAll("#sim-artilharia .sim-jog").length).toBe(15);
+  clique(document.querySelector("#se-nota"));
+  expect(document.querySelector("#sim-notas h2").textContent).toMatch(/mínimo de 12 jogos/);
+  clique(document.querySelector("#se-meu"));
+  expect(document.querySelectorAll("#sim-meu-clube .sim-jog").length).toBeGreaterThan(11);
   // "Simular de novo": semente nova e volta para antes da temporada (a escolha do rebaixamento continua)
   const semente = sim().semente;
   clique(document.querySelector("#sim-de-novo"));
@@ -1301,4 +1327,8 @@ test("aba Temporada: composição, previsão, simular rodada, elenco mudou, fim 
   expect(sim().semente).not.toBe(semente);
   expect(sim().escolhas["BRA>BRB"].sel.sort()).toEqual(["T1957", "T1966", "T5926"]);
   expect(document.querySelector("#sim-status").textContent).toBe("Antes da temporada · 38 rodadas");
+  // Voltar ao plano
+  clique(document.querySelector("#sim-voltar"));
+  expect(document.querySelector("#simulador")).toBeNull();
+  expect(document.querySelector("#sum")).toBeTruthy();
 }, 60000);

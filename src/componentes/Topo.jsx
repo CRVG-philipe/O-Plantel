@@ -8,7 +8,7 @@ import { Escudo } from "./Imagens.jsx";
 import SeletorMoeda from "./SeletorMoeda.jsx";
 import BotaoTema from "./BotaoTema.jsx";
 
-const ABAS = [["elenco", "Elenco"], ["mercado", "Mercado"], ["time", "Time"], ["resumo", "Resumo"], ["temporada", "Temporada"]];
+const ABAS = [["elenco", "Elenco"], ["mercado", "Mercado"], ["time", "Time"], ["resumo", "Resumo"]];
 
 export default function Topo({ app }) {
   const { plano } = app;
@@ -85,6 +85,12 @@ function ResumoEAbas({ app }) {
           <span className="ic" aria-hidden="true"><IconeTroca /></span>
           <b className="num"><span className="up">+{nChegam(plano)}</span> <span className="dn">−{nSaem(plano)}</span></b>
           <span className="l">Chegam · saem</span>
+        </button>
+        {/* Simulador da temporada: abre numa página própria */}
+        <button className="stat stat-sim" id="simular-temporada" onClick={app.abrirSimulador}>
+          <span className="ic" aria-hidden="true"><svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M7 4.5v15l12-7.5z" /></svg></span>
+          <b>Simular temporada</b>
+          <span className="l">{D.LG[D.CL[plano.club].lg]?.n} {D.LG[D.CL[plano.club].lg]?.cal ? "2027" : "2027/28"}</span>
         </button>
       </div>
       <div className="tabs" role="tablist" id="tabs" style={{ "--i": indice }}>

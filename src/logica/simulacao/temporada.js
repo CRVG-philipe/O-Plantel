@@ -40,6 +40,15 @@ export function apagarSim(k) {
   try { const t = lerTudo(); delete t[k]; localStorage.setItem(CHAVE, JSON.stringify(t)); } catch (e) { /* segue */ }
 }
 
+// Velocidade do jogo ao vivo ("1x", "2x", "4x" ou "8x"), guardada à parte em "plantel:velocidade"
+export const VELOCIDADES = { "1x": 1000, "2x": 500, "4x": 250, "8x": 110 }; // milissegundos por minuto de jogo
+export function lerVelocidade() {
+  try { const v = localStorage.getItem("plantel:velocidade"); return VELOCIDADES[v] ? v : "4x"; } catch (e) { return "4x"; }
+}
+export function salvarVelocidade(v) {
+  try { localStorage.setItem("plantel:velocidade", v); } catch (e) { /* segue */ }
+}
+
 // "Impressão digital" do plano: elenco planejado, titulares, reservas e formação
 export const assinaturaDoPlano = (plano) =>
   String(misturar([...idsDoPlano(plano)].sort().join(","), JSON.stringify(plano.xi || {}), JSON.stringify(plano.res || {}), plano.form || "", D.CL[plano.club]?.lg || ""));
@@ -109,7 +118,8 @@ export function simularAte(estado, plano, ate) {
         s[0]++; s[1] += g; s[2] += a; s[3] += Math.round(nota * 10);
         novo.estatisticas[id] = s;
       }
-      return [c, f, jogo.gc, jogo.gf, jogo.eventos];
+      // Jogos do seu clube guardam também as substituições (para o jogo ao vivo)
+      return c === plano.club || f === plano.club ? [c, f, jogo.gc, jogo.gf, jogo.eventos, jogo.subs] : [c, f, jogo.gc, jogo.gf, jogo.eventos];
     }));
   }
   novo.rodadaAtual = fim;
@@ -117,6 +127,43 @@ export function simularAte(estado, plano, ate) {
 }
 
 export const tabelaAtual = (estado) => tabelaDosResultados(estado.composicao.clubes, estado.resultados, sorteioDe(estado));
+
+// ---------- Jogo ao vivo ----------
+// Narração minuto a minuto de um jogo já simulado (rodada r, jogo i): gols e substituições (salvos) e lances que
+// não viraram gol (finalização para fora, defesa do goleiro, bola na trave), sorteados com a semente do jogo, então
+// o mesmo jogo tem sempre a mesma narração. Devolve [{ min, tipo: "gol"|"sub"|"chance", lado, ... }] em ordem.
+const TIPOS_CHANCE = [["fora", 0.45], ["defesa", 0.35], ["trave", 0.2]];
+export function narracao(estado, plano, r, i) {
+  const jogo = estado.resultados[r]?.[i];
+  if (!jogo) return [];
+  const [c, f, , , eventos, subs = []] = jogo;
+  const lances = [];
+  for (const [min, lado, autor, assist] of eventos) lances.push({ min, tipo: "gol", lado, autor, assist });
+  for (const [min, lado, sai, entra] of subs) lances.push({ min, tipo: "sub", lado, sai, entra });
+  // Quem está em campo em cada minuto (titulares e quem entrou), para escolher quem finaliza
+  const fora = idsDoPlano(plano);
+  const times = [c, f].map((k) => (k === plano.club ? escalarPlano(plano) : escalarClube(k, estado.liga, fora)));
+  const emCampo = (lado, min) => {
+    const s = subs.filter((x) => x[1] === lado && x[0] <= min);
+    const saiu = new Set(s.map((x) => x[2]));
+    return [...times[lado].onze.map((x) => x.p).filter((p) => p && !saiu.has(p.id)), ...s.map((x) => D.BYID[x[3]] || (plano.custom || []).find((p) => p.id === x[3]))].filter((p) => p && p.pos !== "GOL");
+  };
+  const rng = rngDe(estado.semente, "lances", r, i);
+  [0, 1].forEach((lado) => {
+    const n = 2 + Math.floor(rng() * 5) + Math.round((times[lado].forca - times[1 - lado].forca) / 6);
+    for (let k = 0; k < Math.max(1, n); k++) {
+      const min = 1 + Math.floor(rng() * 90);
+      const ps = emCampo(lado, min);
+      if (!ps.length) continue;
+      const p = ps[Math.floor(rng() * ps.length)];
+      let x = rng(), tipo = "fora";
+      for (const [t, w] of TIPOS_CHANCE) { if ((x -= w) < 0) { tipo = t; break; } }
+      lances.push({ min, tipo: "chance", lado, autor: p.id, como: tipo });
+    }
+  });
+  const ordem = { chance: 0, sub: 1, gol: 2 };
+  return lances.sort((a, b) => a.min - b.min || ordem[a.tipo] - ordem[b.tipo]);
+}
 
 // ---------- Previsão ----------
 // 300 temporadas rápidas (só placares). Para cada clube: posição média, chance de título, de cair e de subir.

@@ -7,7 +7,7 @@ import { gerarCalendario } from "../src/logica/simulacao/calendario.js";
 import { calcularForca, jogarPartida, lambdas, sortearPlacar } from "../src/logica/simulacao/motor.js";
 import { escalarClube, escalarPlano } from "../src/logica/simulacao/escalar.js";
 import { comporLiga, ligaNaTemporada, resolverPendencias, rotuloLiga, zonasDaLiga } from "../src/logica/simulacao/composicao.js";
-import { criarEstado, montarTimes, simularAte, tabelaAtual, totalRodadas } from "../src/logica/simulacao/temporada.js";
+import { criarEstado, montarTimes, narracao, simularAte, tabelaAtual, totalRodadas } from "../src/logica/simulacao/temporada.js";
 import { novoPlano } from "../src/logica/elenco.js";
 import { escalarSozinho } from "../src/logica/escalacao.js";
 
@@ -236,6 +236,45 @@ test("semente: mesma semente e mesmo plano → mesma tabela final; rodada a roda
   // Pontos: todo jogo distribui 3 (vitória) ou 2 (empate)
   const t = tabelaAtual(A);
   expect(t.reduce((s, l) => s + l.j, 0)).toBe(380 * 2);
+});
+
+test("jogo ao vivo: narração igual a cada vez, com os gols salvos, 3 substituições e lances de quem está em campo", () => {
+  const P = planoDe(porNome("BRA", "Flamengo"));
+  const E = simularAte(criarEstado(P, { semente: 21 }), P, 5);
+  for (let r = 0; r < 5; r++) {
+    const i = E.resultados[r].findIndex((j) => j[0] === P.club || j[1] === P.club);
+    if (i < 0) continue;
+    const jogo = E.resultados[r][i];
+    expect(jogo[5].length).toBe(6); // 3 substituições de cada lado, salvas só nos jogos do seu clube
+    const n1 = narracao(E, P, r, i), n2 = narracao(E, P, r, i);
+    expect(n1).toEqual(n2);
+    expect(n1.filter((x) => x.tipo === "gol").length).toBe(jogo[2] + jogo[3]);
+    expect(n1.filter((x) => x.tipo === "chance").length).toBeGreaterThan(0);
+    // Quem saiu não finaliza depois de sair
+    for (const ch of n1.filter((x) => x.tipo === "chance")) {
+      const saiu = jogo[5].find((s) => s[2] === ch.autor);
+      if (saiu) expect(ch.min).toBeLessThan(saiu[0] + 1);
+    }
+    expect(n1.every((x, k) => k === 0 || n1[k - 1].min <= x.min)).toBe(true);
+  }
+  // Os outros jogos não guardam substituições (para o "plantel:sim" não crescer à toa)
+  expect(E.resultados[0].filter((j) => j[0] !== P.club && j[1] !== P.club).every((j) => j.length === 5)).toBe(true);
+});
+
+test("tela do simulador: classes sem o prefixo sim-/simp-/av- são só as peças comuns reaproveitadas de propósito", () => {
+  // Classes curtas soltas já existem no CSS com outro sentido (".esc" = tela de escolha, ".top" = topo do plano)
+  // e esticavam ou pintavam partes do simulador. As novas precisam do prefixo.
+  const fonte = fs.readFileSync("src/componentes/Simulador.jsx", "utf8");
+  const classes = new Set();
+  for (const m of fonte.matchAll(/className=(?:"([^"]+)"|\{([^}]*)\})/g)) {
+    const txt = m[1] ?? (m[2].match(/"([^"]*)"/g) || []).map((s) => s.slice(1, -1)).join(" ");
+    txt.split(/\s+/).filter(Boolean).forEach((c) => classes.add(c));
+  }
+  const PERMITIDAS = new Set(["acts", "btn", "pri", "card", "col", "empty", "field", "kv", "kv-nome", "mute", "note", "num", "opt", "r", "ponto", "pos",
+    "sec", "seg", "tabs", "ind", "sobe", "desce", "meu", "c", "f", "a", "b", "cl", "zp", "ult", "fim", "r-",
+    "acesso"]); // "acesso" não é classe: é o texto comparado em x.tipo === "acesso" dentro do className
+  const soltas = [...classes].filter((c) => !/^(sim-|simp-|simp$|av-)/.test(c) && !PERMITIDAS.has(c));
+  expect(soltas).toEqual([]);
 });
 
 test("desempenho: uma temporada de 20 clubes simula inteira em menos de 300 ms", () => {

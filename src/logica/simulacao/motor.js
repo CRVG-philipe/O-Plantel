@@ -55,13 +55,13 @@ export const PESO_ASSIST = { MEI: 4, PE: 3.5, PD: 3.5, ME: 3, MD: 3, SA: 3, MC: 
 const golsPorJogo = (p) => (p.st && p.st[0] > 0 ? p.st[1] / p.st[0] : 0);
 
 // Quem joga: os titulares e 3 reservas sorteados (entre os 7 primeiros do banco), cada um no lugar de um
-// titular de linha sorteado. Cada um tem o intervalo [entra, sai] em minutos.
+// titular de linha sorteado. Cada um tem o intervalo [entra, sai] em minutos. subs = [[minuto, id de quem sai, id de quem entra]].
 function participantes(rng, time) {
   const lista = time.onze.filter((x) => x.p).map(({ p }) => ({ p, entra: 0, sai: 90 }));
   const banco = time.banco.slice(0, 7);
-  const subs = Math.min(3, banco.length);
+  const n = Math.min(3, banco.length), subs = [];
   const usados = new Set();
-  for (let s = 0; s < subs; s++) {
+  for (let s = 0; s < n; s++) {
     const linha = lista.filter((x) => x.sai === 90 && x.entra === 0 && x.p.pos !== "GOL");
     if (!linha.length) break;
     let j;
@@ -71,8 +71,9 @@ function participantes(rng, time) {
     const minuto = 55 + Math.floor(rng() * 31); // entre 55' e 85'
     sai.sai = minuto;
     lista.push({ p: banco[j], entra: minuto, sai: 90 });
+    subs.push([minuto, sai.p.id, banco[j].id]);
   }
-  return lista;
+  return { lista, subs };
 }
 const tempo = (x) => (x.sai - x.entra) / 90;
 const emCampo = (x, m) => x.entra < m && m <= x.sai;
@@ -104,10 +105,12 @@ function nota(rng, x, saldo, sofridos, gols, assists) {
 }
 
 // Jogo completo. Devolve { gc, gf, eventos: [[minuto, lado (0 casa, 1 fora), id do autor, id da assistência]],
-// jogadores: [[id, lado, gols, assistências, nota]] }.
+// jogadores: [[id, lado, gols, assistências, nota]], subs: [[minuto, lado, id de quem sai, id de quem entra]] }.
 export function jogarPartida(rng, casa, fora) {
   const [gc, gf] = sortearPlacar(rng, casa.forca, fora.forca);
-  const ps = [participantes(rng, casa), participantes(rng, fora)];
+  const pa = participantes(rng, casa), pb = participantes(rng, fora);
+  const ps = [pa.lista, pb.lista];
+  const subs = [...pa.subs.map((s) => [s[0], 0, s[1], s[2]]), ...pb.subs.map((s) => [s[0], 1, s[1], s[2]])].sort((a, b) => a[0] - b[0]);
   const eventos = [];
   const conta = new Map(); // id → [gols, assistências]
   const marca = (p, i) => { if (!p) return; const c = conta.get(p.id) || [0, 0]; c[i]++; conta.set(p.id, c); };
@@ -128,5 +131,5 @@ export function jogarPartida(rng, casa, fora) {
       jogadores.push([x.p.id, lado, g, a, nota(rng, x, saldo, sofridos, g, a)]);
     }
   });
-  return { gc, gf, eventos, jogadores };
+  return { gc, gf, eventos, jogadores, subs };
 }

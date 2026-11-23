@@ -18,7 +18,7 @@ import Elenco from "./componentes/Elenco.jsx";
 import Mercado from "./componentes/Mercado.jsx";
 import Time from "./componentes/Time.jsx";
 import Resumo from "./componentes/Resumo.jsx";
-import Temporada from "./componentes/Temporada.jsx";
+import Simulador, { PainelSimOpcoes } from "./componentes/Simulador.jsx";
 import Painel, { Congelado } from "./componentes/Painel.jsx";
 import Rodape from "./componentes/Rodape.jsx";
 import PainelJogador from "./componentes/paineis/PainelJogador.jsx";
@@ -33,9 +33,9 @@ import PainelEmprestado from "./componentes/paineis/PainelEmprestado.jsx";
 import PainelTime, { PainelExcluirTime } from "./componentes/paineis/PainelTime.jsx";
 import { PainelFicha, PainelFiltrosLista } from "./componentes/paineis/PainelLista.jsx";
 
-const ABAS = { elenco: Elenco, mercado: Mercado, time: Time, resumo: Resumo, temporada: Temporada };
+const ABAS = { elenco: Elenco, mercado: Mercado, time: Time, resumo: Resumo };
 const PAINEIS = { jogador: PainelJogador, compra: PainelCompra, filtros: PainelFiltros, criar: PainelCriar, clube: PainelClube, orcamento: PainelOrcamento, posicao: PainelPosicao, excluirPlano: PainelExcluirPlano, emprestado: PainelEmprestado, reserva: PainelReserva,
-  time: PainelTime, excluirTime: PainelExcluirTime, filtrosLista: PainelFiltrosLista, ficha: PainelFicha };
+  time: PainelTime, excluirTime: PainelExcluirTime, filtrosLista: PainelFiltrosLista, ficha: PainelFicha, simOpcoes: PainelSimOpcoes };
 
 // Clubes de uma liga em ordem alfabética
 const clubesDa = (lg) => D.CLUBS.filter((c) => c.lg === lg).sort((a, b) => a.n.localeCompare(b.n));
@@ -67,6 +67,8 @@ export default function Plantel() {
   const [db, setDb] = useState(lerPlanos);       // tudo que está salvo no navegador
   const [aberto, setAberto] = useState(null);    // clube do plano aberto (null = tela de escolha)
   const [aba, setAba] = useState("elenco");
+  // Simulador da temporada: página própria por cima do plano (botão "Simular temporada" no topo)
+  const [simulador, setSimulador] = useState(false);
   // Tela antes do plano: "inicio", "pais", "divisao", "clube" ou "lista" (Lista de jogadores).
   // O site sempre abre no início, a não ser que o endereço traga filtros da Lista (?liga=BRA&pos=CA).
   // País, liga e clube começam no último clube aberto (para quem volta a ele).
@@ -138,6 +140,7 @@ export default function Plantel() {
     gravar(p);
     setAberto(k);
     setAba("elenco");
+    setSimulador(false);
     window.scrollTo(0, 0);
     if (p.budget === null) abrirPainel("orcamento", { primeiro: true });
   }
@@ -147,6 +150,7 @@ export default function Plantel() {
     fecharPainel();
     const k = aberto;
     setAberto(null);
+    setSimulador(false);
     setTela("inicio");
     setPais(paisDa(D.CL[k].lg));
     setLiga(D.CL[k].lg);
@@ -244,6 +248,8 @@ export default function Plantel() {
   }
 
   const irPara = (a) => { setAba(a); window.scrollTo(0, 0); };
+  const abrirSimulador = () => { fecharPainel(); setSimulador(true); window.scrollTo(0, 0); };
+  const fecharSimulador = () => { fecharPainel(); setSimulador(false); window.scrollTo(0, 0); };
   const passo = (d) => setIndice((i) => (i + d + clubes.length) % clubes.length);
   const planejarClube = () => { setTela("pais"); window.scrollTo(0, 0); };
 
@@ -310,7 +316,7 @@ export default function Plantel() {
   const app = {
     db, plano, aba, tela, pais, liga, indice, clubes, busca, chip, limite, filtros, moeda, cotacao, criterio, times, lista,
     setIndice, setBusca, setChip, setLimite, setFiltros, setCriterio, trocarMoeda, tema, alternarTema, setLista,
-    criarTime, salvarTime, excluirTime, irMenu, abrirLista, abrirClubeNaEscolha,
+    criarTime, salvarTime, excluirTime, irMenu, abrirLista, abrirClubeNaEscolha, abrirSimulador, fecharSimulador,
     abrirClube, trocarClube, reiniciarClube, excluirPlano, abrirJogador, abrirPainel, fecharPainel,
     mudar, irPara, passo, planejarClube, escolherPais, escolherDivisao, voltar, aviso: mostrarAviso,
   };
@@ -319,7 +325,9 @@ export default function Plantel() {
 
   return (
     <>
-      {plano ? (
+      {plano && simulador ? (
+        <Simulador app={app} /> /* página própria, com topo, rodapé e barra de ações */
+      ) : plano ? (
         <>
           <Topo app={app} />
           <main className="col"><Aba app={app} /></main>
