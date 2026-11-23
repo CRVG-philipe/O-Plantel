@@ -6,6 +6,7 @@ import { dinheiro, calcularDinheiro, simbolo } from "../logica/dinheiro.js";
 import { elencoAtual, nChegam, nSaem } from "../logica/elenco.js";
 import { Escudo } from "./Imagens.jsx";
 import SeletorMoeda from "./SeletorMoeda.jsx";
+import { rotuloLiga } from "../logica/simulacao/composicao.js";
 import BotaoTema from "./BotaoTema.jsx";
 
 const ABAS = [["elenco", "Elenco"], ["mercado", "Mercado"], ["time", "Time"], ["resumo", "Resumo"]];
@@ -91,7 +92,7 @@ function ResumoEAbas({ app }) {
           <span className="sim-cta-play" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M8 5.2v13.6c0 .8.9 1.3 1.6.8l10.2-6.8a1 1 0 0 0 0-1.6L9.6 4.4C8.9 3.9 8 4.4 8 5.2z" /></svg></span>
           <span className="sim-cta-txt">
             <b>Simular temporada</b>
-            <span className="l">{D.LG[D.CL[plano.club].lg]?.n} {D.LG[D.CL[plano.club].lg]?.cal ? "2027" : "2027/28"}</span>
+            <span className="l">{rotuloLiga(D.CL[plano.club].lg)}</span>
           </span>
           <svg className="sim-cta-seta" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M9 5l7 7-7 7" /></svg>
         </button>

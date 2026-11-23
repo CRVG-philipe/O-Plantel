@@ -6,7 +6,8 @@ import { mulberry32, rngDe } from "../src/logica/simulacao/aleatorio.js";
 import { gerarCalendario } from "../src/logica/simulacao/calendario.js";
 import { calcularForca, jogarPartida, lambdas, sortearPlacar } from "../src/logica/simulacao/motor.js";
 import { escalarClube, escalarPlano } from "../src/logica/simulacao/escalar.js";
-import { comporLiga, ligaNaTemporada, resolverPendencias, rotuloLiga, zonasDaLiga } from "../src/logica/simulacao/composicao.js";
+import { comporLiga, ligaNaTemporada, projecaoAtual, resolverPendencias, rotuloLiga, zonasDaLiga } from "../src/logica/simulacao/composicao.js";
+import { classificacao, fecharRodada, garantirRodada, montarEsqueleto, titulos } from "../src/logica/simulacao/formatos.js";
 import { criarEstado, montarTimes, narracao, simularAte, tabelaAtual, totalRodadas } from "../src/logica/simulacao/temporada.js";
 import { novoPlano } from "../src/logica/elenco.js";
 import { escalarSozinho } from "../src/logica/escalacao.js";
@@ -20,9 +21,130 @@ const clubesDa = (lg) => D.CLUBS.filter((c) => c.lg === lg).map((c) => c.k);
 const porNome = (lg, nome) => D.CLUBS.find((c) => c.lg === lg && c.n === nome)?.k;
 const planoDe = (k) => { const P = novoPlano(k); escalarSozinho(P, "o"); return P; };
 
-test("temporada certa por liga: '2026' simula 2027; '26/27' simula 2027/28", () => {
+test("rótulo da temporada: o de formatos-ligas.json tem prioridade", () => {
+  expect(rotuloLiga("BRA")).toBe("Brasileirão 2027");
+  expect(rotuloLiga("ENG")).toBe("Premier League 2027/28");
+  expect(rotuloLiga("MEX")).toBe("Liga MX 2027/28");
+  expect(rotuloLiga("USA")).toBe("MLS 2027 (Sprint Season)");
+  // Sem o arquivo de formatos: a regra antiga ("2026" → 2027; "26/27" → 2027/28)
+  const F = D.FORMATOS;
+  D.FORMATOS = null;
   expect(rotuloLiga("BRA")).toBe(D.LG.BRA.n + " 2027");
   expect(rotuloLiga("ENG")).toBe(D.LG.ENG.n + " 2027/28");
+  D.FORMATOS = F;
+});
+
+// Temporada inteira de uma liga só com placares, pelo motor de formatos (como na previsão)
+function temporadaRapidaFormato(lg, semente = 1) {
+  const clubes = clubesDa(lg), E = montarEsqueleto(lg, clubes, semente);
+  const forca = Object.fromEntries(clubes.map((k) => [k, escalarClube(k, lg).forca]));
+  const rng = mulberry32(semente), st = { agenda: [], chaves: {}, grupos: {}, resultados: [] };
+  const sorteio = Object.fromEntries(clubes.map((k, i) => [k, i]));
+  for (let r = 0; r < E.total; r++) {
+    const jogos = garantirRodada(st, E, r, sorteio);
+    if (!jogos) throw new Error(`${lg}: rodada ${r + 1} sem jogos definidos`);
+    st.resultados.push(jogos.map(([c, f, n]) => { const [a, b] = sortearPlacar(rng, forca[c], forca[f], !!n); return [c, f, a, b]; }));
+    fecharRodada(st, E, r, forca, () => rng());
+  }
+  return { E, st, sorteio };
+}
+const jogosNasEtapas = (E, st, tipo) => {
+  const j = {};
+  E.etapas.filter((e) => e.tipo === tipo).forEach((e) => { for (let r = e.inicio; r < e.inicio + e.rodadas; r++) for (const [c, f] of st.resultados[r]) { j[c] = (j[c] || 0) + 1; j[f] = (j[f] || 0) + 1; } });
+  return j;
+};
+
+test("formatos: todas as 66 ligas terminam a temporada, com 1 campeão (2 nas ligas com dois campeões)", () => {
+  const ligas = Object.keys(D.FORMATOS);
+  expect(ligas.length).toBe(66);
+  for (const lg of ligas) {
+    const { E, st, sorteio } = temporadaRapidaFormato(lg, 7);
+    expect(st.resultados.length).toBe(E.total);
+    const t = titulos(st, E, sorteio).filter((x) => !x.extra);
+    expect(t.length, lg).toBe(D.FORMATOS[lg].campeao === "dois_campeoes" ? 2 : 1);
+    t.forEach((x) => expect(x.k, lg + " " + x.nome).toBeTruthy());
+    // Na fase de pontos, todo clube do mesmo grupo joga o mesmo número de jogos
+    const j = jogosNasEtapas(E, st, "pontos");
+    const grupos = E.liga.grupos || (E.torneios.length ? null : [{ clubes: E.clubes }]);
+    (grupos || []).forEach((g) => expect(new Set(g.clubes.map((k) => j[k])).size, lg).toBe(1));
+    expect(classificacao(st, E, sorteio).length).toBe(E.clubes.length);
+  }
+});
+
+test("formatos: Argentina 30 jogos (Apertura e Clausura com playoffs), Escócia 33 + 5 do split, MLS 14 por conferência", () => {
+  const arg = temporadaRapidaFormato("ARG");
+  const ja = jogosNasEtapas(arg.E, arg.st, "pontos");
+  expect(Object.values(ja).every((n) => n === 30)).toBe(true);
+  expect(arg.E.partes.map((p) => p.nome)).toEqual(["Apertura 2027", "Clausura 2027"]);
+  expect(titulos(arg.st, arg.E, arg.sorteio).filter((x) => x.extra).every((x) => x.k)).toBe(true); // campeões do Apertura e do Clausura
+  const sco = temporadaRapidaFormato("SCO");
+  expect(Object.values(jogosNasEtapas(sco.E, sco.st, "pontos")).every((n) => n === 33)).toBe(true);
+  expect(Object.values(jogosNasEtapas(sco.E, sco.st, "split")).every((n) => n === 5)).toBe(true);
+  // Split: os 6 primeiros da fase de pontos formam o grupo do título e terminam em 1º a 6º
+  const split = sco.st.grupos[sco.E.liga.split];
+  expect(split.map((g) => g.clubes.length)).toEqual([6, 6]);
+  expect(classificacao(sco.st, sco.E, sco.sorteio).slice(0, 6).map((l) => l.k).sort()).toEqual([...split[0].clubes].sort());
+  const mls = temporadaRapidaFormato("USA");
+  expect(Object.values(jogosNasEtapas(mls.E, mls.st, "pontos")).every((n) => n === 14)).toBe(true);
+  expect(mls.E.liga.grupos.map((g) => g.nome)).toEqual(["Leste", "Oeste"]);
+  // Liga MX: dois campeões (Apertura e Clausura), cada torneio com 17 rodadas e mando invertido no Clausura
+  const mex = temporadaRapidaFormato("MEX");
+  const ap = mex.E.etapas[mex.E.torneios[0].pontos[0]], cl = mex.E.etapas[mex.E.torneios[1].pontos[0]];
+  expect(ap.rodadas).toBe(17);
+  const jogosAp = mex.st.agenda[ap.inicio].jogos, jogosCl = mex.st.agenda[cl.inicio].jogos;
+  expect(jogosCl).toEqual(jogosAp.map(([a, b]) => [b, a]));
+});
+
+test("mata-mata ida e volta com 'vantagem: melhor_campanha': empate no agregado classifica o melhor colocado", () => {
+  const clubes = clubesDa("BRB"), E = montarEsqueleto("BRB", clubes, 3);
+  const st = { agenda: [], chaves: {}, grupos: {}, resultados: [] }, sorteio = Object.fromEntries(clubes.map((k, i) => [k, i]));
+  const mata = E.etapas.find((e) => e.tipo === "mata");
+  expect(mata.jogos).toBe("ida_volta");
+  for (let r = 0; r < mata.inicio; r++) { st.resultados.push(garantirRodada(st, E, r, sorteio).map(([c, f]) => [c, f, 1, 0])); fecharRodada(st, E, r, {}, () => 0); }
+  const ida = garantirRodada(st, E, mata.inicio, sorteio), volta = garantirRodada(st, E, mata.inicio + 1, sorteio);
+  const pares = st.chaves[mata.i].pares;
+  expect(pares.length).toBe(2);
+  st.resultados.push(ida.map(([c, f]) => [c, f, 2, 1])); // o pior colocado vence a ida em casa por 2 x 1
+  st.resultados.push(volta.map(([c, f]) => [c, f, 1, 0])); // o melhor vence a volta por 1 x 0: agregado 2 x 2
+  fecharRodada(st, E, mata.inicio + 1, {}, () => 0.99); // "pênaltis" desfavoráveis ao melhor não podem contar
+  expect(st.chaves[mata.i].vence).toEqual(pares.map(([a]) => a));
+});
+
+test("temporada atual real: Brasileirão termina com 38 jogos, ninguém perde pontos e a Chapecoense cai", () => {
+  for (const semente of [1, 2, 3]) {
+    const proj = projecaoAtual("BRA", semente);
+    const real = Object.fromEntries(D.ATUAL.BRA.tabela.map((r) => [r.k, r.pts]));
+    expect(proj.length).toBe(20);
+    proj.forEach((l) => { expect(l.j).toBe(38); expect(l.pts).toBeGreaterThanOrEqual(real[l.k]); });
+    expect(proj.slice(-4).map((l) => l.k)).toContain(porNome("BRA", "Chapecoense"));
+    // As vagas em aberto do rebaixamento saem da projeção: os 4 últimos caem
+    const r = resolverPendencias(["BRA"], semente);
+    expect([porNome("BRA", "Chapecoense"), ...r["BRA>BRB"].movem].sort()).toEqual(proj.slice(-4).map((l) => l.k).sort());
+  }
+  // Liga encerrada (Argentina): a tabela não muda
+  const arg = projecaoAtual("ARG", 5);
+  expect(arg.map((l) => l.pts)).toEqual(arg.map((l) => l.real));
+});
+
+test("semente: mesma semente → mesma temporada também nos formatos especiais (Liga MX e Argentina)", () => {
+  for (const lg of ["MEX", "ARG", "SCO"]) {
+    const a = temporadaRapidaFormato(lg, 11), b = temporadaRapidaFormato(lg, 11);
+    expect(a.st.resultados).toEqual(b.st.resultados);
+    expect(titulos(a.st, a.E, a.sorteio)).toEqual(titulos(b.st, b.E, b.sorteio));
+  }
+});
+
+test("desempenho: temporada completa (com estatísticas) das ligas com formatos especiais abaixo de 300 ms", () => {
+  for (const lg of ["ARG2", "MEX", "USA", "ARG"]) {
+    const P = planoDe(clubesDa(lg)[0]);
+    const E0 = criarEstado(P, { semente: 2 });
+    const t0 = performance.now();
+    const F = simularAte(E0, P, 999);
+    const ms = performance.now() - t0;
+    console.log(`${lg}: ${totalRodadas(F)} rodadas em ${ms.toFixed(0)} ms`);
+    expect(F.rodadaAtual).toBe(totalRodadas(F));
+    expect(ms).toBeLessThan(300);
+  }
 });
 
 test("calendário: cada clube joga 2×(n−1) jogos, metade em casa, sem repetir jogo no turno", () => {

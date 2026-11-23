@@ -14,12 +14,15 @@ import { gerarCalendario } from "./calendario.js";
 import { sortearPlacar } from "./motor.js";
 import { temporadaRapida } from "./tabela.js";
 import { escalarClube } from "./escalar.js";
+import { terminarAtual, dataAtual } from "./atual.js";
+import { formatoDa } from "./formatos.js";
 
 // ---------- Temporada e nomes ----------
 // Liga de ano fechado ("2026") simula "2027"; liga de duas metades ("26/27") simula "2027/28"
 export const temporadaSim = (lg) => (D.LG[lg]?.cal ? "2027" : "2027/28");
 export const temporadaAtual = (lg) => { const s = D.LG[lg]?.season || ""; return /^\d{2}\/\d{2}$/.test(s) ? "20" + s.slice(0, 2) + "/" + s.slice(3) : s; };
-export const rotuloLiga = (lg) => `${D.LG[lg]?.n || lg} ${temporadaSim(lg)}`;
+// O "rotulo" de formatos-ligas.json tem prioridade (ex.: "Liga MX 2027/28", "MLS 2027 (Sprint Season)")
+export const rotuloLiga = (lg) => (D.FORMATOS?.[lg]?.rotulo) || `${D.LG[lg]?.n || lg} ${temporadaSim(lg)}`;
 const nome = (k) => D.CL[k]?.n || k;
 
 export const pares = () => D.ACESSO?.pares || [];
@@ -93,13 +96,17 @@ function novoContexto(semente, escolhas) {
     semente, escolhas,
     // Força com o elenco atual (a temporada atual é jogada com os elencos de hoje)
     forca: (k) => (forcas[k] ??= escalarClube(k, D.CL[k].lg).forca),
-    // Temporada atual inteira da liga, só com placares (sem gravar estatísticas): chaves na ordem final
-    tabela: (lg) => {
+    // Temporada atual terminada (só placares, sem gravar estatísticas): chaves na ordem final.
+    // Com a tabela real (temporada-atual.json): parte dela e joga só o que falta. Sem ela: a temporada inteira do zero.
+    linhas: (lg) => {
       if (tabelas[lg]) return tabelas[lg];
+      const real = terminarAtual(lg, rngDe(semente, "projecao", lg), ctx.forca);
+      if (real) return (tabelas[lg] = real);
       const clubes = D.CLUBS.filter((c) => c.lg === lg).map((c) => c.k);
       const forca = Object.fromEntries(clubes.map((k) => [k, ctx.forca(k)]));
-      return (tabelas[lg] = temporadaRapida(rngDe(semente, "projecao", lg), clubes, forca, gerarCalendario(clubes)));
+      return (tabelas[lg] = temporadaRapida(rngDe(semente, "projecao", lg), clubes, forca, gerarCalendario(clubes)).map((k) => ({ k })));
     },
+    tabela: (lg) => ctx.linhas(lg).map((l) => l.k),
     // Playoff entre a 1ª e a 2ª divisão (ex.: 16º da Bundesliga x 3º da 2. Bundesliga), resolvido uma vez para os dois pares
     interliga: (cima, baixo) => (inter[cima + ">" + baixo] ??= playoffEntreLigas(ctx, cima, baixo)),
   };
@@ -139,8 +146,16 @@ function playoffEntreLigas(ctx, cima, baixo) {
 function simularPar(par, ctx) {
   const rng = rngDe(ctx.semente, "par", idPar(par));
   const pend = par.pendentes;
-  // Rebaixamento ainda aberto: sorteio entre os candidatos, com mais chance para os mais fracos e para quem está
-  // mais perto da zona (os candidatos vêm em ordem de risco)
+  // Rebaixamento ainda aberto, com a tabela real da liga: termina a temporada (só os jogos que faltam) e caem os últimos
+  if (pend?.candidatos && D.ATUAL?.[par.de]) {
+    const tab = ctx.tabela(par.de), conf = new Set(par.confirmados || []);
+    const zona = tab.slice(-(pend.vagas + conf.size)).filter((k) => !conf.has(k));
+    const movem = zona.slice(-pend.vagas);
+    const pos = (k) => tab.indexOf(k) + 1 + "º";
+    return { movem, detalhe: [`Projeção a partir da tabela real de ${dataBr(dataAtual())} (${temporadaAtual(par.de)}): caem ${[...conf, ...movem].map((k) => `${nome(k)} (${pos(k)})`).join(", ")}.`], projecao: true };
+  }
+  // Rebaixamento ainda aberto (sem tabela real): sorteio entre os candidatos, com mais chance para os mais fracos e
+  // para quem está mais perto da zona (os candidatos vêm em ordem de risco)
   if (pend?.candidatos) {
     const cand = pend.candidatos.filter((k) => D.CL[k]);
     const F = cand.map(ctx.forca), media = F.reduce((s, x) => s + x, 0) / (F.length || 1);
@@ -222,6 +237,13 @@ export function resolverPendencias(ligas, semente, escolhas = {}) {
   return out;
 }
 
+// Tabela atual terminada de uma liga (a mesma usada nas projeções, com a mesma semente): linhas com os pontos finais
+export function projecaoAtual(lg, semente) {
+  if (!D.ATUAL?.[lg]) return null;
+  return novoContexto(semente, {}).linhas(lg);
+}
+const dataBr = (iso) => (/^\d{4}-\d{2}-\d{2}$/.test(iso || "") ? iso.slice(8) + "/" + iso.slice(5, 7) + "/" + iso.slice(0, 4) : iso || "hoje");
+
 // ---------- Composição ----------
 // Quem muda num par: os confirmados + o que foi resolvido nas pendências
 export const movimentos = (par, resolvidas) => [...(par.confirmados || []).filter((k) => D.CL[k]), ...(resolvidas[idPar(par)]?.movem || [])];
@@ -283,6 +305,10 @@ export function zonasDaLiga(lg, n) {
       if (p) pinta(p, p, { nome: "Playoff de rebaixamento", cor: COR_PLAYOFF_QUEDA, tipo: "playoff-queda" });
     }
   }
+  // Rebaixamento definido pelo formato da liga (quando não há par no arquivo de acesso/rebaixamento)
+  const reb = formatoDa(lg).rebaixamento;
+  if (reb?.n && !pares().some((p) => p.de === lg && p.tipo !== "acesso"))
+    pinta(n - reb.n + 1, n, { nome: reb.fora_do_site ? "Rebaixamento (fora do site)" : "Rebaixamento", cor: COR_QUEDA, tipo: "queda" });
   if (!doArquivo && !temAcesso) (D.ZONAS?._padrao || [{ de: 1, ate: 1, nome: "Campeão", cor: COR_ACESSO }]).forEach((x) => pinta(x.de, x.ate, { nome: x.nome, cor: x.cor, tipo: "faixa" }));
   return z;
 }

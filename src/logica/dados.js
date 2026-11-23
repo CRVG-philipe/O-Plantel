@@ -12,7 +12,10 @@ import { norm } from "./formato.js";
 //   D.EMP     empréstimos por clube: { "<clube>": { in: [ids recebidos], out: [{ id, para: {k, n}, ate, contrato }] } }
 //   D.ACESSO  acesso e rebaixamento da temporada simulada (acesso-rebaixamento.json) ou null
 //   D.ZONAS   faixas coloridas da tabela do simulador (zonas-ligas.json) ou null
-export const D = { DATA: null, CLUBS: [], LEAGUES: [], LG: {}, CL: {}, ALL: [], BYID: {}, APELIDOS: {}, EMP: {}, ESTRANGEIROS: null, ACESSO: null, ZONAS: null };
+//   D.ATUAL   tabelas reais da temporada atual por liga (temporada-atual.json, campo "ligas") ou null; D.ATUAL_DATA = "atualizado"
+//   D.FORMATOS formato de cada liga na temporada simulada (formatos-ligas.json, campo "ligas") ou null
+export const D = { DATA: null, CLUBS: [], LEAGUES: [], LG: {}, CL: {}, ALL: [], BYID: {}, APELIDOS: {}, EMP: {}, ESTRANGEIROS: null, ACESSO: null, ZONAS: null,
+  ATUAL: null, ATUAL_DATA: "", FORMATOS: null };
 
 // Apelidos (public/apelidos.json: { "apelido": "Nome como está no data.json" }). Se falhar, segue sem eles.
 async function carregarApelidos() {
@@ -85,6 +88,17 @@ async function carregarZonas() {
   }
 }
 
+// Simulador v2: tabela real da temporada atual e formatos das ligas. Se falhar, o simulador usa o comportamento antigo
+// (temporada atual simulada do zero; pontos corridos, turno e returno).
+async function carregarLigasDe(arquivo) {
+  try {
+    const r = await fetch(arquivo).then((x) => x.json());
+    return r && r.ligas && typeof r.ligas === "object" && !Array.isArray(r.ligas) ? r : null;
+  } catch (e) {
+    return null;
+  }
+}
+
 // Empréstimos (public/emprestimos.json, do Transfermarkt). Se falhar, segue sem eles.
 async function carregarEmprestimos() {
   try {
@@ -152,10 +166,13 @@ function montarEmprestimos(E) {
 }
 
 export async function carregarDados() {
-  const [DATA, APELIDOS, ESTIMADOS, EMPRESTIMOS, OVERALL, AJUSTES, ESTRANGEIROS, ACESSO, ZONAS] = await Promise.all([fetch("data.json").then((r) => r.json()),
+  const [DATA, APELIDOS, ESTIMADOS, EMPRESTIMOS, OVERALL, AJUSTES, ESTRANGEIROS, ACESSO, ZONAS, ATUAL, FORMATOS] = await Promise.all([fetch("data.json").then((r) => r.json()),
     carregarApelidos(), carregarEstimados(), carregarEmprestimos(), carregarOverall(), carregarAjustesOverall(), carregarRegrasEstrangeiros(),
-    carregarAcesso(), carregarZonas()]);
+    carregarAcesso(), carregarZonas(), carregarLigasDe("temporada-atual.json"), carregarLigasDe("formatos-ligas.json")]);
   Object.assign(D, { DATA, APELIDOS, ESTRANGEIROS, ACESSO, ZONAS, LG: {}, CL: {}, ALL: [], BYID: {}, EMP: {} }); // começa do zero
+  D.ATUAL = ATUAL?.ligas || null;
+  D.ATUAL_DATA = ATUAL?.atualizado || "";
+  D.FORMATOS = FORMATOS?.ligas || null;
   D.CLUBS = DATA.clubs;
   D.LEAGUES = DATA.leagues;
 

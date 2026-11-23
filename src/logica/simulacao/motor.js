@@ -106,8 +106,8 @@ function nota(rng, x, saldo, sofridos, gols, assists) {
 
 // Jogo completo. Devolve { gc, gf, eventos: [[minuto, lado (0 casa, 1 fora), id do autor, id da assistência]],
 // jogadores: [[id, lado, gols, assistências, nota]], subs: [[minuto, lado, id de quem sai, id de quem entra]] }.
-export function jogarPartida(rng, casa, fora) {
-  const [gc, gf] = sortearPlacar(rng, casa.forca, fora.forca);
+export function jogarPartida(rng, casa, fora, neutro = false) {
+  const [gc, gf] = sortearPlacar(rng, casa.forca, fora.forca, neutro);
   const pa = participantes(rng, casa), pb = participantes(rng, fora);
   const ps = [pa.lista, pb.lista];
   const subs = [...pa.subs.map((s) => [s[0], 0, s[1], s[2]]), ...pb.subs.map((s) => [s[0], 1, s[1], s[2]])].sort((a, b) => a[0] - b[0]);

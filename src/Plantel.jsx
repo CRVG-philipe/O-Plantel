@@ -18,7 +18,7 @@ import Elenco from "./componentes/Elenco.jsx";
 import Mercado from "./componentes/Mercado.jsx";
 import Time from "./componentes/Time.jsx";
 import Resumo from "./componentes/Resumo.jsx";
-import Simulador, { PainelSimOpcoes } from "./componentes/Simulador.jsx";
+import Simulador, { PainelSimOpcoes, PainelTabelaAtual } from "./componentes/Simulador.jsx";
 import Painel, { Congelado } from "./componentes/Painel.jsx";
 import Rodape from "./componentes/Rodape.jsx";
 import PainelJogador from "./componentes/paineis/PainelJogador.jsx";
@@ -35,7 +35,7 @@ import { PainelFicha, PainelFiltrosLista } from "./componentes/paineis/PainelLis
 
 const ABAS = { elenco: Elenco, mercado: Mercado, time: Time, resumo: Resumo };
 const PAINEIS = { jogador: PainelJogador, compra: PainelCompra, filtros: PainelFiltros, criar: PainelCriar, clube: PainelClube, orcamento: PainelOrcamento, posicao: PainelPosicao, excluirPlano: PainelExcluirPlano, emprestado: PainelEmprestado, reserva: PainelReserva,
-  time: PainelTime, excluirTime: PainelExcluirTime, filtrosLista: PainelFiltrosLista, ficha: PainelFicha, simOpcoes: PainelSimOpcoes };
+  time: PainelTime, excluirTime: PainelExcluirTime, filtrosLista: PainelFiltrosLista, ficha: PainelFicha, simOpcoes: PainelSimOpcoes, simAtual: PainelTabelaAtual };
 
 // Clubes de uma liga em ordem alfabética
 const clubesDa = (lg) => D.CLUBS.filter((c) => c.lg === lg).sort((a, b) => a.n.localeCompare(b.n));

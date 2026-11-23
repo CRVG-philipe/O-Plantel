@@ -1,0 +1,817 @@
+{
+ "_sobre": "Copas da temporada simulada. Classificação usa temporada-atual.json (tabelas reais de 22/11/2026, completadas com as rodadas que faltam simuladas) e acesso-rebaixamento.json. \"calendario\" = momento da temporada da liga do usuário (0 = 1ª rodada, 1 = última) em que cada fase acontece; um intervalo [a,b] espalha as rodadas da fase. Clubes de ligas que não estão no site não participam.",
+ "atualizado": "2026-11-22",
+ "copas": {
+  "CDB": {
+   "nome": "Copa do Brasil 2027",
+   "tipo": "copa_nacional",
+   "pais": "Brasil",
+   "confirmado": true,
+   "participantes": "todos os clubes do site em BRA, BRB e BRC na composição de 2027",
+   "fases": [
+    {
+     "nome": "Fases 1 a 4",
+     "jogos": "unico",
+     "quem": "clubes de BRB e BRC",
+     "regra": "mata-mata jogo único (mando do clube de divisão menor/pior ranqueado) até sobrarem 12 clubes; use byes para os mais fortes quando o número não fechar"
+    },
+    {
+     "nome": "5ª fase (32 clubes)",
+     "jogos": "ida_volta",
+     "quem": "20 da Série A 2027 + 12 que avançaram",
+     "sorteio": "Série A como cabeças de chave contra os 12, depois Série A x Série A"
+    },
+    {
+     "nome": "Oitavas",
+     "jogos": "ida_volta"
+    },
+    {
+     "nome": "Quartas",
+     "jogos": "ida_volta"
+    },
+    {
+     "nome": "Semifinal",
+     "jogos": "ida_volta"
+    },
+    {
+     "nome": "Final",
+     "jogos": "unico",
+     "local": "neutro"
+    }
+   ],
+   "desempate": "pênaltis",
+   "calendario": {
+    "Fases 1 a 4": [
+     0.05,
+     0.2
+    ],
+    "5ª fase (32 clubes)": 0.3,
+    "Oitavas": 0.45,
+    "Quartas": 0.6,
+    "Semifinal": 0.8,
+    "Final": 0.98
+   },
+   "vagas": "campeão → Libertadores 2028 (grupos), vice → pré (só informativo)",
+   "nota": "No real são 128 clubes; o site usa só os clubes que existem nele."
+  },
+  "LIB": {
+   "nome": "Copa Libertadores 2027",
+   "tipo": "continental",
+   "confirmado": true,
+   "vagas_por_pais": {
+    "BRA": {
+     "grupos": 5,
+     "pre": 2
+    },
+    "ARG": {
+     "grupos": 5,
+     "pre": 1
+    },
+    "BOL": {
+     "grupos": 2,
+     "pre": 2
+    },
+    "CHI": {
+     "grupos": 2,
+     "pre": 2
+    },
+    "COL": {
+     "grupos": 2,
+     "pre": 2
+    },
+    "ECU": {
+     "grupos": 2,
+     "pre": 2
+    },
+    "PAR": {
+     "grupos": 2,
+     "pre": 2
+    },
+    "PER": {
+     "grupos": 2,
+     "pre": 2
+    },
+    "URU": {
+     "grupos": 2,
+     "pre": 2
+    },
+    "VEN": {
+     "grupos": 2,
+     "pre": 2
+    }
+   },
+   "vagas_extra": {
+    "campeao_libertadores_2026": "grupos",
+    "campeao_sulamericana_2026": "grupos"
+   },
+   "regras_pais": {
+    "BRA": "grupos: 1º-4º do Brasileirão 2026 + campeão da Copa do Brasil 2026; pré: 5º do Brasileirão + vice da Copa do Brasil. Vaga de quem já se classificou passa ao próximo da tabela. Clube rebaixado não joga.",
+    "ARG": "grupos: campeões do Apertura, Clausura e Copa Argentina 2026 + 2 melhores da tabela anual não classificados; pré: 3º melhor não classificado.",
+    "OUTROS": "clubes já garantidos (lista abaixo) + completar pela tabela anual de temporada-atual.json; os melhores colocados ficam com as vagas de grupos."
+   },
+   "garantidos_reais": {
+    "BRA": [
+     "T5981",
+     "T1963",
+     "T1954"
+    ],
+    "ARG": [
+     "T3203",
+     "T3202",
+     "T3216",
+     "T3217"
+    ],
+    "VEN": [
+     "T6229",
+     "T162480",
+     "T36437"
+    ],
+    "COL": [
+     "T6105",
+     "T6106"
+    ],
+    "ECU": [
+     "T39723",
+     "T6001"
+    ],
+    "PER": [
+     "T2311",
+     "T2305"
+    ],
+    "BOL": [
+     "T268083"
+    ],
+    "PAR": [
+     "T292595"
+    ]
+   },
+   "garantidos_fonte": "Trivela, 17/11/2026 (Flamengo, Palmeiras, Cruzeiro; Belgrano, Boca, Argentinos, Rosario Central; Carabobo, Metropolitanos, La Guaira; Junior, Atl. Nacional; Independiente del Valle, Macará; Alianza Lima, Universitario; Always Ready; Recoleta)",
+   "pendentes": [
+    {
+     "id": "final_lib_2026",
+     "nome": "Final da Libertadores 2026",
+     "jogo": [
+      "T1963",
+      "T3206"
+     ],
+     "data": "2026-11-28",
+     "local": "neutro (Montevidéu)",
+     "efeito": "campeão entra na fase de grupos 2027 (se já classificado, a vaga do país passa ao próximo da tabela)"
+    },
+    {
+     "id": "final_sud_2026",
+     "nome": "Final da Sul-Americana 2026",
+     "jogo": [
+      "T3202",
+      "T1977"
+     ],
+     "data": "2026-11-21",
+     "local": "neutro (Barranquilla)",
+     "efeito": "campeão entra na fase de grupos 2027",
+     "nota": "jogo já disputado; resultado ainda não inserido no arquivo — o usuário pode escolher o campeão real na tela Antes da temporada"
+    },
+    {
+     "id": "final_cdb_2026",
+     "nome": "Final da Copa do Brasil 2026",
+     "jogo": [
+      "T5926",
+      "T1963"
+     ],
+     "data": "2026-12-06",
+     "local": "neutro (Brasília)",
+     "efeito": "campeão → grupos, vice → pré (Grêmio só vale se não cair)"
+    }
+   ],
+   "fases": [
+    {
+     "nome": "Pré-Libertadores (3 fases)",
+     "jogos": "ida_volta",
+     "regra": "19 clubes: fase 1 com os 6 piores ranqueados (3 confrontos), fase 2 com 3 vencedores + 13 (8 confrontos), fase 3 com 8 vencedores (4 confrontos) → 4 vão aos grupos; os 4 perdedores da fase 3 vão à Sul-Americana"
+    },
+    {
+     "nome": "Fase de grupos",
+     "tipo": "grupos",
+     "grupos": 8,
+     "por_grupo": 4,
+     "turnos": 2,
+     "sorteio": "potes por força; no máximo 1 clube do mesmo país por grupo (exceto vagas da pré)",
+     "avancam": 2,
+     "terceiro": "vai ao playoff da Sul-Americana"
+    },
+    {
+     "nome": "Oitavas",
+     "jogos": "ida_volta"
+    },
+    {
+     "nome": "Quartas",
+     "jogos": "ida_volta"
+    },
+    {
+     "nome": "Semifinal",
+     "jogos": "ida_volta"
+    },
+    {
+     "nome": "Final",
+     "jogos": "unico",
+     "local": "neutro"
+    }
+   ],
+   "desempate": "saldo no agregado e pênaltis (sem gol fora)",
+   "calendario": {
+    "Pré-Libertadores (3 fases)": [
+     0.02,
+     0.1
+    ],
+    "Fase de grupos": [
+     0.15,
+     0.4
+    ],
+    "Oitavas": 0.55,
+    "Quartas": 0.7,
+    "Semifinal": 0.85,
+    "Final": 0.95
+   }
+  },
+  "SUD": {
+   "nome": "Copa Sul-Americana 2027",
+   "tipo": "continental",
+   "confirmado": false,
+   "vagas_por_pais": {
+    "BRA": 6,
+    "ARG": 6,
+    "BOL": 4,
+    "CHI": 4,
+    "COL": 4,
+    "ECU": 4,
+    "PAR": 4,
+    "PER": 4,
+    "URU": 4,
+    "VEN": 4
+   },
+   "regra": "próximos colocados da tabela (temporada-atual.json; Brasil = Brasileirão 2026) que não foram à Libertadores. Clube rebaixado não entra.",
+   "fases": [
+    {
+     "nome": "Primeira fase",
+     "jogos": "unico",
+     "regra": "clubes de BOL, CHI, COL, ECU, PAR, PER, URU e VEN se enfrentam dentro do próprio país (16 jogos); os 16 vencedores avançam"
+    },
+    {
+     "nome": "Fase de grupos",
+     "tipo": "grupos",
+     "grupos": 8,
+     "por_grupo": 4,
+     "turnos": 2,
+     "quem": "12 de BRA/ARG + 16 da primeira fase + 4 eliminados da fase 3 da pré-Libertadores",
+     "avancam": "1º direto às oitavas; 2º joga playoff"
+    },
+    {
+     "nome": "Playoff",
+     "jogos": "ida_volta",
+     "regra": "2º colocados dos grupos x 3º colocados dos grupos da Libertadores"
+    },
+    {
+     "nome": "Oitavas",
+     "jogos": "ida_volta"
+    },
+    {
+     "nome": "Quartas",
+     "jogos": "ida_volta"
+    },
+    {
+     "nome": "Semifinal",
+     "jogos": "ida_volta"
+    },
+    {
+     "nome": "Final",
+     "jogos": "unico",
+     "local": "neutro"
+    }
+   ],
+   "nota": "simplificado (no real são 56 clubes)",
+   "calendario": {
+    "Primeira fase": 0.08,
+    "Fase de grupos": [
+     0.15,
+     0.4
+    ],
+    "Playoff": 0.5,
+    "Oitavas": 0.58,
+    "Quartas": 0.72,
+    "Semifinal": 0.85,
+    "Final": 0.94
+   }
+  },
+  "UCL": {
+   "nome": "Champions League 2027/28",
+   "tipo": "continental",
+   "confirmado": false,
+   "nota": "vagas por país iguais à lista de acesso de 2026/27 (aproximação para 2027/28); classificação pela tabela final PROJETADA da temporada 2026/27 (temporada-atual.json + rodadas restantes simuladas). Vagas de copa nacional passam ao próximo da tabela. Clubes russos não entram.",
+   "diretas": {
+    "ENG": 4,
+    "ITA": 4,
+    "ESP": 4,
+    "GER": 4,
+    "FRA": 3,
+    "NED": 2,
+    "POR": 1,
+    "BEL": 1,
+    "CZE": 1,
+    "TUR": 1
+   },
+   "european_performance_spots": {
+    "ENG": 1,
+    "ESP": 1,
+    "nota": "aproximado: as 2 ligas com melhor desempenho recente"
+   },
+   "detentores": {
+    "n": 2,
+    "regra": "UCL/UEL 2026/27 não são simuladas: as 2 vagas vão aos 2 campeões nacionais mais fortes das ligas fora da lista acima (regra de rebalanceamento da UEFA)"
+   },
+   "qualificacao": {
+    "n": 7,
+    "caminho_campeoes": {
+     "vagas": 5,
+     "quem": "campeões das demais ligas europeias do site, os 10 mais fortes, 5 confrontos ida e volta"
+    },
+    "caminho_liga": {
+     "vagas": 2,
+     "quem": "2º de POR, BEL, CZE e TUR; 2 confrontos ida e volta"
+    },
+    "perdedores": "vão à Europa League"
+   },
+   "fases": [
+    {
+     "nome": "Qualificação",
+     "jogos": "ida_volta"
+    },
+    {
+     "nome": "Fase de liga",
+     "tipo": "fase_de_liga",
+     "clubes": 36,
+     "jogos_por_clube": 8,
+     "regra": "4 potes de 9 por força; cada clube enfrenta 2 de cada pote (1 casa, 1 fora), sem rival do mesmo país; tabela única de 36",
+     "avancam": "1º-8º direto às oitavas; 9º-24º playoff; 25º-36º eliminados"
+    },
+    {
+     "nome": "Playoff",
+     "jogos": "ida_volta",
+     "regra": "9º-16º (cabeças) x 17º-24º"
+    },
+    {
+     "nome": "Oitavas",
+     "jogos": "ida_volta"
+    },
+    {
+     "nome": "Quartas",
+     "jogos": "ida_volta"
+    },
+    {
+     "nome": "Semifinal",
+     "jogos": "ida_volta"
+    },
+    {
+     "nome": "Final",
+     "jogos": "unico",
+     "local": "neutro"
+    }
+   ],
+   "desempate": "prorrogação e pênaltis",
+   "calendario": {
+    "Qualificação": 0.03,
+    "Fase de liga": [
+     0.1,
+     0.55
+    ],
+    "Playoff": 0.6,
+    "Oitavas": 0.68,
+    "Quartas": 0.78,
+    "Semifinal": 0.86,
+    "Final": 0.99
+   }
+  },
+  "UEL": {
+   "nome": "Europa League 2027/28",
+   "tipo": "continental",
+   "confirmado": false,
+   "vagas_por_pais": {
+    "ENG": 2,
+    "ESP": 2,
+    "ITA": 2,
+    "GER": 2,
+    "FRA": 2,
+    "NED": 2,
+    "POR": 2,
+    "BEL": 1,
+    "CZE": 1,
+    "TUR": 1,
+    "SCO": 1,
+    "AUT": 1,
+    "SUI": 1,
+    "GRE": 1,
+    "NOR": 1,
+    "DEN": 1
+   },
+   "extra": "+ 7 perdedores da qualificação da Champions; completar até 36 com os melhores clubes restantes (por força) das ligas europeias do site",
+   "fases": "mesmo formato da Champions (fase de liga 36 clubes, 8 jogos; 1-8 oitavas, 9-24 playoff)",
+   "calendario": {
+    "Fase de liga": [
+     0.1,
+     0.55
+    ],
+    "Playoff": 0.6,
+    "Oitavas": 0.68,
+    "Quartas": 0.78,
+    "Semifinal": 0.86,
+    "Final": 0.97
+   }
+  },
+  "UECL": {
+   "nome": "Conference League 2027/28",
+   "tipo": "continental",
+   "confirmado": false,
+   "vagas_por_pais": {
+    "ENG": 1,
+    "ESP": 1,
+    "ITA": 1,
+    "GER": 1,
+    "FRA": 1,
+    "NED": 1,
+    "POR": 1,
+    "BEL": 1,
+    "CZE": 1,
+    "TUR": 1,
+    "SCO": 1,
+    "AUT": 1,
+    "SUI": 1,
+    "GRE": 1,
+    "NOR": 1,
+    "DEN": 1,
+    "SWE": 1,
+    "POL": 1,
+    "CRO": 1,
+    "SRB": 1,
+    "UKR": 1,
+    "ROU": 1,
+    "ISR": 1,
+    "HUN": 1,
+    "SVK": 1,
+    "BUL": 1,
+    "CYP": 1,
+    "SVN": 1
+   },
+   "extra": "1 vaga por liga europeia do site (próximo colocado não classificado) + completar até 36 com os melhores restantes",
+   "fases": "fase de liga de 36 clubes com 6 jogos (2 de cada um de 3 potes... use 6 jogos contra 6 adversários de potes diferentes); 1-8 oitavas, 9-24 playoff",
+   "calendario": {
+    "Fase de liga": [
+     0.1,
+     0.55
+    ],
+    "Playoff": 0.6,
+    "Oitavas": 0.68,
+    "Quartas": 0.78,
+    "Semifinal": 0.86,
+    "Final": 0.96
+   }
+  },
+  "FAC": {
+   "nome": "FA Cup 2027/28",
+   "tipo": "copa_nacional",
+   "participantes": {
+    "ligas": [
+     "ENG",
+     "ENG2"
+    ]
+   },
+   "jogos": "unico",
+   "final": "unico",
+   "regra": "mata-mata com os clubes do site dessas ligas; byes para os mais fortes até fechar potência de 2; mando do clube de divisão menor quando houver",
+   "semifinal": "unico",
+   "desempate": "prorrogação e pênaltis",
+   "calendario": "distribuir as fases entre 0.2 e 0.95 da temporada da liga",
+   "confirmado": false,
+   "nota": "simplificado: só clubes do site"
+  },
+  "CDR": {
+   "nome": "Copa del Rey 2027/28",
+   "tipo": "copa_nacional",
+   "participantes": {
+    "ligas": [
+     "ESP",
+     "ESP2"
+    ]
+   },
+   "jogos": "unico",
+   "final": "unico",
+   "regra": "mata-mata com os clubes do site dessas ligas; byes para os mais fortes até fechar potência de 2; mando do clube de divisão menor quando houver",
+   "semifinal": "ida_volta",
+   "desempate": "prorrogação e pênaltis",
+   "calendario": "distribuir as fases entre 0.2 e 0.95 da temporada da liga",
+   "confirmado": false,
+   "nota": "simplificado: só clubes do site"
+  },
+  "CIT": {
+   "nome": "Coppa Italia 2027/28",
+   "tipo": "copa_nacional",
+   "participantes": {
+    "ligas": [
+     "ITA",
+     "ITA2"
+    ]
+   },
+   "jogos": "unico",
+   "final": "unico",
+   "regra": "mata-mata com os clubes do site dessas ligas; byes para os mais fortes até fechar potência de 2; mando do clube de divisão menor quando houver",
+   "semifinal": "ida_volta",
+   "desempate": "prorrogação e pênaltis",
+   "calendario": "distribuir as fases entre 0.2 e 0.95 da temporada da liga",
+   "confirmado": false,
+   "nota": "simplificado: só clubes do site"
+  },
+  "DFB": {
+   "nome": "DFB-Pokal 2027/28",
+   "tipo": "copa_nacional",
+   "participantes": {
+    "ligas": [
+     "GER",
+     "GER2"
+    ]
+   },
+   "jogos": "unico",
+   "final": "unico",
+   "regra": "mata-mata com os clubes do site dessas ligas; byes para os mais fortes até fechar potência de 2; mando do clube de divisão menor quando houver",
+   "semifinal": "unico",
+   "desempate": "prorrogação e pênaltis",
+   "calendario": "distribuir as fases entre 0.2 e 0.95 da temporada da liga",
+   "confirmado": false,
+   "nota": "simplificado: só clubes do site"
+  },
+  "CDF": {
+   "nome": "Coupe de France 2027/28",
+   "tipo": "copa_nacional",
+   "participantes": {
+    "ligas": [
+     "FRA",
+     "FRA2"
+    ]
+   },
+   "jogos": "unico",
+   "final": "unico",
+   "regra": "mata-mata com os clubes do site dessas ligas; byes para os mais fortes até fechar potência de 2; mando do clube de divisão menor quando houver",
+   "semifinal": "unico",
+   "desempate": "prorrogação e pênaltis",
+   "calendario": "distribuir as fases entre 0.2 e 0.95 da temporada da liga",
+   "confirmado": false,
+   "nota": "simplificado: só clubes do site"
+  },
+  "TDP": {
+   "nome": "Taça de Portugal 2027/28",
+   "tipo": "copa_nacional",
+   "participantes": {
+    "ligas": [
+     "POR"
+    ]
+   },
+   "jogos": "unico",
+   "final": "unico",
+   "regra": "mata-mata com os clubes do site dessas ligas; byes para os mais fortes até fechar potência de 2; mando do clube de divisão menor quando houver",
+   "semifinal": "unico",
+   "desempate": "prorrogação e pênaltis",
+   "calendario": "distribuir as fases entre 0.2 e 0.95 da temporada da liga",
+   "confirmado": false,
+   "nota": "simplificado: só clubes do site"
+  },
+  "CAR": {
+   "nome": "Copa Argentina 2027",
+   "tipo": "copa_nacional",
+   "participantes": {
+    "ligas": [
+     "ARG",
+     "ARG2"
+    ]
+   },
+   "jogos": "unico",
+   "final": "unico",
+   "regra": "mata-mata com os clubes do site dessas ligas; byes para os mais fortes até fechar potência de 2; mando do clube de divisão menor quando houver",
+   "semifinal": "unico",
+   "desempate": "prorrogação e pênaltis",
+   "calendario": "distribuir as fases entre 0.2 e 0.95 da temporada da liga",
+   "confirmado": false,
+   "nota": "simplificado: só clubes do site"
+  }
+ },
+ "por_liga": {
+  "BRA": [
+   "CDB",
+   "LIB",
+   "SUD"
+  ],
+  "BRB": [
+   "CDB"
+  ],
+  "BRC": [
+   "CDB"
+  ],
+  "ARG": [
+   "CAR",
+   "LIB",
+   "SUD"
+  ],
+  "ARG2": [
+   "CAR"
+  ],
+  "ENG": [
+   "FAC",
+   "UCL",
+   "UEL",
+   "UECL"
+  ],
+  "ENG2": [
+   "FAC"
+  ],
+  "ESP": [
+   "CDR",
+   "UCL",
+   "UEL",
+   "UECL"
+  ],
+  "ESP2": [
+   "CDR"
+  ],
+  "ITA": [
+   "CIT",
+   "UCL",
+   "UEL",
+   "UECL"
+  ],
+  "ITA2": [
+   "CIT"
+  ],
+  "GER": [
+   "DFB",
+   "UCL",
+   "UEL",
+   "UECL"
+  ],
+  "GER2": [
+   "DFB"
+  ],
+  "FRA": [
+   "CDF",
+   "UCL",
+   "UEL",
+   "UECL"
+  ],
+  "FRA2": [
+   "CDF"
+  ],
+  "POR": [
+   "TDP",
+   "UCL",
+   "UEL",
+   "UECL"
+  ],
+  "BOL": [
+   "LIB",
+   "SUD"
+  ],
+  "CHI": [
+   "LIB",
+   "SUD"
+  ],
+  "COL": [
+   "LIB",
+   "SUD"
+  ],
+  "ECU": [
+   "LIB",
+   "SUD"
+  ],
+  "PAR": [
+   "LIB",
+   "SUD"
+  ],
+  "PER": [
+   "LIB",
+   "SUD"
+  ],
+  "URU": [
+   "LIB",
+   "SUD"
+  ],
+  "VEN": [
+   "LIB",
+   "SUD"
+  ],
+  "NED": [
+   "UCL",
+   "UEL",
+   "UECL"
+  ],
+  "BEL": [
+   "UCL",
+   "UEL",
+   "UECL"
+  ],
+  "CZE": [
+   "UCL",
+   "UEL",
+   "UECL"
+  ],
+  "TUR": [
+   "UCL",
+   "UEL",
+   "UECL"
+  ],
+  "SCO": [
+   "UCL",
+   "UEL",
+   "UECL"
+  ],
+  "AUT": [
+   "UCL",
+   "UEL",
+   "UECL"
+  ],
+  "SUI": [
+   "UCL",
+   "UEL",
+   "UECL"
+  ],
+  "GRE": [
+   "UCL",
+   "UEL",
+   "UECL"
+  ],
+  "NOR": [
+   "UCL",
+   "UEL",
+   "UECL"
+  ],
+  "DEN": [
+   "UCL",
+   "UEL",
+   "UECL"
+  ],
+  "SWE": [
+   "UCL",
+   "UEL",
+   "UECL"
+  ],
+  "POL": [
+   "UCL",
+   "UEL",
+   "UECL"
+  ],
+  "CRO": [
+   "UCL",
+   "UEL",
+   "UECL"
+  ],
+  "SRB": [
+   "UCL",
+   "UEL",
+   "UECL"
+  ],
+  "UKR": [
+   "UCL",
+   "UEL",
+   "UECL"
+  ],
+  "ROU": [
+   "UCL",
+   "UEL",
+   "UECL"
+  ],
+  "ISR": [
+   "UCL",
+   "UEL",
+   "UECL"
+  ],
+  "HUN": [
+   "UCL",
+   "UEL",
+   "UECL"
+  ],
+  "SVK": [
+   "UCL",
+   "UEL",
+   "UECL"
+  ],
+  "BUL": [
+   "UCL",
+   "UEL",
+   "UECL"
+  ],
+  "CYP": [
+   "UCL",
+   "UEL",
+   "UECL"
+  ],
+  "SVN": [
+   "UCL",
+   "UEL",
+   "UECL"
+  ]
+ },
+ "fora_nesta_versao": "Concacaf Champions Cup, Leagues Cup, AFC, CAF, Copa Sul-Americana completa (56), Supercopas, Recopa e Mundial de Clubes."
+}

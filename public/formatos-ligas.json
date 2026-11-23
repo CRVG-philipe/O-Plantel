@@ -1,0 +1,1640 @@
+{
+ "_sobre": "Formato da temporada SIMULADA de cada liga (substitui o \"pontos corridos para todas\" da versão 1). rotulo = nome da temporada mostrado no site (tem prioridade sobre a regra 2026→2027 / 26/27→2027/28). confirmado=true: formato conferido em notícias de nov/2026; false: aproximado. Tipos de fase: pontos (turnos 1-4; grupos/partes opcionais), split (divide a tabela em grupos e joga mais turnos; pontos mantidos ou pela metade), grupos (quadrangulares etc.), mata (mata-mata; ida_volta ou unico; final unico/ida_volta/nenhuma), torneios (Apertura/Clausura: cada torneio tem suas fases e seu campeão; tabela anual = soma), final (decisão entre campeões).",
+ "atualizado": "2026-11-22",
+ "ligas": {
+  "BRA": {
+   "rotulo": "Brasileirão 2027",
+   "fases": [
+    {
+     "tipo": "pontos",
+     "turnos": 2
+    }
+   ],
+   "campeao": "pontos",
+   "confirmado": true
+  },
+  "BRB": {
+   "rotulo": "Série B 2027",
+   "fases": [
+    {
+     "tipo": "pontos",
+     "turnos": 2
+    },
+    {
+     "tipo": "mata",
+     "nome": "Playoff de acesso",
+     "classificados": {
+      "de": 3,
+      "ate": 6
+     },
+     "jogos": "ida_volta",
+     "final": "nenhuma",
+     "vantagem": "melhor_campanha",
+     "nota": "3º x 6º e 4º x 5º, ida e volta; os 2 vencedores sobem; empate no agregado = melhor campanha (sem pênaltis)"
+    }
+   ],
+   "campeao": "pontos",
+   "confirmado": true,
+   "nota": "1º e 2º sobem direto"
+  },
+  "BRC": {
+   "rotulo": "Série C 2027",
+   "fases": [
+    {
+     "tipo": "pontos",
+     "turnos": 1
+    },
+    {
+     "tipo": "grupos",
+     "nome": "Quadrangulares",
+     "classificados": {
+      "de": 1,
+      "ate": 8
+     },
+     "grupos": 2,
+     "turnos": 2,
+     "sorteio": "1-4-5-8 / 2-3-6-7"
+    }
+   ],
+   "campeao": "final",
+   "confirmado": false,
+   "nota": "No real a Série C 2027 tem 24 clubes; no site só os que existem. 2 primeiros de cada quadrangular sobem; final entre os líderes (ida e volta)."
+  },
+  "ARG": {
+   "rotulo": "Liga Profesional 2027",
+   "fases": [
+    {
+     "tipo": "pontos",
+     "turnos": 1,
+     "partes": [
+      {
+       "nome": "Apertura 2027",
+       "rodadas": [
+        1,
+        15
+       ],
+       "mata": {
+        "tipo": "mata",
+        "nome": "Playoffs Apertura",
+        "classificados": {
+         "de": 1,
+         "ate": 16
+        },
+        "jogos": "unico",
+        "final": "unico",
+        "vantagem": "melhor_campanha",
+        "nota": "mata-mata jogo único, mando do melhor colocado; empate = pênaltis"
+       }
+      },
+      {
+       "nome": "Clausura 2027",
+       "rodadas": [
+        16,
+        30
+       ],
+       "mata": {
+        "tipo": "mata",
+        "nome": "Playoffs Clausura",
+        "classificados": {
+         "de": 1,
+         "ate": 16
+        },
+        "jogos": "unico",
+        "final": "unico",
+        "vantagem": "melhor_campanha",
+        "nota": "classificação pelas rodadas 16-30"
+       }
+      }
+     ]
+    }
+   ],
+   "campeao": "anual",
+   "confirmado": true,
+   "nota": "30 clubes em turno único (30 rodadas), sem zonas. Apertura = rodadas 1-15, Clausura = 16-30, cada um com playoff de 16. Campeão da Liga = tabela anual. 2 rebaixados (um pela anual, um por promedios: aproximar pelo 2º pior da anual).",
+   "rebaixamento": {
+    "n": 2,
+    "criterio": "anual"
+   }
+  },
+  "ARG2": {
+   "rotulo": "Primera Nacional 2027",
+   "fases": [
+    {
+     "tipo": "pontos",
+     "turnos": 2,
+     "grupos": "zonas",
+     "grupos_def": "usar as zonas de temporada-atual.json (ARG2) trocando os que sobem/descem"
+    },
+    {
+     "tipo": "mata",
+     "nome": "Reducido",
+     "classificados": {
+      "de": 2,
+      "ate": 8
+     },
+     "jogos": "unico",
+     "final": "unico",
+     "vantagem": "melhor_campanha",
+     "por_grupo": true,
+     "nota": "2º-8º de cada zona; vencedor sobe"
+    }
+   ],
+   "campeao": "final_lideres",
+   "confirmado": false,
+   "nota": "líderes das zonas fazem a final (sobe o campeão); 2ª vaga pelo Reducido. Aproximado."
+  },
+  "USA": {
+   "rotulo": "MLS 2027 (Sprint Season)",
+   "fases": [
+    {
+     "tipo": "pontos",
+     "turnos": 1,
+     "grupos": "conferencias",
+     "grupos_def": {
+      "Leste": [
+       "T337612",
+       "T337602",
+       "T2511",
+       "T2505",
+       "T404108",
+       "T39833",
+       "T2504",
+       "T52237",
+       "T215167",
+       "T2506",
+       "T187643",
+       "T7080",
+       "T243211",
+       "T2502",
+       "T22006"
+      ],
+      "Oeste": [
+       "T22010",
+       "T2512",
+       "T407803",
+       "T21825",
+       "T2508",
+       "T274650",
+       "T22007",
+       "T22009",
+       "T5133",
+       "T41618",
+       "T2513",
+       "T2510",
+       "T1043961",
+       "T377973",
+       "T2509"
+      ]
+     }
+    },
+    {
+     "tipo": "mata",
+     "nome": "MLS Cup Playoffs",
+     "classificados": {
+      "de": 1,
+      "ate": 8
+     },
+     "jogos": "unico",
+     "final": "unico",
+     "vantagem": "melhor_campanha",
+     "por_grupo": true,
+     "nota": "chave por conferência, jogo único; campeões de conferência fazem a final (MLS Cup)"
+    }
+   ],
+   "campeao": "mata",
+   "confirmado": true,
+   "nota": "Em 2027 a MLS joga uma temporada curta de 14 jogos (só contra a própria conferência) e depois muda para o calendário europeu (2027/28 começa em julho). Sem rebaixamento."
+  },
+  "USL": {
+   "rotulo": "USL Championship 2027",
+   "fases": [
+    {
+     "tipo": "pontos",
+     "turnos": 2,
+     "grupos": "conferencias",
+     "grupos_def": {
+      "Oeste": [
+       "T310531",
+       "T153498",
+       "T310532",
+       "T460707",
+       "T197065",
+       "T217134",
+       "T197071",
+       "T154018",
+       "T217781",
+       "T325107",
+       "T276898",
+       "T405944"
+      ],
+      "Leste": [
+       "T41617",
+       "T22004",
+       "T285642",
+       "T197070",
+       "T23635",
+       "T310968",
+       "T502355",
+       "T218106",
+       "T148992",
+       "T310969",
+       "T310967",
+       "T1158835",
+       "T1077312"
+      ]
+     }
+    },
+    {
+     "tipo": "mata",
+     "nome": "Playoffs",
+     "classificados": {
+      "de": 1,
+      "ate": 8
+     },
+     "jogos": "unico",
+     "final": "unico",
+     "vantagem": "melhor_campanha",
+     "por_grupo": true
+    }
+   ],
+   "campeao": "mata",
+   "confirmado": false,
+   "nota": "aproximado; sem rebaixamento"
+  },
+  "MEX": {
+   "rotulo": "Liga MX 2027/28",
+   "fases": [
+    {
+     "tipo": "torneios",
+     "torneios": [
+      {
+       "nome": "Apertura 2027",
+       "fases": [
+        {
+         "tipo": "pontos",
+         "turnos": 1
+        },
+        {
+         "tipo": "mata",
+         "nome": "Liguilla",
+         "classificados": {
+          "de": 1,
+          "ate": 8
+         },
+         "jogos": "ida_volta",
+         "final": "ida_volta",
+         "vantagem": "melhor_campanha",
+         "nota": "quartas e semis ida e volta; empate no agregado = melhor campanha; final ida e volta com prorrogação e pênaltis"
+        }
+       ]
+      },
+      {
+       "nome": "Clausura 2028",
+       "fases": [
+        {
+         "tipo": "pontos",
+         "turnos": 1,
+         "mando_invertido": true
+        },
+        {
+         "tipo": "mata",
+         "nome": "Liguilla",
+         "classificados": {
+          "de": 1,
+          "ate": 8
+         },
+         "jogos": "ida_volta",
+         "final": "ida_volta",
+         "vantagem": "melhor_campanha"
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "campeao": "dois_campeoes",
+   "confirmado": true,
+   "nota": "Play-in eliminado em definitivo: os 8 primeiros vão direto à Liguilla. Sem rebaixamento. Tabela anual = soma dos dois torneios."
+  },
+  "CAN": {
+   "rotulo": "Canadian Premier League 2027",
+   "fases": [
+    {
+     "tipo": "pontos",
+     "turnos": 4
+    },
+    {
+     "tipo": "mata",
+     "nome": "Playoffs",
+     "classificados": {
+      "de": 1,
+      "ate": 4
+     },
+     "jogos": "unico",
+     "final": "unico",
+     "vantagem": "melhor_campanha"
+    }
+   ],
+   "campeao": "mata",
+   "confirmado": false,
+   "nota": "aproximado"
+  },
+  "CRC": {
+   "rotulo": "Primera División 2027/28",
+   "fases": [
+    {
+     "tipo": "torneios",
+     "torneios": [
+      {
+       "nome": "Apertura 2027",
+       "fases": [
+        {
+         "tipo": "pontos",
+         "turnos": 2
+        },
+        {
+         "tipo": "mata",
+         "nome": "Fase final",
+         "classificados": {
+          "de": 1,
+          "ate": 4
+         },
+         "jogos": "ida_volta",
+         "final": "ida_volta",
+         "vantagem": "melhor_campanha"
+        }
+       ]
+      },
+      {
+       "nome": "Clausura 2028",
+       "fases": [
+        {
+         "tipo": "pontos",
+         "turnos": 2
+        },
+        {
+         "tipo": "mata",
+         "nome": "Fase final",
+         "classificados": {
+          "de": 1,
+          "ate": 4
+         },
+         "jogos": "ida_volta",
+         "final": "ida_volta",
+         "vantagem": "melhor_campanha"
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "campeao": "dois_campeoes",
+   "confirmado": false,
+   "nota": "aproximado"
+  },
+  "HON": {
+   "rotulo": "Liga Nacional 2027/28",
+   "fases": [
+    {
+     "tipo": "torneios",
+     "torneios": [
+      {
+       "nome": "Apertura 2027",
+       "fases": [
+        {
+         "tipo": "pontos",
+         "turnos": 2
+        },
+        {
+         "tipo": "mata",
+         "nome": "Liguilla",
+         "classificados": {
+          "de": 1,
+          "ate": 6
+         },
+         "jogos": "ida_volta",
+         "final": "ida_volta",
+         "vantagem": "melhor_campanha",
+         "nota": "3º-6º jogam repescagem; 1º e 2º direto às semis"
+        }
+       ]
+      },
+      {
+       "nome": "Clausura 2028",
+       "fases": [
+        {
+         "tipo": "pontos",
+         "turnos": 2
+        },
+        {
+         "tipo": "mata",
+         "nome": "Liguilla",
+         "classificados": {
+          "de": 1,
+          "ate": 6
+         },
+         "jogos": "ida_volta",
+         "final": "ida_volta",
+         "vantagem": "melhor_campanha"
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "campeao": "dois_campeoes",
+   "confirmado": false,
+   "nota": "aproximado"
+  },
+  "ENG": {
+   "rotulo": "Premier League 2027/28",
+   "fases": [
+    {
+     "tipo": "pontos",
+     "turnos": 2
+    }
+   ],
+   "campeao": "pontos",
+   "confirmado": true
+  },
+  "ENG2": {
+   "rotulo": "Championship 2027/28",
+   "fases": [
+    {
+     "tipo": "pontos",
+     "turnos": 2
+    },
+    {
+     "tipo": "mata",
+     "nome": "Playoff de acesso",
+     "classificados": {
+      "de": 3,
+      "ate": 6
+     },
+     "jogos": "ida_volta",
+     "final": "unico",
+     "vantagem": "melhor_campanha",
+     "nota": "semis ida e volta (3x6, 4x5), final única; vencedor sobe"
+    }
+   ],
+   "campeao": "pontos",
+   "confirmado": true,
+   "nota": "1º e 2º sobem direto; 3 últimos caem para a League One (fora do site: ficam no site)"
+  },
+  "ESP": {
+   "rotulo": "LaLiga 2027/28",
+   "fases": [
+    {
+     "tipo": "pontos",
+     "turnos": 2
+    }
+   ],
+   "campeao": "pontos",
+   "confirmado": true
+  },
+  "ESP2": {
+   "rotulo": "LaLiga 2 2027/28",
+   "fases": [
+    {
+     "tipo": "pontos",
+     "turnos": 2
+    },
+    {
+     "tipo": "mata",
+     "nome": "Playoff de acesso",
+     "classificados": {
+      "de": 3,
+      "ate": 6
+     },
+     "jogos": "ida_volta",
+     "final": "ida_volta",
+     "vantagem": "melhor_campanha"
+    }
+   ],
+   "campeao": "pontos",
+   "confirmado": true,
+   "nota": "1º e 2º sobem direto"
+  },
+  "ITA": {
+   "rotulo": "Serie A 2027/28",
+   "fases": [
+    {
+     "tipo": "pontos",
+     "turnos": 2
+    }
+   ],
+   "campeao": "pontos",
+   "confirmado": true
+  },
+  "ITA2": {
+   "rotulo": "Serie B 2027/28",
+   "fases": [
+    {
+     "tipo": "pontos",
+     "turnos": 2
+    },
+    {
+     "tipo": "mata",
+     "nome": "Playoff de acesso",
+     "classificados": {
+      "de": 3,
+      "ate": 8
+     },
+     "jogos": "ida_volta",
+     "final": "ida_volta",
+     "vantagem": "melhor_campanha",
+     "nota": "preliminar jogo único 5x8 e 6x7; semis ida e volta com 3º e 4º; final ida e volta"
+    }
+   ],
+   "campeao": "pontos",
+   "confirmado": true,
+   "nota": "1º e 2º sobem direto"
+  },
+  "GER": {
+   "rotulo": "Bundesliga 2027/28",
+   "fases": [
+    {
+     "tipo": "pontos",
+     "turnos": 2
+    }
+   ],
+   "campeao": "pontos",
+   "confirmado": true,
+   "nota": "16º joga playoff (ida e volta) contra o 3º da 2. Bundesliga"
+  },
+  "GER2": {
+   "rotulo": "2. Bundesliga 2027/28",
+   "fases": [
+    {
+     "tipo": "pontos",
+     "turnos": 2
+    }
+   ],
+   "campeao": "pontos",
+   "confirmado": true,
+   "nota": "1º e 2º sobem; 3º joga playoff contra o 16º da Bundesliga"
+  },
+  "FRA": {
+   "rotulo": "Ligue 1 2027/28",
+   "fases": [
+    {
+     "tipo": "pontos",
+     "turnos": 2
+    }
+   ],
+   "campeao": "pontos",
+   "confirmado": true,
+   "nota": "16º joga barragem contra o vencedor do playoff da Ligue 2"
+  },
+  "FRA2": {
+   "rotulo": "Ligue 2 2027/28",
+   "fases": [
+    {
+     "tipo": "pontos",
+     "turnos": 2
+    },
+    {
+     "tipo": "mata",
+     "nome": "Playoff de acesso",
+     "classificados": {
+      "de": 3,
+      "ate": 5
+     },
+     "jogos": "unico",
+     "final": "unico",
+     "vantagem": "melhor_campanha",
+     "nota": "5º x 4º, vencedor x 3º, vencedor x 16º da Ligue 1 (ida e volta)"
+    }
+   ],
+   "campeao": "pontos",
+   "confirmado": true
+  },
+  "POR": {
+   "rotulo": "Liga Portugal 2027/28",
+   "fases": [
+    {
+     "tipo": "pontos",
+     "turnos": 2
+    }
+   ],
+   "campeao": "pontos",
+   "confirmado": true
+  },
+  "NED": {
+   "rotulo": "Eredivisie 2027/28",
+   "fases": [
+    {
+     "tipo": "pontos",
+     "turnos": 2
+    }
+   ],
+   "campeao": "pontos",
+   "confirmado": true
+  },
+  "BEL": {
+   "rotulo": "Pro League 2027/28",
+   "fases": [
+    {
+     "tipo": "pontos",
+     "turnos": 2
+    }
+   ],
+   "campeao": "pontos",
+   "confirmado": true,
+   "nota": "18 clubes, 34 rodadas, sem playoffs; 2 últimos caem"
+  },
+  "TUR": {
+   "rotulo": "Süper Lig 2027/28",
+   "fases": [
+    {
+     "tipo": "pontos",
+     "turnos": 2
+    }
+   ],
+   "campeao": "pontos",
+   "confirmado": false
+  },
+  "SCO": {
+   "rotulo": "Premiership 2027/28",
+   "fases": [
+    {
+     "tipo": "pontos",
+     "turnos": 3
+    },
+    {
+     "tipo": "split",
+     "pontos": "mantem",
+     "grupos": [
+      {
+       "nome": "Grupo do título",
+       "de": 1,
+       "ate": 6,
+       "turnos": 1
+      },
+      {
+       "nome": "Grupo inferior",
+       "de": 7,
+       "ate": 12,
+       "turnos": 1
+      }
+     ]
+    }
+   ],
+   "campeao": "pontos",
+   "confirmado": true,
+   "nota": "33 rodadas + split de 5"
+  },
+  "DEN": {
+   "rotulo": "Superliga 2027/28",
+   "fases": [
+    {
+     "tipo": "pontos",
+     "turnos": 2
+    },
+    {
+     "tipo": "split",
+     "pontos": "mantem",
+     "grupos": [
+      {
+       "nome": "Grupo do título",
+       "de": 1,
+       "ate": 6,
+       "turnos": 2
+      },
+      {
+       "nome": "Grupo de rebaixamento",
+       "de": 7,
+       "ate": 12,
+       "turnos": 2
+      }
+     ]
+    }
+   ],
+   "campeao": "pontos",
+   "confirmado": false
+  },
+  "SUI": {
+   "rotulo": "Super League 2027/28",
+   "fases": [
+    {
+     "tipo": "pontos",
+     "turnos": 3
+    },
+    {
+     "tipo": "split",
+     "pontos": "mantem",
+     "grupos": [
+      {
+       "nome": "Grupo do título",
+       "de": 1,
+       "ate": 6,
+       "turnos": 1
+      },
+      {
+       "nome": "Grupo inferior",
+       "de": 7,
+       "ate": 12,
+       "turnos": 1
+      }
+     ]
+    }
+   ],
+   "campeao": "pontos",
+   "confirmado": false
+  },
+  "AUT": {
+   "rotulo": "Bundesliga 2027/28",
+   "fases": [
+    {
+     "tipo": "pontos",
+     "turnos": 2
+    },
+    {
+     "tipo": "split",
+     "pontos": "metade",
+     "grupos": [
+      {
+       "nome": "Grupo do título",
+       "de": 1,
+       "ate": 6,
+       "turnos": 2
+      },
+      {
+       "nome": "Grupo de qualificação",
+       "de": 7,
+       "ate": 12,
+       "turnos": 2
+      }
+     ]
+    }
+   ],
+   "campeao": "pontos",
+   "confirmado": false,
+   "nota": "pontos divididos por 2 (arredonda para baixo) no split"
+  },
+  "GRE": {
+   "rotulo": "Super League 2027/28",
+   "fases": [
+    {
+     "tipo": "pontos",
+     "turnos": 2
+    },
+    {
+     "tipo": "split",
+     "pontos": "mantem",
+     "grupos": [
+      {
+       "nome": "Playoff do título",
+       "de": 1,
+       "ate": 4,
+       "turnos": 2
+      },
+      {
+       "nome": "Playoff 5-8",
+       "de": 5,
+       "ate": 8,
+       "turnos": 2
+      },
+      {
+       "nome": "Playout",
+       "de": 9,
+       "ate": 14,
+       "turnos": 1
+      }
+     ]
+    }
+   ],
+   "campeao": "pontos",
+   "confirmado": false
+  },
+  "NOR": {
+   "rotulo": "Eliteserien 2027",
+   "fases": [
+    {
+     "tipo": "pontos",
+     "turnos": 2
+    }
+   ],
+   "campeao": "pontos",
+   "confirmado": false
+  },
+  "SWE": {
+   "rotulo": "Allsvenskan 2027",
+   "fases": [
+    {
+     "tipo": "pontos",
+     "turnos": 2
+    }
+   ],
+   "campeao": "pontos",
+   "confirmado": false
+  },
+  "POL": {
+   "rotulo": "Ekstraklasa 2027/28",
+   "fases": [
+    {
+     "tipo": "pontos",
+     "turnos": 2
+    }
+   ],
+   "campeao": "pontos",
+   "confirmado": false
+  },
+  "CZE": {
+   "rotulo": "Chance Liga 2027/28",
+   "fases": [
+    {
+     "tipo": "pontos",
+     "turnos": 2
+    },
+    {
+     "tipo": "split",
+     "pontos": "mantem",
+     "grupos": [
+      {
+       "nome": "Grupo do título",
+       "de": 1,
+       "ate": 6,
+       "turnos": 1
+      },
+      {
+       "nome": "Grupo do meio",
+       "de": 7,
+       "ate": 10,
+       "turnos": 1
+      },
+      {
+       "nome": "Grupo de rebaixamento",
+       "de": 11,
+       "ate": 16,
+       "turnos": 1
+      }
+     ]
+    }
+   ],
+   "campeao": "pontos",
+   "confirmado": false
+  },
+  "CRO": {
+   "rotulo": "HNL 2027/28",
+   "fases": [
+    {
+     "tipo": "pontos",
+     "turnos": 4
+    }
+   ],
+   "campeao": "pontos",
+   "confirmado": false
+  },
+  "SRB": {
+   "rotulo": "Superliga 2027/28",
+   "fases": [
+    {
+     "tipo": "pontos",
+     "turnos": 2
+    },
+    {
+     "tipo": "split",
+     "pontos": "mantem",
+     "grupos": [
+      {
+       "nome": "Grupo do título",
+       "de": 1,
+       "ate": 7,
+       "turnos": 1
+      },
+      {
+       "nome": "Grupo inferior",
+       "de": 8,
+       "ate": 14,
+       "turnos": 1
+      }
+     ]
+    }
+   ],
+   "campeao": "pontos",
+   "confirmado": false
+  },
+  "UKR": {
+   "rotulo": "Premier Liga 2027/28",
+   "fases": [
+    {
+     "tipo": "pontos",
+     "turnos": 2
+    }
+   ],
+   "campeao": "pontos",
+   "confirmado": false
+  },
+  "ROU": {
+   "rotulo": "SuperLiga 2027/28",
+   "fases": [
+    {
+     "tipo": "pontos",
+     "turnos": 2
+    },
+    {
+     "tipo": "split",
+     "pontos": "metade",
+     "grupos": [
+      {
+       "nome": "Playoff",
+       "de": 1,
+       "ate": 6,
+       "turnos": 2
+      },
+      {
+       "nome": "Playout",
+       "de": 7,
+       "ate": 16,
+       "turnos": 1
+      }
+     ]
+    }
+   ],
+   "campeao": "pontos",
+   "confirmado": false
+  },
+  "RUS": {
+   "rotulo": "Premier Liga 2027/28",
+   "fases": [
+    {
+     "tipo": "pontos",
+     "turnos": 2
+    }
+   ],
+   "campeao": "pontos",
+   "confirmado": false,
+   "nota": "clubes russos fora das copas da UEFA"
+  },
+  "JPN": {
+   "rotulo": "J1 League 2027/28",
+   "fases": [
+    {
+     "tipo": "pontos",
+     "turnos": 2
+    }
+   ],
+   "campeao": "pontos",
+   "confirmado": false,
+   "nota": "a J1 passou ao calendário europeu em 2026/27"
+  },
+  "KOR": {
+   "rotulo": "K League 1 2027",
+   "fases": [
+    {
+     "tipo": "pontos",
+     "turnos": 3
+    },
+    {
+     "tipo": "split",
+     "pontos": "mantem",
+     "grupos": [
+      {
+       "nome": "Final A",
+       "de": 1,
+       "ate": 6,
+       "turnos": 1
+      },
+      {
+       "nome": "Final B",
+       "de": 7,
+       "ate": 12,
+       "turnos": 1
+      }
+     ]
+    }
+   ],
+   "campeao": "pontos",
+   "confirmado": false
+  },
+  "CHN": {
+   "rotulo": "Super League 2027",
+   "fases": [
+    {
+     "tipo": "pontos",
+     "turnos": 2
+    }
+   ],
+   "campeao": "pontos",
+   "confirmado": false
+  },
+  "QAT": {
+   "rotulo": "Stars League 2027/28",
+   "fases": [
+    {
+     "tipo": "pontos",
+     "turnos": 2
+    }
+   ],
+   "campeao": "pontos",
+   "confirmado": false
+  },
+  "UAE": {
+   "rotulo": "Pro League 2027/28",
+   "fases": [
+    {
+     "tipo": "pontos",
+     "turnos": 2
+    }
+   ],
+   "campeao": "pontos",
+   "confirmado": false
+  },
+  "SAU": {
+   "rotulo": "Saudi Pro League 2027/28",
+   "fases": [
+    {
+     "tipo": "pontos",
+     "turnos": 2
+    }
+   ],
+   "campeao": "pontos",
+   "confirmado": false
+  },
+  "EGY": {
+   "rotulo": "Premier League 2027/28",
+   "fases": [
+    {
+     "tipo": "pontos",
+     "turnos": 2
+    }
+   ],
+   "campeao": "pontos",
+   "confirmado": false
+  },
+  "MAR": {
+   "rotulo": "Botola Pro 2027/28",
+   "fases": [
+    {
+     "tipo": "pontos",
+     "turnos": 2
+    }
+   ],
+   "campeao": "pontos",
+   "confirmado": false
+  },
+  "RSA": {
+   "rotulo": "Premiership 2027/28",
+   "fases": [
+    {
+     "tipo": "pontos",
+     "turnos": 2
+    }
+   ],
+   "campeao": "pontos",
+   "confirmado": false
+  },
+  "AUS": {
+   "rotulo": "A-League 2027/28",
+   "fases": [
+    {
+     "tipo": "pontos",
+     "turnos": 2,
+     "nota": "26 rodadas: turno e returno + 4 jogos extras sorteados"
+    },
+    {
+     "tipo": "mata",
+     "nome": "Finals Series",
+     "classificados": {
+      "de": 1,
+      "ate": 6
+     },
+     "jogos": "unico",
+     "final": "unico",
+     "vantagem": "melhor_campanha",
+     "nota": "3x6 e 4x5 jogo único; semis ida e volta contra 1º e 2º; grande final única"
+    }
+   ],
+   "campeao": "mata",
+   "confirmado": false
+  },
+  "ISR": {
+   "rotulo": "Ligat ha'Al 2027/28",
+   "fases": [
+    {
+     "tipo": "pontos",
+     "turnos": 2
+    },
+    {
+     "tipo": "split",
+     "pontos": "mantem",
+     "grupos": [
+      {
+       "nome": "Grupo do título",
+       "de": 1,
+       "ate": 6,
+       "turnos": 2
+      },
+      {
+       "nome": "Grupo inferior",
+       "de": 7,
+       "ate": 14,
+       "turnos": 1
+      }
+     ]
+    }
+   ],
+   "campeao": "pontos",
+   "confirmado": false
+  },
+  "HUN": {
+   "rotulo": "NB I 2027/28",
+   "fases": [
+    {
+     "tipo": "pontos",
+     "turnos": 3
+    }
+   ],
+   "campeao": "pontos",
+   "confirmado": false
+  },
+  "SVK": {
+   "rotulo": "Niké Liga 2027/28",
+   "fases": [
+    {
+     "tipo": "pontos",
+     "turnos": 2
+    },
+    {
+     "tipo": "split",
+     "pontos": "mantem",
+     "grupos": [
+      {
+       "nome": "Grupo do título",
+       "de": 1,
+       "ate": 6,
+       "turnos": 2
+      },
+      {
+       "nome": "Grupo inferior",
+       "de": 7,
+       "ate": 12,
+       "turnos": 2
+      }
+     ]
+    }
+   ],
+   "campeao": "pontos",
+   "confirmado": false
+  },
+  "BUL": {
+   "rotulo": "Parva Liga 2027/28",
+   "fases": [
+    {
+     "tipo": "pontos",
+     "turnos": 2
+    },
+    {
+     "tipo": "split",
+     "pontos": "mantem",
+     "grupos": [
+      {
+       "nome": "Grupo do título",
+       "de": 1,
+       "ate": 6,
+       "turnos": 2
+      },
+      {
+       "nome": "Grupo inferior",
+       "de": 7,
+       "ate": 14,
+       "turnos": 1
+      }
+     ]
+    }
+   ],
+   "campeao": "pontos",
+   "confirmado": false
+  },
+  "CYP": {
+   "rotulo": "First Division 2027/28",
+   "fases": [
+    {
+     "tipo": "pontos",
+     "turnos": 2
+    },
+    {
+     "tipo": "split",
+     "pontos": "mantem",
+     "grupos": [
+      {
+       "nome": "Grupo do título",
+       "de": 1,
+       "ate": 6,
+       "turnos": 2
+      },
+      {
+       "nome": "Grupo inferior",
+       "de": 7,
+       "ate": 14,
+       "turnos": 1
+      }
+     ]
+    }
+   ],
+   "campeao": "pontos",
+   "confirmado": false
+  },
+  "SVN": {
+   "rotulo": "PrvaLiga 2027/28",
+   "fases": [
+    {
+     "tipo": "pontos",
+     "turnos": 4
+    }
+   ],
+   "campeao": "pontos",
+   "confirmado": false
+  },
+  "COL": {
+   "rotulo": "Liga BetPlay 2027",
+   "fases": [
+    {
+     "tipo": "torneios",
+     "torneios": [
+      {
+       "nome": "Apertura 2027",
+       "fases": [
+        {
+         "tipo": "pontos",
+         "turnos": 1
+        },
+        {
+         "tipo": "grupos",
+         "nome": "Quadrangulares",
+         "classificados": {
+          "de": 1,
+          "ate": 8
+         },
+         "grupos": 2,
+         "turnos": 2,
+         "sorteio": "1 e 2 cabeças de chave"
+        },
+        {
+         "tipo": "final",
+         "jogos": "ida_volta",
+         "entre": "lideres_grupos"
+        }
+       ]
+      },
+      {
+       "nome": "Finalización 2027",
+       "fases": [
+        {
+         "tipo": "pontos",
+         "turnos": 1,
+         "mando_invertido": true
+        },
+        {
+         "tipo": "grupos",
+         "nome": "Quadrangulares",
+         "classificados": {
+          "de": 1,
+          "ate": 8
+         },
+         "grupos": 2,
+         "turnos": 2
+        },
+        {
+         "tipo": "final",
+         "jogos": "ida_volta",
+         "entre": "lideres_grupos"
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "campeao": "dois_campeoes",
+   "confirmado": false,
+   "nota": "rebaixamento por promedio (aproximar pela tabela anual): 2 caem",
+   "rebaixamento": {
+    "n": 2,
+    "criterio": "anual"
+   }
+  },
+  "COL2": {
+   "rotulo": "Primera B 2027",
+   "fases": [
+    {
+     "tipo": "torneios",
+     "torneios": [
+      {
+       "nome": "Torneo I",
+       "fases": [
+        {
+         "tipo": "pontos",
+         "turnos": 1
+        },
+        {
+         "tipo": "mata",
+         "nome": "Fase final",
+         "classificados": {
+          "de": 1,
+          "ate": 8
+         },
+         "jogos": "ida_volta",
+         "final": "ida_volta",
+         "vantagem": "melhor_campanha"
+        }
+       ]
+      },
+      {
+       "nome": "Torneo II",
+       "fases": [
+        {
+         "tipo": "pontos",
+         "turnos": 1
+        },
+        {
+         "tipo": "mata",
+         "nome": "Fase final",
+         "classificados": {
+          "de": 1,
+          "ate": 8
+         },
+         "jogos": "ida_volta",
+         "final": "ida_volta",
+         "vantagem": "melhor_campanha"
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "campeao": "dois_campeoes",
+   "confirmado": false,
+   "nota": "os campeões dos dois torneios sobem (se for o mesmo, sobe o 2º da anual). Aproximado."
+  },
+  "URU": {
+   "rotulo": "Liga AUF 2027",
+   "fases": [
+    {
+     "tipo": "torneios",
+     "torneios": [
+      {
+       "nome": "Apertura",
+       "fases": [
+        {
+         "tipo": "pontos",
+         "turnos": 1
+        }
+       ]
+      },
+      {
+       "nome": "Intermedio",
+       "fases": [
+        {
+         "tipo": "pontos",
+         "turnos": 1,
+         "grupos": "2 grupos sorteados"
+        }
+       ]
+      },
+      {
+       "nome": "Clausura",
+       "fases": [
+        {
+         "tipo": "pontos",
+         "turnos": 1,
+         "mando_invertido": true
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "tipo": "final",
+     "entre": "campeoes_torneios_e_lider_anual",
+     "jogos": "unico"
+    }
+   ],
+   "campeao": "final",
+   "confirmado": false,
+   "nota": "aproximado; rebaixamento por promedio (2 piores da anual)",
+   "rebaixamento": {
+    "n": 2,
+    "criterio": "anual",
+    "fora_do_site": true
+   }
+  },
+  "PAR": {
+   "rotulo": "Primera División 2027",
+   "fases": [
+    {
+     "tipo": "torneios",
+     "torneios": [
+      {
+       "nome": "Apertura 2027",
+       "fases": [
+        {
+         "tipo": "pontos",
+         "turnos": 2
+        }
+       ]
+      },
+      {
+       "nome": "Clausura 2027",
+       "fases": [
+        {
+         "tipo": "pontos",
+         "turnos": 2
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "campeao": "dois_campeoes",
+   "confirmado": false,
+   "nota": "rebaixamento por promedio (2 piores do acumulado)",
+   "rebaixamento": {
+    "n": 2,
+    "criterio": "anual",
+    "fora_do_site": true
+   }
+  },
+  "PER": {
+   "rotulo": "Liga 1 2027",
+   "fases": [
+    {
+     "tipo": "torneios",
+     "torneios": [
+      {
+       "nome": "Apertura 2027",
+       "fases": [
+        {
+         "tipo": "pontos",
+         "turnos": 1
+        }
+       ]
+      },
+      {
+       "nome": "Clausura 2027",
+       "fases": [
+        {
+         "tipo": "pontos",
+         "turnos": 1,
+         "mando_invertido": true
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "tipo": "final",
+     "entre": "campeoes_torneios",
+     "jogos": "ida_volta",
+     "nota": "se o mesmo clube vencer os dois, é campeão direto"
+    }
+   ],
+   "campeao": "final",
+   "confirmado": false,
+   "rebaixamento": {
+    "n": 2,
+    "criterio": "anual"
+   }
+  },
+  "PER2": {
+   "rotulo": "Liga 2 2027",
+   "fases": [
+    {
+     "tipo": "pontos",
+     "turnos": 2,
+     "grupos": "2 grupos"
+    },
+    {
+     "tipo": "mata",
+     "nome": "Fase final",
+     "classificados": {
+      "de": 1,
+      "ate": 4
+     },
+     "jogos": "ida_volta",
+     "final": "ida_volta",
+     "vantagem": "melhor_campanha",
+     "por_grupo": true
+    }
+   ],
+   "campeao": "mata",
+   "confirmado": false,
+   "nota": "aproximado"
+  },
+  "CHI": {
+   "rotulo": "Liga de Primera 2027",
+   "fases": [
+    {
+     "tipo": "pontos",
+     "turnos": 2
+    }
+   ],
+   "campeao": "pontos",
+   "confirmado": false,
+   "rebaixamento": {
+    "n": 2,
+    "criterio": "pontos"
+   }
+  },
+  "CHI2": {
+   "rotulo": "Liga de Ascenso 2027",
+   "fases": [
+    {
+     "tipo": "pontos",
+     "turnos": 2
+    },
+    {
+     "tipo": "mata",
+     "nome": "Liguilla de acesso",
+     "classificados": {
+      "de": 2,
+      "ate": 7
+     },
+     "jogos": "ida_volta",
+     "final": "ida_volta",
+     "vantagem": "melhor_campanha"
+    }
+   ],
+   "campeao": "pontos",
+   "confirmado": false,
+   "nota": "campeão sobe direto; 2ª vaga pela liguilla"
+  },
+  "ECU": {
+   "rotulo": "LigaPro 2027",
+   "fases": [
+    {
+     "tipo": "pontos",
+     "turnos": 2
+    },
+    {
+     "tipo": "split",
+     "pontos": "mantem",
+     "grupos": [
+      {
+       "nome": "Hexagonal do título",
+       "de": 1,
+       "ate": 6,
+       "turnos": 2
+      },
+      {
+       "nome": "Grupo de rebaixamento",
+       "de": 7,
+       "ate": 16,
+       "turnos": 1
+      }
+     ]
+    }
+   ],
+   "campeao": "pontos",
+   "confirmado": false,
+   "nota": "aproximado"
+  },
+  "BOL": {
+   "rotulo": "División Profesional 2027",
+   "fases": [
+    {
+     "tipo": "pontos",
+     "turnos": 2
+    }
+   ],
+   "campeao": "pontos",
+   "confirmado": false
+  },
+  "VEN": {
+   "rotulo": "Liga FUTVE 2027",
+   "fases": [
+    {
+     "tipo": "torneios",
+     "torneios": [
+      {
+       "nome": "Apertura 2027",
+       "fases": [
+        {
+         "tipo": "pontos",
+         "turnos": 1
+        }
+       ]
+      },
+      {
+       "nome": "Clausura 2027",
+       "fases": [
+        {
+         "tipo": "pontos",
+         "turnos": 1,
+         "mando_invertido": true
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "tipo": "final",
+     "entre": "campeoes_torneios",
+     "jogos": "ida_volta"
+    }
+   ],
+   "campeao": "final",
+   "confirmado": false
+  }
+ }
+}

@@ -1,8 +1,9 @@
 // Página do simulador da temporada (botão "Simular temporada", no topo do plano). Lógica em src/logica/simulacao/;
-// o estado fica em "plantel:sim". Versão 1: só a liga, sem copas, lesões ou suspensões; os outros clubes não contratam.
+// o estado fica em "plantel:sim". Versão 2 (etapa 1): temporada atual real e formatos especiais das ligas (split, playoffs,
+// Apertura/Clausura...). Sem copas, lesões ou suspensões; os outros clubes não contratam.
 //   Resumo        antes da temporada (previsão, quem chega e quem sai, vagas em aberto), durante (campanha e próximo jogo)
 //                 e no fim (campeão, sua campanha, seleção da temporada no campinho, faixas)
-//   Tabela        classificação com as faixas e os últimos 5 resultados
+//   Tabela        seletor de fase (pontos, split, grupos, torneios, anual) com as faixas; mata-mata como chaveamento
 //   Jogos         placares de cada rodada; tocar num jogo mostra os gols
 //   Estatísticas  artilharia, assistências, melhores notas e os números do seu clube
 //   Ao vivo       o seu jogo minuto a minuto (gols, substituições e lances), com velocidade 1x a 8x
@@ -16,10 +17,13 @@ import { Avatar, Pos } from "./Jogador.jsx";
 import { Cabecalho } from "./Painel.jsx";
 import Rodape from "./Rodape.jsx";
 import { idPar, opcoesDaPendencia, pares, rotuloLiga, temporadaAtual, vagasDaPendencia, zonasDaLiga } from "../logica/simulacao/composicao.js";
+import { formatoDa } from "../logica/simulacao/formatos.js";
+import { atualDa, dataAtual } from "../logica/simulacao/atual.js";
 import { escalarClube } from "../logica/simulacao/escalar.js";
 import {
-  VELOCIDADES, assinaturaDoPlano, calendarioDe, criarEstado, jogadorSim, lerSim, lerVelocidade, linhasEstatisticas, minimoJogos,
-  narracao, nomeClube, salvarSim, salvarVelocidade, selecaoDaTemporada, simularAte, tabelaAtual,
+  VELOCIDADES, assinaturaDoPlano, criarEstado, jogadorSim, jogosDaRodada, lerSim, lerVelocidade, linhasEstatisticas, minimoJogos,
+  narracao, nomeClube, nomeDaRodada, salvarSim, salvarVelocidade, selecaoDaTemporada, simularAte, tabelaAtual, titulosDe, totalRodadas,
+  vistaAtual, vistasTabela,
 } from "../logica/simulacao/temporada.js";
 
 // ---------- Formatos ----------
@@ -27,6 +31,17 @@ const pct = (x) => (x <= 0 ? "0%" : x < 1 ? "<1%" : Math.round(x) + "%");
 const dec = (x, n = 1) => x.toFixed(n).replace(".", ",");
 const sinal = (n) => (n > 0 ? "+" + n : n < 0 ? "−" + -n : "0");
 const nomeJog = (plano, id) => { const p = id && jogadorSim(plano, id); return p ? short(p.n) : "—"; };
+const dataBr = (iso) => (/^\d{4}-\d{2}-\d{2}$/.test(iso || "") ? iso.slice(8) + "/" + iso.slice(5, 7) + "/" + iso.slice(0, 4) : iso || "");
+// Nome da rodada para a tela: "Rodada 12 de 38" na fase de pontos simples; "Playoffs · Quartas (ida) · 33/40" no resto
+function rotuloRodada(estado, r, total) {
+  const n = nomeDaRodada(estado, r);
+  return /^Rodada \d+$/.test(n) ? `${n} de ${total}` : `${n} · ${r + 1}/${total}`;
+}
+// Texto do botão de jogar: "Jogar rodada 15", "Jogar Quartas (ida)"
+function rotuloJogar(estado, r) {
+  const n = nomeDaRodada(estado, r), ult = n.split(" · ").pop();
+  return /^Rodada \d+$/.test(ult) ? "Jogar " + ult.replace("Rodada", "rodada") : "Jogar " + ult;
+}
 
 // Estado salvo do clube, se ainda servir (liga e clubes existem); senão, uma temporada nova
 function carregar(plano) {
@@ -47,8 +62,8 @@ export default function Simulador({ app }) {
   const [estado, setEstado] = useState(() => carregar(plano));
   const [vista, setVista] = useState("resumo");
   const [aoVivo, setAoVivo] = useState(null); // índice da rodada que está sendo assistida (null = fora do jogo ao vivo)
-  const cal = useMemo(() => calendarioDe(estado), [estado.semente, estado.composicao]); // eslint-disable-line
-  const total = cal.length, fim = estado.rodadaAtual >= total;
+  const total = useMemo(() => totalRodadas(estado), [estado.semente, estado.composicao, estado.liga]); // eslint-disable-line
+  const fim = estado.rodadaAtual >= total;
   const tabela = useMemo(() => tabelaAtual(estado), [estado]);
 
   const guardar = (e) => { salvarSim(k, e); setEstado(e); };
@@ -70,10 +85,12 @@ export default function Simulador({ app }) {
   const mudou = estado.rodadaAtual > 0 && estado.assinatura !== assinatura;
   const pos = tabela.findIndex((l) => l.k === k) + 1;
   // Durante o jogo ao vivo, o topo não mostra a posição (ela já conta o resultado e estragaria a surpresa)
-  const status = aoVivo !== null ? `Rodada ${aoVivo + 1} de ${total} · ao vivo`
+  const tits = fim ? titulosDe(estado).filter((t) => !t.extra && t.k) : [];
+  const status = aoVivo !== null ? `${rotuloRodada(estado, aoVivo, total)} · ao vivo`
     : estado.rodadaAtual === 0 ? `Antes da temporada · ${total} rodadas`
-    : fim ? `Temporada encerrada · campeão: ${nomeClube(tabela[0].k)}`
-      : `Rodada ${estado.rodadaAtual} de ${total} · ${nomeClube(k)} em ${pos}º`;
+    : fim ? `Temporada encerrada · ${tits.length > 1 ? "campeões" : "campeão"}: ${tits.map((t) => nomeClube(t.k)).join(" e ") || nomeClube(tabela[0].k)}`
+      : `${rotuloRodada(estado, estado.rodadaAtual - 1, total)} · ${nomeClube(k)} em ${pos}º`;
+  const F = formatoDa(estado.liga);
   const indice = ABAS.findIndex(([v]) => v === vista);
 
   return (
@@ -87,7 +104,10 @@ export default function Simulador({ app }) {
             </button>
             <LogoLiga k={estado.liga} z={38} />
             <div className="simp-titulo">
-              <b id="sim-liga">{rotuloLiga(estado.liga)}</b>
+              <span className="simp-titulo-l">
+                <b id="sim-liga">{rotuloLiga(estado.liga)}</b>
+                {F.confirmado === false && <span className="sim-selo sim-aprox" id="sim-aprox" title={F.nota || "Formato aproximado: confira as regras reais da liga."}>formato aproximado</span>}
+              </span>
               <span id="sim-status">{status}</span>
             </div>
           </div>
@@ -119,9 +139,9 @@ export default function Simulador({ app }) {
             )}
             {vista === "resumo" && (estado.rodadaAtual === 0 ? <Antes estado={estado} k={k} refazer={refazer} app={app} />
               : fim ? <Fim estado={estado} tabela={tabela} k={k} plano={plano} />
-                : <Andamento estado={estado} tabela={tabela} k={k} cal={cal} plano={plano} jogarAoVivo={jogarAoVivo} verJogos={() => ir("jogos")} />)}
-            {vista === "tabela" && <Tabela estado={estado} tabela={tabela} k={k} />}
-            {vista === "jogos" && <Jogos estado={estado} cal={cal} k={k} plano={plano} jogarAoVivo={jogarAoVivo} />}
+                : <Andamento estado={estado} tabela={tabela} k={k} total={total} plano={plano} jogarAoVivo={jogarAoVivo} verJogos={() => ir("jogos")} />)}
+            {vista === "tabela" && <Tabela estado={estado} k={k} />}
+            {vista === "jogos" && <Jogos estado={estado} total={total} k={k} plano={plano} jogarAoVivo={jogarAoVivo} />}
             {vista === "estat" && <Estatisticas estado={estado} k={k} plano={plano} />}
           </>
         )}
@@ -139,7 +159,7 @@ export default function Simulador({ app }) {
                 <button className="btn" id="sim-fim" onClick={() => simular(total)}>Simular até o fim</button>
                 <button className="btn pri" id="sim-aovivo" onClick={jogarAoVivo}>
                   <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="currentColor"><path d="M7 4.5v15l12-7.5z" /></svg>
-                  Jogar rodada {estado.rodadaAtual + 1}
+                  {rotuloJogar(estado, estado.rodadaAtual)}
                 </button>
               </>
             ) : (
@@ -231,12 +251,20 @@ function Antes({ estado, k, refazer, app }) {
           <div className="sim-hero-clube"><Escudo k={k} z={40} /><span><b>{nomeClube(k)}</b><small>Previsão para a {rotuloLiga(liga)}</small></span></div>
           <div className="sim-hero-nums">
             <div className="sim-big"><b className="num">{Math.round(meu.pos)}º</b><span>previsão</span></div>
-            <div><b className="num">{pct(meu.titulo)}</b><span>chance de título</span></div>
+            {meu.titulos ? meu.titulos.map((t) => <div key={t.nome}><b className="num">{pct(t.pct)}</b><span>título {t.nome}</span></div>)
+              : <div><b className="num">{pct(meu.titulo)}</b><span>chance de título</span></div>}
             {temQueda && <div><b className="num desce">{pct(meu.queda)}</b><span>risco de queda</span></div>}
             {temAcesso && <div><b className="num sobe">{pct(meu.acesso)}</b><span>chance de acesso</span></div>}
           </div>
-          <p className="sim-hero-nota">Média de 300 temporadas simuladas com o seu elenco e a sua escalação.</p>
+          <p className="sim-hero-nota">Média de 300 temporadas simuladas com o seu elenco, a sua escalação e o formato da liga.</p>
         </div>
+      )}
+
+      {estado.atual && (
+        <button className="card sim-atual-bt" id="sim-ver-atual" onClick={() => app.abrirPainel("simAtual", { estado })}>
+          <span><b>Ver tabela atual</b><small>{rotuloAtual(estado.atual.lg)}: a tabela real de {dataBr(dataAtual())} e como ela termina na projeção</small></span>
+          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M9 5l7 7-7 7" /></svg>
+        </button>
       )}
 
       {!!D.CL[k]?.criado && <Substituto estado={estado} k={k} refazer={refazer} />}
@@ -285,7 +313,7 @@ function Antes({ estado, k, refazer, app }) {
               <Escudo k={c} z={22} />
               <span className="sim-nome">{nomeClube(c)}</span>
               <span className="sim-prev-barra" title={`posição média ${dec(x.pos)}º`}><i style={{ width: Math.max(2, x.titulo) + "%" }}></i></span>
-              <span className="num sim-prev-n"><span>{pct(x.titulo)}</span>
+              <span className="num sim-prev-n"><span>{x.titulos ? x.titulos.map((t) => pct(t.pct)).join(" · ") : pct(x.titulo)}</span>
                 {temQueda && <span className={x.queda >= 50 ? "desce" : "mute"}>{pct(x.queda)}</span>}{temAcesso && <span className={x.acesso >= 50 ? "sobe" : "mute"}>{pct(x.acesso)}</span>}</span>
             </div>
           ))}
@@ -352,9 +380,12 @@ function Pendencia({ par, r, esc, onModo, onMarcar }) {
 }
 
 // ---------- Resumo: durante a temporada ----------
-function Andamento({ estado, tabela, k, cal, plano, jogarAoVivo, verJogos }) {
+function Andamento({ estado, tabela, k, plano, jogarAoVivo, verJogos }) {
   const i = tabela.findIndex((l) => l.k === k), l = tabela[i];
-  const prox = cal[estado.rodadaAtual]?.find(([c, f]) => c === k || f === k);
+  // Próximo jogo: a rodada pode ainda não ter confrontos (playoff que depende da fase anterior) ou o clube pode não jogar
+  const jogosProx = jogosDaRodada(estado, estado.rodadaAtual);
+  const prox = jogosProx?.find(([c, f]) => c === k || f === k);
+  const nomeProx = nomeDaRodada(estado, estado.rodadaAtual);
   const prev = estado.previsao[k];
   // Último jogo do seu clube
   let ultimo = null;
@@ -375,14 +406,14 @@ function Andamento({ estado, tabela, k, cal, plano, jogarAoVivo, verJogos }) {
       <div className="sim-jogos-par">
         {prox ? (
           <div className="card sim-prox" id="sim-prox-jogo">
-            <span className="sim-rot">Próximo jogo · rodada {estado.rodadaAtual + 1}</span>
+            <span className="sim-rot">Próximo jogo · {nomeProx}</span>
             <div className="sim-confronto"><span><Escudo k={prox[0]} z={30} /><b className="sim-nome">{nomeClube(prox[0])}</b></span><i>×</i><span><Escudo k={prox[1]} z={30} /><b className="sim-nome">{nomeClube(prox[1])}</b></span></div>
             <button className="btn pri" onClick={jogarAoVivo}>Assistir ao vivo</button>
           </div>
-        ) : <div className="card sim-prox"><span className="sim-rot">Rodada {estado.rodadaAtual + 1}</span><p className="mute" style={{ margin: 0 }}>Seu clube folga nesta rodada.</p></div>}
+        ) : <div className="card sim-prox"><span className="sim-rot">{nomeProx}</span><p className="mute" style={{ margin: 0 }}>{jogosProx ? "Seu clube não joga nesta rodada." : "Os confrontos saem quando a fase anterior acabar."}</p></div>}
         {ultimo && (
           <button className="card sim-prox sim-ultimo" onClick={verJogos}>
-            <span className="sim-rot">Último jogo · rodada {ultimo.r + 1}</span>
+            <span className="sim-rot">Último jogo · {nomeDaRodada(estado, ultimo.r)}</span>
             <div className="sim-confronto"><span><Escudo k={ultimo.j[0]} z={30} /><b className="sim-nome">{nomeClube(ultimo.j[0])}</b></span><i className="num">{ultimo.j[2]} × {ultimo.j[3]}</i><span><Escudo k={ultimo.j[1]} z={30} /><b className="sim-nome">{nomeClube(ultimo.j[1])}</b></span></div>
             <span className="mute sim-autores">{ultimo.j[4].filter((e) => (e[1] === 0 ? ultimo.j[0] : ultimo.j[1]) === k).map((e) => nomeJog(plano, e[2])).join(", ") || "sem gols do seu clube"}</span>
           </button>
@@ -418,7 +449,11 @@ function TabelaCurta({ tabela, k, zonas }) {
 // ---------- Resumo: fim da temporada ----------
 function Fim({ estado, tabela, k, plano }) {
   const zonas = zonasDaLiga(estado.liga, tabela.length);
-  const campeao = tabela[0];
+  // Títulos pela regra do formato (pontos, playoffs, final, dois campeões); extras = Apertura/Clausura da Argentina
+  const tits = titulosDe(estado);
+  const principais = tits.filter((t) => !t.extra && t.k), extras = tits.filter((t) => t.extra && t.k);
+  const campeao = tabela.find((l) => l.k === principais[0]?.k) || tabela[0];
+  const meusTitulos = tits.filter((t) => t.k === k);
   const faixas = [];
   zonas.forEach((z, i) => {
     if (!z) return;
@@ -434,10 +469,16 @@ function Fim({ estado, tabela, k, plano }) {
       <div className="sim-campeao" id="sim-campeao">
         <span className="sim-taca" aria-hidden="true">🏆</span>
         <Escudo k={campeao.k} z={64} />
-        <small>Campeão da {rotuloLiga(estado.liga)}</small>
+        <small>{principais.length > 1 ? `${principais[0].nome} · ${rotuloLiga(estado.liga)}` : `Campeão da ${rotuloLiga(estado.liga)}`}</small>
         <b>{nomeClube(campeao.k)}</b>
         <span className="num">{campeao.pts} pontos · {campeao.v} vitórias · saldo {sinal(campeao.gp - campeao.gc)}</span>
+        {(principais.length > 1 || extras.length > 0) && (
+          <span className="sim-outros-titulos" id="sim-titulos">
+            {[...principais.slice(1), ...extras].map((t) => <span key={t.nome}><Escudo k={t.k} z={18} />{t.nome}: <b>{nomeClube(t.k)}</b></span>)}
+          </span>
+        )}
       </div>
+      {meusTitulos.length > 0 && <p className="sim-aviso sim-meu-titulo" id="sim-meu-titulo">🏆 {nomeClube(k)} campeão: {meusTitulos.map((t) => t.nome).join(", ")}!</p>}
 
       {prev && (
         <section className="sec" id="sim-prev-res">
@@ -494,19 +535,42 @@ function Fim({ estado, tabela, k, plano }) {
 }
 
 // ---------- Tabela ----------
-function Tabela({ estado, tabela, k }) {
-  const zonas = zonasDaLiga(estado.liga, tabela.length);
+// Seletor de fase (Fase de pontos | Split | Playoffs, ou Apertura | Clausura | Anual...) e, em cada fase,
+// as tabelas (com as faixas onde valem) e o chaveamento dos mata-matas.
+function Tabela({ estado, k }) {
+  const vistas = useMemo(() => vistasTabela(estado), [estado]);
+  const [id, setId] = useState(() => vistaAtual(estado, vistas));
+  const v = vistas.find((x) => x.id === id) || vistas[0];
   const legenda = [];
-  zonas.forEach((z) => { if (z && !legenda.some((x) => x.nome === z.nome)) legenda.push(z); });
+  v.blocos.forEach((b) => (b.zonas || []).forEach((z) => { if (z && !legenda.some((x) => x.nome === z.nome)) legenda.push(z); }));
   return (
-    <>
+    <div id="sim-tabelas">
+      {vistas.length > 1 && (
+        <div className="seg sim-fases" role="group" aria-label="Fase" id="sim-fases">
+          {vistas.map((x) => <button key={x.id} id={"sf-" + x.id} aria-pressed={x.id === v.id} onClick={() => setId(x.id)}>{x.nome}</button>)}
+        </div>
+      )}
+      {v.blocos.map((b, i) => (
+        b.tipo === "tabela" ? <TabelaBloco key={i} b={b} k={k} primeira={i === 0} />
+          : b.tipo === "chave" ? <Chave key={i} b={b} k={k} />
+            : <div className="card" key={i}><div className="empty" style={{ padding: 16 }}>{b.texto}</div></div>
+      ))}
+      {legenda.length > 0 && <div className="sim-legenda" id="sim-legenda">{legenda.map((z) => <span key={z.nome}><i style={{ background: z.cor }}></i>{z.nome}</span>)}</div>}
+    </div>
+  );
+}
+
+function TabelaBloco({ b, k, primeira }) {
+  return (
+    <section className="sec sim-bloco">
+      {b.titulo && <h2><span>{b.titulo}</span><span>{b.linhas.length} clubes</span></h2>}
       <div className="card sim-tab-wrap">
-        <table className="sim-tabela" id="sim-tabela">
+        <table className="sim-tabela" id={primeira ? "sim-tabela" : undefined}>
           <thead><tr><th>#</th><th className="cl">Clube</th><th>P</th><th>J</th><th>V</th><th>E</th><th>D</th><th>SG</th><th className="ult">Últimos 5</th></tr></thead>
           <tbody>
-            {tabela.map((l, i) => (
+            {b.linhas.map((l, i) => (
               <tr key={l.k} className={l.k === k ? "meu" : ""}>
-                <td className="zp" style={{ "--z": zonas[i]?.cor || "transparent" }} title={zonas[i]?.nome}>{i + 1}</td>
+                <td className="zp" style={{ "--z": b.zonas?.[i]?.cor || "transparent" }} title={b.zonas?.[i]?.nome}>{(b.inicio || 0) + i + 1}</td>
                 <td className="cl"><span><Escudo k={l.k} z={20} /><span className="sim-nome">{nomeClube(l.k)}</span></span></td>
                 <td><b>{l.pts}</b></td><td>{l.j}</td><td>{l.v}</td><td>{l.e}</td><td>{l.d}</td><td>{sinal(l.gp - l.gc)}</td>
                 <td className="ult"><Ultimos l={l} /></td>
@@ -515,49 +579,129 @@ function Tabela({ estado, tabela, k }) {
           </tbody>
         </table>
       </div>
-      {legenda.length > 0 && <div className="sim-legenda" id="sim-legenda">{legenda.map((z) => <span key={z.nome}><i style={{ background: z.cor }}></i>{z.nome}</span>)}</div>}
-    </>
+    </section>
+  );
+}
+
+// Chaveamento: uma coluna por fase; cada confronto com o placar de cada jogo, o agregado e quem passou
+function Chave({ b, k }) {
+  const Time = ({ x, gols, vence, pen }) => (
+    <div className={"sim-conf-time" + (vence ? " sim-conf-vence" : "") + (x === k ? " meu" : "")}>
+      {x ? <Escudo k={x} z={20} /> : <span className="sim-conf-vazio"></span>}
+      <span className="sim-nome">{x ? nomeClube(x) : "a definir"}</span>
+      {gols != null && <b className="num">{gols}{pen ? <small> (pên.)</small> : null}</b>}
+    </div>
+  );
+  return (
+    <section className="sec sim-bloco">
+      <h2><span>{b.titulo}</span><span>chaveamento</span></h2>
+      <div className="sim-chave">
+        {b.fases.map((f, i) => (
+          <div className="sim-chave-col" key={i}>
+            <span className="sim-rot">{f.nome}{f.idaVolta ? " · ida e volta" : ""}</span>
+            {!f.definida && <div className="card sim-conf sim-conf-aguarde">Sai da fase anterior</div>}
+            {f.confrontos.map((c, j) => (
+              <div className="card sim-conf" key={j}>
+                <Time x={c.a} gols={c.jogados ? c.ga : null} vence={c.vence === c.a} pen={c.penaltis && c.vence === c.a} />
+                <Time x={c.b} gols={c.jogados ? c.gb : null} vence={c.vence === c.b} pen={c.penaltis && c.vence === c.b} />
+                {c.jogos.length > 1 && <span className="sim-conf-jogos num">{c.jogos.map(([casa, x, y]) => `${casa === c.a ? x + "×" + y : y + "×" + x}`).join(" · ")}</span>}
+              </div>
+            ))}
+            {f.passam.length > 0 && (
+              <div className="sim-conf-passam">Direto: {f.passam.map((x) => <span key={x} className={x === k ? "meu" : ""}><Escudo k={x} z={16} />{nomeClube(x)}</span>)}</div>
+            )}
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }
 
 // ---------- Jogos (rodada a rodada) ----------
-function Jogos({ estado, cal, k, plano, jogarAoVivo }) {
-  const [r, setR] = useState(() => Math.max(0, Math.min(cal.length - 1, estado.rodadaAtual - 1)));
+function Jogos({ estado, total, k, plano, jogarAoVivo }) {
+  const [r, setR] = useState(() => Math.max(0, Math.min(total - 1, estado.rodadaAtual - 1)));
   const [aberto, setAberto] = useState(null);
   const jogada = r < estado.rodadaAtual;
-  const jogos = jogada ? estado.resultados[r] : cal[r].map(([c, f]) => [c, f, null, null, []]);
-  const ordenados = [...jogos].sort((a, b) => (b[0] === k || b[1] === k) - (a[0] === k || a[1] === k));
+  const fixos = jogada ? estado.resultados[r] : jogosDaRodada(estado, r);
+  const jogos = fixos ? (jogada ? fixos : fixos.map(([c, f]) => [c, f, null, null, []])) : null;
+  const ordenados = jogos ? [...jogos].sort((a, b) => (b[0] === k || b[1] === k) - (a[0] === k || a[1] === k)) : [];
   const mudar = (n) => { setR(n); setAberto(null); };
+  const nome = nomeDaRodada(estado, r);
   return (
     <div id="sim-rodadas">
       <div className="sim-nav">
         <button className="btn" id="rod-ant" aria-label="Rodada anterior" disabled={r === 0} onClick={() => mudar(r - 1)}>‹</button>
-        <div><b id="rod-n">Rodada {r + 1} de {cal.length}</b><span className="mute">{jogada ? "encerrada" : r === estado.rodadaAtual ? "próxima" : "a jogar"}</span></div>
-        <button className="btn" id="rod-prox" aria-label="Próxima rodada" disabled={r >= cal.length - 1} onClick={() => mudar(r + 1)}>›</button>
+        <div><b id="rod-n">{/^Rodada \d+$/.test(nome) ? `${nome} de ${total}` : nome}</b><span className="mute">{jogada ? "encerrada" : r === estado.rodadaAtual ? "próxima" : "a jogar"}{/^Rodada \d+$/.test(nome) ? "" : ` · ${r + 1}/${total}`}</span></div>
+        <button className="btn" id="rod-prox" aria-label="Próxima rodada" disabled={r >= total - 1} onClick={() => mudar(r + 1)}>›</button>
       </div>
-      {r === estado.rodadaAtual && <button className="btn pri sim-jogar-rodada" onClick={jogarAoVivo}>Jogar esta rodada ao vivo</button>}
-      {!ordenados.some((j) => j[0] === k || j[1] === k) && <p className="note">Seu clube folga nesta rodada.</p>}
-      <div className="card">
-        {ordenados.map((j) => {
-          const [c, f, gc, gf, ev] = j, meu = c === k || f === k, id = c + f, ab = aberto === id || (meu && jogada && aberto === null);
-          return (
-            <div className={"sim-jogo" + (meu ? " meu" : "")} key={id} id={meu ? "sim-jogo-meu" : undefined}>
-              <button className="sim-jogo-linha" disabled={!jogada || !ev.length} aria-expanded={jogada ? ab : undefined} onClick={() => setAberto(ab ? "" : id)}>
-                <span className="c"><span className="sim-nome">{nomeClube(c)}</span><Escudo k={c} z={22} /></span>
-                <b className="num sim-placar-n">{jogada ? `${gc} × ${gf}` : "×"}</b>
-                <span className="f"><Escudo k={f} z={22} /><span className="sim-nome">{nomeClube(f)}</span></span>
-              </button>
-              {ab && ev.length > 0 && (
-                <div className="sim-gols">
-                  <ul>{ev.filter((e) => e[1] === 0).map((e, n) => <li key={n}><span className="num mute">{e[0]}'</span> {nomeJog(plano, e[2])}{e[3] && <span className="mute"> ({nomeJog(plano, e[3])})</span>}</li>)}</ul>
-                  <ul>{ev.filter((e) => e[1] === 1).map((e, n) => <li key={n}>{nomeJog(plano, e[2])}{e[3] && <span className="mute"> ({nomeJog(plano, e[3])})</span>} <span className="num mute">{e[0]}'</span></li>)}</ul>
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
+      {r === estado.rodadaAtual && jogos && <button className="btn pri sim-jogar-rodada" onClick={jogarAoVivo}>Jogar esta rodada ao vivo</button>}
+      {!jogos && <div className="card"><div className="empty" style={{ padding: 16 }}>Os confrontos desta rodada saem quando a fase anterior acabar.</div></div>}
+      {jogos && !ordenados.some((j) => j[0] === k || j[1] === k) && <p className="note">Seu clube não joga nesta rodada.</p>}
+      {jogos && jogos.length > 0 && (
+        <div className="card">
+          {ordenados.map((j) => {
+            const [c, f, gc, gf, ev] = j, meu = c === k || f === k, id = c + f, ab = aberto === id || (meu && jogada && aberto === null);
+            return (
+              <div className={"sim-jogo" + (meu ? " meu" : "")} key={id} id={meu ? "sim-jogo-meu" : undefined}>
+                <button className="sim-jogo-linha" disabled={!jogada || !ev.length} aria-expanded={jogada ? ab : undefined} onClick={() => setAberto(ab ? "" : id)}>
+                  <span className="c"><span className="sim-nome">{nomeClube(c)}</span><Escudo k={c} z={22} /></span>
+                  <b className="num sim-placar-n">{jogada ? `${gc} × ${gf}` : "×"}</b>
+                  <span className="f"><Escudo k={f} z={22} /><span className="sim-nome">{nomeClube(f)}</span></span>
+                </button>
+                {ab && ev.length > 0 && (
+                  <div className="sim-gols">
+                    <ul>{ev.filter((e) => e[1] === 0).map((e, n) => <li key={n}><span className="num mute">{e[0]}'</span> {nomeJog(plano, e[2])}{e[3] && <span className="mute"> ({nomeJog(plano, e[3])})</span>}</li>)}</ul>
+                    <ul>{ev.filter((e) => e[1] === 1).map((e, n) => <li key={n}>{nomeJog(plano, e[2])}{e[3] && <span className="mute"> ({nomeJog(plano, e[3])})</span>} <span className="num mute">{e[0]}'</span></li>)}</ul>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
+  );
+}
+
+// ---------- Painel "Ver tabela atual" ----------
+// A tabela real de hoje (temporada-atual.json) e como ela termina na projeção (a mesma usada nas vagas de acesso/rebaixamento)
+const rotuloAtual = (lg) => atualDa(lg)?.rotulo || D.LG[lg]?.n || lg;
+export function PainelTabelaAtual({ app, estado }) {
+  const A = estado.atual, real = atualDa(A.lg)?.tabela || [];
+  const k = app.plano?.club;
+  return (
+    <>
+      <Cabecalho titulo={rotuloAtual(A.lg)} sub={`Tabela real de ${dataBr(dataAtual())} e a projeção do fim`} onFechar={app.fecharPainel} />
+      <div className="sim-atual" id="sim-atual">
+        <div>
+          <span className="sim-rot">Hoje ({dataBr(dataAtual())})</span>
+          <div className="card">
+            {real.filter((r) => D.CL[r.k]).map((r, i) => (
+              <div className={"sim-linha" + (r.k === k ? " meu" : "")} key={r.k}>
+                <span className="sim-n">{i + 1}</span><Escudo k={r.k} z={20} /><span className="sim-nome">{nomeClube(r.k)}</span>
+                <span className="num mute">{r.j}j</span><b className="num">{r.pts}</b>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div>
+          <span className="sim-rot">Projeção do fim <span className="sim-selo sim-selo-proj">projeção</span></span>
+          <div className="card">
+            {A.linhas.map(([x, pts, j], i) => {
+              const antes = real.findIndex((r) => r.k === x) + 1, mov = antes - (i + 1);
+              return (
+                <div className={"sim-linha" + (x === k ? " meu" : "")} key={x}>
+                  <span className="sim-n">{i + 1}</span><Escudo k={x} z={20} /><span className="sim-nome">{nomeClube(x)}</span>
+                  <span className={"num sim-mov-pos " + (mov > 0 ? "sobe" : mov < 0 ? "desce" : "mute")}>{mov > 0 ? "▲" + mov : mov < 0 ? "▼" + -mov : "="}</span>
+                  <span className="num mute">{j}j</span><b className="num">{pts}</b>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+      <p className="note" style={{ marginTop: 10 }}>A projeção joga só os jogos que faltam, com os elencos de hoje, e é ela que decide quem sobe e quem cai na composição da próxima temporada. ▲▼ = posições ganhas ou perdidas até o fim.</p>
+    </>
   );
 }
 
@@ -649,7 +793,7 @@ function AoVivo({ estado, r, plano, k, total, onSair, onProxima }) {
   return (
     <div id="sim-ao-vivo">
       <div className="av-placar" style={meu ? { "--ca": D.CL[meu[0]]?.c || "#444", "--cb": D.CL[meu[1]]?.c || "#444" } : undefined}>
-        <span className="av-rot">Rodada {r + 1} · {rotuloLiga(estado.liga)}</span>
+        <span className="av-rot">{nomeDaRodada(estado, r)} · {rotuloLiga(estado.liga)}</span>
         {meu ? (
           <div className="av-times">
             <span className="av-time"><Escudo k={meu[0]} z={52} /><b>{nomeClube(meu[0])}</b></span>
@@ -719,7 +863,7 @@ function AoVivo({ estado, r, plano, k, total, onSair, onProxima }) {
           ) : (
             <>
               <button className="btn" id="av-sair" onClick={() => onSair("tabela")}>Ver tabela</button>
-              {!ultimaRodada ? <button className="btn pri" id="av-proxima" onClick={onProxima}>Jogar rodada {r + 2}</button>
+              {!ultimaRodada ? <button className="btn pri" id="av-proxima" onClick={onProxima}>{rotuloJogar(estado, r + 1)}</button>
                 : <button className="btn pri" id="av-fim" onClick={() => onSair("resumo")}>Ver o fim da temporada</button>}
             </>
           )}

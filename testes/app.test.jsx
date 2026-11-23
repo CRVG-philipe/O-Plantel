@@ -20,6 +20,8 @@ const OVERALL = JSON.parse(fs.readFileSync("public/overall.json", "utf8"));
 const AJUSTES = JSON.parse(fs.readFileSync("public/overall-ajustes.json", "utf8")); // ajustes manuais do overall
 const ACESSO = JSON.parse(fs.readFileSync("public/acesso-rebaixamento.json", "utf8")); // simulador: acesso e rebaixamento
 const ZONAS = JSON.parse(fs.readFileSync("public/zonas-ligas.json", "utf8"));         // simulador: faixas da tabela
+const ATUAL = JSON.parse(fs.readFileSync("public/temporada-atual.json", "utf8"));     // simulador: tabelas reais de hoje
+const FORMATOS = JSON.parse(fs.readFileSync("public/formatos-ligas.json", "utf8"));   // simulador: formato de cada liga
 let semEstimados = false; // true = simula o valores-estimados.json fora do ar
 const CHAVE = "plantel:v2";
 // Cotação que a "API de mentira" devolve nos testes
@@ -44,6 +46,8 @@ beforeEach(() => {
     if (String(url).includes("overall-ajustes")) return { ok: true, json: async () => structuredClone(AJUSTES) };
     if (String(url).includes("acesso-rebaixamento")) return { ok: true, json: async () => structuredClone(ACESSO) };
     if (String(url).includes("zonas-ligas")) return { ok: true, json: async () => structuredClone(ZONAS) };
+    if (String(url).includes("temporada-atual")) return { ok: true, json: async () => structuredClone(ATUAL) };
+    if (String(url).includes("formatos-ligas")) return { ok: true, json: async () => structuredClone(FORMATOS) };
     if (String(url).includes("overall")) return { ok: true, json: async () => structuredClone(OVERALL) };
     if (String(url).includes("valores-estimados")) {
       if (semEstimados) throw new Error("fora do ar");
@@ -1241,8 +1245,15 @@ test("simulador da temporada: página própria, previsão, vagas em aberto, jogo
   clique(document.querySelector("#simular-temporada"));
   expect(document.querySelector("#simulador")).toBeTruthy();
   expect(document.querySelector("#sum")).toBeNull(); // sem os cards do plano
-  const BRA = DATA.leagues.find((l) => l.k === "BRA").n;
-  expect(document.querySelector("#sim-liga").textContent).toBe(BRA + " 2027");
+  const ROT = FORMATOS.ligas.BRA.rotulo; // "Brasileirão 2027" (o rótulo de formatos-ligas.json tem prioridade)
+  expect(document.querySelector("#sim-liga").textContent).toBe(ROT);
+  expect(document.querySelector("#sim-aprox")).toBeNull(); // formato confirmado: sem o selo "formato aproximado"
+  // "Ver tabela atual": a tabela real de hoje e a projeção do fim, lado a lado
+  clique(document.querySelector("#sim-ver-atual"));
+  expect(painel().textContent).toContain("22/11/2026");
+  expect(painel().querySelectorAll("#sim-atual .card")[0].querySelectorAll(".sim-linha").length).toBe(20);
+  expect(painel().querySelectorAll("#sim-atual .card")[1].textContent).toMatch(/38j/);
+  clique(noPainel().getByRole("button", { name: /Fechar/ }));
   expect(document.querySelector("#sim-status").textContent).toBe("Antes da temporada · 38 rodadas");
   // Previsão do seu clube e de todos
   expect(document.querySelector("#sim-prev-meu").textContent).toMatch(/\d+ºprevisão\d+%chance de título\d+%risco de queda/);
@@ -1311,7 +1322,7 @@ test("simulador da temporada: página própria, previsão, vagas em aberto, jogo
   expect(document.querySelector("#sim-andamento")).toBeTruthy();
   clique(document.querySelector("#sim-fim"));
   expect(sim().rodadaAtual).toBe(38);
-  expect(document.querySelector("#sim-campeao").textContent).toContain("Campeão da " + BRA + " 2027");
+  expect(document.querySelector("#sim-campeao").textContent).toContain("Campeão da " + ROT);
   expect(document.querySelectorAll("#sim-selecao .sim-campo-jog").length).toBe(11);
   expect(document.querySelectorAll("#sim-selecao .kv").length).toBe(11);
   expect(document.querySelector("#sim-prev-res").textContent).toMatch(/Resultado\d+º/);
@@ -1333,4 +1344,34 @@ test("simulador da temporada: página própria, previsão, vagas em aberto, jogo
   clique(document.querySelector("#sim-voltar"));
   expect(document.querySelector("#simulador")).toBeNull();
   expect(document.querySelector("#sum")).toBeTruthy();
+}, 60000);
+
+test("simulador com formato especial (Argentina): seletor Apertura | Clausura | Anual, chaveamento e campeões", async () => {
+  const k = DATA.clubs.find((c) => c.lg === "ARG").k;
+  localStorage.setItem(CHAVE, JSON.stringify({ plans: { [k]: { club: k, budget: 50, st: {}, ins: [], form: "4-3-3", xi: {}, custom: [] } }, last: k }));
+  render(<App />);
+  clique(await screen.findByRole("button", { name: /2027/ }));
+  clique(document.querySelector("#simular-temporada"));
+  expect(document.querySelector("#sim-liga").textContent).toBe("Liga Profesional 2027");
+  expect(document.querySelector("#sim-status").textContent).toMatch(/^Antes da temporada · \d+ rodadas$/);
+  clique(document.querySelector("#sim-fim"));
+  clique(document.querySelector("#sv-tabela"));
+  const fases = [...document.querySelectorAll("#sim-fases button")].map((b) => b.textContent);
+  expect(fases).toEqual(["Apertura 2027", "Clausura 2027", "Anual"]);
+  // Anual (o fim da temporada abre nela): 30 clubes com 30 jogos e as faixas
+  expect(document.querySelector("#sf-anual").getAttribute("aria-pressed")).toBe("true");
+  const linhas = [...document.querySelectorAll("#sim-tabela tbody tr")];
+  expect(linhas.length).toBe(30);
+  linhas.forEach((tr) => expect(tr.children[3].textContent).toBe("30"));
+  // Apertura: tabela das rodadas 1–15 e o chaveamento dos playoffs (oitavas → final) com um campeão
+  clique(document.querySelector("#sf-p0"));
+  expect([...document.querySelectorAll("#sim-tabela tbody tr")].every((tr) => tr.children[3].textContent === "15")).toBe(true);
+  const colunas = [...document.querySelectorAll(".sim-chave-col .sim-rot")].map((s) => s.textContent);
+  expect(colunas).toEqual(["Oitavas", "Quartas", "Semifinal", "Final"]);
+  expect(document.querySelectorAll(".sim-chave-col")[0].querySelectorAll(".sim-conf").length).toBe(8);
+  expect(document.querySelectorAll(".sim-chave-col")[3].querySelectorAll(".sim-conf-vence").length).toBe(1);
+  // Fim: campeão pela tabela anual + os campeões do Apertura e do Clausura
+  clique(document.querySelector("#sv-resumo"));
+  expect(document.querySelector("#sim-campeao").textContent).toContain("Campeão da Liga Profesional 2027");
+  expect(document.querySelector("#sim-titulos").textContent).toMatch(/Apertura 2027: .+Clausura 2027: /);
 }, 60000);

@@ -1,41 +1,252 @@
 {
-  "_sobre": "Composição das ligas na temporada simulada (2027 ou 27/28). 'confirmados' = já definidos na vida real (fonte e data em 'fonte'). 'pendentes' = vagas ainda em aberto: o site resolve uma única vez por simulação (ou o usuário escolhe). Quando 'modo' é 'projecao', a temporada atual ainda está no meio: o site simula a temporada atual inteira (com os elencos atuais) para decidir quem sobe e quem desce, e avisa que é uma projeção.",
-  "atualizado": "2026-11-22",
-  "pares": [
-    {
-      "de": "BRA", "para": "BRB", "tipo": "rebaixamento", "n": 4,
-      "confirmados": ["T21845"],
-      "pendentes": { "vagas": 3, "candidatos": ["T2012", "T1957", "T5926", "T1966", "T21982", "T1962"], "como": "simular as rodadas restantes; candidatos em ordem de risco" },
-      "fonte": "Chapecoense rebaixada matematicamente; demais vagas abertas (nov/2026)"
-    },
-    {
-      "de": "BRB", "para": "BRA", "tipo": "acesso", "n": 4,
-      "confirmados": ["T135514", "T1980"],
-      "pendentes": { "vagas": 2, "playoffs": [["T2021", "T7314"], ["T2020", "T1984"]], "como": "mata-mata ida e volta; mando de campo do melhor colocado (o primeiro de cada par); empate no agregado = classifica o melhor colocado" },
-      "fonte": "Novorizontino campeão e Juventude vice; playoffs Vila Nova x Atlético-GO e Fortaleza x Criciúma (nov/2026)"
-    },
-    { "de": "BRB", "para": "BRC", "tipo": "rebaixamento", "n": 4, "confirmados": ["T7315", "T2022", "T1973", "T1969"], "fonte": "Série B 2026 encerrada" },
-    { "de": "BRC", "para": "BRB", "tipo": "acesso", "n": 4, "confirmados": ["T135324", "T35285", "T1976", "T135526"], "fonte": "Série C 2026 encerrada" },
-    { "de": "BRC", "para": null, "tipo": "sai", "n": 2, "confirmados": ["T21853", "T2017"], "fonte": "Itabaiana e Confiança caíram para a Série D (fora do site). Os 6 que sobem da Série D não estão no site; a Série C 2027 fica com os clubes restantes." },
-
-    { "de": "ENG", "para": "ENG2", "tipo": "rebaixamento", "n": 3, "modo": "projecao" },
-    { "de": "ENG2", "para": "ENG", "tipo": "acesso", "n": 3, "modo": "projecao", "regra": "1º e 2º sobem; 3º–6º jogam playoff (semis ida e volta + final única)" },
-    { "de": "ESP", "para": "ESP2", "tipo": "rebaixamento", "n": 3, "modo": "projecao" },
-    { "de": "ESP2", "para": "ESP", "tipo": "acesso", "n": 3, "modo": "projecao", "regra": "1º e 2º sobem; 3º–6º playoff" },
-    { "de": "ITA", "para": "ITA2", "tipo": "rebaixamento", "n": 3, "modo": "projecao" },
-    { "de": "ITA2", "para": "ITA", "tipo": "acesso", "n": 3, "modo": "projecao", "regra": "1º e 2º sobem; 3º–8º playoff" },
-    { "de": "GER", "para": "GER2", "tipo": "rebaixamento", "n": 2, "modo": "projecao", "playoff": "16º da 1ª x 3º da 2ª (ida e volta)" },
-    { "de": "GER2", "para": "GER", "tipo": "acesso", "n": 2, "modo": "projecao", "playoff": "3º x 16º da 1ª" },
-    { "de": "FRA", "para": "FRA2", "tipo": "rebaixamento", "n": 2, "modo": "projecao", "playoff": "16º da 1ª x vencedor do playoff 3º–5º da 2ª" },
-    { "de": "FRA2", "para": "FRA", "tipo": "acesso", "n": 2, "modo": "projecao", "playoff": "3º–5º, vencedor enfrenta o 16º da 1ª" },
-    { "de": "ARG", "para": "ARG2", "tipo": "rebaixamento", "n": 2, "modo": "projecao", "aproximado": true },
-    { "de": "ARG2", "para": "ARG", "tipo": "acesso", "n": 2, "modo": "projecao", "aproximado": true },
-    { "de": "COL", "para": "COL2", "tipo": "rebaixamento", "n": 2, "modo": "projecao", "aproximado": true },
-    { "de": "COL2", "para": "COL", "tipo": "acesso", "n": 2, "modo": "projecao", "aproximado": true },
-    { "de": "PER", "para": "PER2", "tipo": "rebaixamento", "n": 2, "modo": "projecao", "aproximado": true },
-    { "de": "PER2", "para": "PER", "tipo": "acesso", "n": 2, "modo": "projecao", "aproximado": true },
-    { "de": "CHI", "para": "CHI2", "tipo": "rebaixamento", "n": 2, "modo": "projecao", "aproximado": true },
-    { "de": "CHI2", "para": "CHI", "tipo": "acesso", "n": 2, "modo": "projecao", "aproximado": true }
-  ],
-  "_outras_ligas": "Ligas sem par no site (ex.: POR, NED, MLS, SAU) mantêm a mesma composição na temporada simulada."
+ "_sobre": "Composição das ligas na temporada simulada (2027 ou 27/28). 'confirmados' = já definidos na vida real (fonte e data em 'fonte'). 'pendentes' = vagas ainda em aberto: o site resolve uma única vez por simulação (ou o usuário escolhe). Quando 'modo' é 'projecao', a temporada atual ainda está no meio: o site parte da classificação REAL de temporada-atual.json e simula só os jogos que faltam (com os elencos atuais) para decidir quem sobe e quem desce, e avisa que é uma projeção.",
+ "atualizado": "2026-11-22",
+ "pares": [
+  {
+   "de": "BRA",
+   "para": "BRB",
+   "tipo": "rebaixamento",
+   "n": 4,
+   "confirmados": [
+    "T21845"
+   ],
+   "pendentes": {
+    "vagas": 3,
+    "candidatos": [
+     "T2012",
+     "T1957",
+     "T5926",
+     "T1966",
+     "T21982",
+     "T1962"
+    ],
+    "como": "simular as rodadas que faltam a partir da tabela real de temporada-atual.json (BRA); os 4 últimos caem"
+   },
+   "fonte": "Chapecoense rebaixada matematicamente; demais vagas abertas (nov/2026)"
+  },
+  {
+   "de": "BRB",
+   "para": "BRA",
+   "tipo": "acesso",
+   "n": 4,
+   "confirmados": [
+    "T135514",
+    "T1980"
+   ],
+   "pendentes": {
+    "vagas": 2,
+    "playoffs": [
+     [
+      "T2021",
+      "T7314"
+     ],
+     [
+      "T2020",
+      "T1984"
+     ]
+    ],
+    "como": "mata-mata ida e volta; mando de campo do melhor colocado (o primeiro de cada par); empate no agregado = classifica o melhor colocado"
+   },
+   "fonte": "Novorizontino campeão e Juventude vice; playoffs Vila Nova x Atlético-GO e Fortaleza x Criciúma (nov/2026)"
+  },
+  {
+   "de": "BRB",
+   "para": "BRC",
+   "tipo": "rebaixamento",
+   "n": 4,
+   "confirmados": [
+    "T7315",
+    "T2022",
+    "T1973",
+    "T1969"
+   ],
+   "fonte": "Série B 2026 encerrada"
+  },
+  {
+   "de": "BRC",
+   "para": "BRB",
+   "tipo": "acesso",
+   "n": 4,
+   "confirmados": [
+    "T135324",
+    "T35285",
+    "T1976",
+    "T135526"
+   ],
+   "fonte": "Série C 2026 encerrada"
+  },
+  {
+   "de": "BRC",
+   "para": null,
+   "tipo": "sai",
+   "n": 2,
+   "confirmados": [
+    "T21853",
+    "T2017"
+   ],
+   "fonte": "Itabaiana e Confiança caíram para a Série D (fora do site). Os 6 que sobem da Série D não estão no site; a Série C 2027 fica com os clubes restantes."
+  },
+  {
+   "de": "ENG",
+   "para": "ENG2",
+   "tipo": "rebaixamento",
+   "n": 3,
+   "modo": "projecao",
+   "usar_temporada_atual": true
+  },
+  {
+   "de": "ENG2",
+   "para": "ENG",
+   "tipo": "acesso",
+   "n": 3,
+   "modo": "projecao",
+   "regra": "1º e 2º sobem; 3º–6º jogam playoff (semis ida e volta + final única)",
+   "usar_temporada_atual": true
+  },
+  {
+   "de": "ESP",
+   "para": "ESP2",
+   "tipo": "rebaixamento",
+   "n": 3,
+   "modo": "projecao",
+   "usar_temporada_atual": true
+  },
+  {
+   "de": "ESP2",
+   "para": "ESP",
+   "tipo": "acesso",
+   "n": 3,
+   "modo": "projecao",
+   "regra": "1º e 2º sobem; 3º–6º playoff",
+   "usar_temporada_atual": true
+  },
+  {
+   "de": "ITA",
+   "para": "ITA2",
+   "tipo": "rebaixamento",
+   "n": 3,
+   "modo": "projecao",
+   "usar_temporada_atual": true
+  },
+  {
+   "de": "ITA2",
+   "para": "ITA",
+   "tipo": "acesso",
+   "n": 3,
+   "modo": "projecao",
+   "regra": "1º e 2º sobem; 3º–8º playoff",
+   "usar_temporada_atual": true
+  },
+  {
+   "de": "GER",
+   "para": "GER2",
+   "tipo": "rebaixamento",
+   "n": 2,
+   "modo": "projecao",
+   "playoff": "16º da 1ª x 3º da 2ª (ida e volta)",
+   "usar_temporada_atual": true
+  },
+  {
+   "de": "GER2",
+   "para": "GER",
+   "tipo": "acesso",
+   "n": 2,
+   "modo": "projecao",
+   "playoff": "3º x 16º da 1ª",
+   "usar_temporada_atual": true
+  },
+  {
+   "de": "FRA",
+   "para": "FRA2",
+   "tipo": "rebaixamento",
+   "n": 2,
+   "modo": "projecao",
+   "playoff": "16º da 1ª x vencedor do playoff 3º–5º da 2ª",
+   "usar_temporada_atual": true
+  },
+  {
+   "de": "FRA2",
+   "para": "FRA",
+   "tipo": "acesso",
+   "n": 2,
+   "modo": "projecao",
+   "playoff": "3º–5º, vencedor enfrenta o 16º da 1ª",
+   "usar_temporada_atual": true
+  },
+  {
+   "de": "ARG",
+   "para": "ARG2",
+   "tipo": "rebaixamento",
+   "n": 2,
+   "modo": "projecao",
+   "aproximado": true,
+   "usar_temporada_atual": true,
+   "nota": "ARG: 2 caem (pior da tabela anual + 2º pior como aproximação dos promedios). ARG2: campeão da final entre líderes de zona + vencedor do Reducido (aproximado pelos 2 melhores da tabela somada)."
+  },
+  {
+   "de": "ARG2",
+   "para": "ARG",
+   "tipo": "acesso",
+   "n": 2,
+   "modo": "projecao",
+   "aproximado": true,
+   "usar_temporada_atual": true,
+   "nota": "ARG: 2 caem (pior da tabela anual + 2º pior como aproximação dos promedios). ARG2: campeão da final entre líderes de zona + vencedor do Reducido (aproximado pelos 2 melhores da tabela somada)."
+  },
+  {
+   "de": "COL",
+   "para": "COL2",
+   "tipo": "rebaixamento",
+   "n": 2,
+   "modo": "projecao",
+   "aproximado": true,
+   "usar_temporada_atual": true
+  },
+  {
+   "de": "COL2",
+   "para": "COL",
+   "tipo": "acesso",
+   "n": 2,
+   "modo": "projecao",
+   "aproximado": true,
+   "usar_temporada_atual": true
+  },
+  {
+   "de": "PER",
+   "para": "PER2",
+   "tipo": "rebaixamento",
+   "n": 2,
+   "modo": "projecao",
+   "aproximado": true,
+   "usar_temporada_atual": true
+  },
+  {
+   "de": "PER2",
+   "para": "PER",
+   "tipo": "acesso",
+   "n": 2,
+   "modo": "projecao",
+   "aproximado": true,
+   "usar_temporada_atual": true
+  },
+  {
+   "de": "CHI",
+   "para": "CHI2",
+   "tipo": "rebaixamento",
+   "n": 2,
+   "modo": "projecao",
+   "aproximado": true,
+   "usar_temporada_atual": true
+  },
+  {
+   "de": "CHI2",
+   "para": "CHI",
+   "tipo": "acesso",
+   "n": 2,
+   "modo": "projecao",
+   "aproximado": true,
+   "usar_temporada_atual": true
+  }
+ ],
+ "_outras_ligas": "Ligas sem par no site (ex.: POR, NED, MLS, SAU) mantêm a mesma composição na temporada simulada."
 }
