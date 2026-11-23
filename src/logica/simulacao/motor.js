@@ -35,7 +35,7 @@ export function calcularForca(onze, banco) {
 // ---------- Placar (versão 2, 23/11/2026: menos goleadas e tabela mais realista) ----------
 // 1. Forma do dia: cada time ganha um ruído N(0; RUIDO) na força, sorteado com a semente do jogo.
 // 2. Diferença comprimida: d = F_casa − F_fora (com a forma do dia) e d′ = ESCALA × tanh(d / ESCALA)
-//    (com 7, 15 pontos de diferença valem ~6,8; 8 pontos valem ~5,7).
+//    (com 5: 2 pontos valem ~1,9; 8 pontos ~4,6; 15 pontos ~5,0).
 // 3. λ (gols esperados no jogo): mandante BASE_CASA × e^(K × d′); visitante BASE_FORA × e^(−K × d′); campo neutro
 //    BASE_NEUTRO para os dois. Entre 0,15 e TETO (3,2).
 // 4. Poisson bivariado: os gols de cada time = parte própria (λ − COMUM) + uma parte comum (COMUM) que vale para os
@@ -43,10 +43,13 @@ export function calcularForca(onze, banco) {
 // 5. Jogo em 6 blocos de 15 minutos (cada um com 1/6 dos λ). Controle de jogo: quando um time abre 3 gols de vantagem,
 //    o λ dele cai CONTROLE[0] (45%) e o do adversário sobe CONTROLE[1] (10%) no resto da partida.
 // Calibração: testes/simulacao.test.js e a página escondida ?debug-motor (calibracao.js), 1.000 Brasileirões.
-// Calibrado em 23/11/2026 (1.000 Brasileirões, 3 sementes): o pedido era K ~0,045, mas com a compressão e a forma do
-// dia o campeão ficava com ~71 pontos (meta 72–82); K = 0,063 põe o campeão em ~72,5, o último em ~28,8 e o resto no meio
-// das faixas (gols 2,5; mandante 46%; empate 27%; 4+ de diferença 2,7%; mais fraco vence o mais forte 16–17%).
-export const MOTOR = { RUIDO: 1.5, ESCALA: 7, K: 0.063, BASE_CASA: 1.41, BASE_FORA: 1.02, BASE_NEUTRO: 1.215, COMUM: 0.1, TETO: 3.2, PISO: 0.15, CONTROLE: [0.55, 1.1] };
+// Recalibrado em 23/11/2026 (noite) para os times superiores serem mais regulares: menos "forma do dia" (0,7), mais peso
+// para diferenças pequenas e médias (K 0,095) e mais compressão nas grandes (escala 5, para não voltar a goleada).
+// 1.000 Brasileirões, 3 sementes: mais forte abaixo do 6º 6–8,5% (antes 17%), campeão entre os 3 mais fortes ~80% (antes
+// 67%), time com +4 de força campeão ~76% (antes 69%); gols 2,4; mandante 46%; empate 27%; 4+ de diferença 2,7%; mais fraco
+// vence o mais forte ~14%; campeão ~76 pontos, último ~24,6, diferença ~51.
+// Versão anterior (mesmo dia): RUIDO 1,5, ESCALA 7, K 0,063, BASE 1,41/1,02, COMUM 0,1.
+export const MOTOR = { RUIDO: 0.7, ESCALA: 5, K: 0.095, BASE_CASA: 1.37, BASE_FORA: 0.98, BASE_NEUTRO: 1.175, COMUM: 0.15, TETO: 3.2, PISO: 0.15, CONTROLE: [0.55, 1.1] };
 const BLOCOS = 6;
 const limitar = (l) => Math.min(MOTOR.TETO, Math.max(MOTOR.PISO, l));
 export const comprimir = (d) => MOTOR.ESCALA * Math.tanh(d / MOTOR.ESCALA);

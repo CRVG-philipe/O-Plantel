@@ -306,10 +306,10 @@ test("motor: time com força +10 vence bem mais do que perde (em casa e fora), m
       const [forte, fraco] = forteEmCasa ? [a, b] : [b, a];
       if (forte > fraco) v++; else if (forte < fraco) d++;
     }
-    // Com a compressão e a forma do dia, o favorito vence ~2× mais do que perde (antes do ajuste de 23/11/2026, ~3×)
+    // Com a calibração de 23/11/2026 (noite), o favorito em casa perde ~7,5% das vezes e fora ~15%
     console.log(forteEmCasa ? "forte em casa" : "forte fora", "vence", v, "perde", d);
     expect(v).toBeGreaterThan(d * 1.6);
-    expect(d).toBeGreaterThan(4000 * 0.08);
+    expect(d).toBeGreaterThan(4000 * 0.05);
   }
 });
 
