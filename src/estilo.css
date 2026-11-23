@@ -805,3 +805,25 @@ button.sim-jogo-linha:not(:disabled):hover{background:var(--sf2)}
 .sim-outros-titulos>span{display:inline-flex;align-items:center;gap:5px}
 .sim-outros-titulos b{font-size:12.5px;letter-spacing:0;color:var(--ink)}
 .sim-meu-titulo{font-weight:700;text-align:center;background:color-mix(in srgb,#f2b544 18%,var(--sf));box-shadow:0 0 0 1px color-mix(in srgb,#f2b544 45%,transparent)}
+
+/* ---------- Simulador v2: copas ---------- */
+.sim-comps{display:flex;max-width:100%;overflow-x:auto;margin-bottom:10px;scrollbar-width:none}
+.sim-comps button{white-space:nowrap}
+.sim-copas-lista{display:flex;flex-direction:column;gap:8px}
+.sim-copa>summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;cursor:pointer}
+.sim-copa>summary::-webkit-details-marker{display:none}
+.sim-copa[open]>summary{border-bottom:1px solid var(--line)}
+.sim-copa-nome{display:flex;flex-direction:column;min-width:0}
+.sim-copa-nome b{font-size:14.5px}
+.sim-copa-nome span{font-size:12.5px}
+.sim-copa-chance{flex:none;font-size:20px;font-weight:750;letter-spacing:-.02em;color:var(--clubVis)}
+.sim-copa-detalhe{padding:10px 12px 12px}
+.sim-copa-detalhe .note{margin:0 0 8px}
+.sim-copa-bloco+.sim-copa-bloco{margin-top:8px}
+.sim-copa-bloco .sim-faixa-clubes{padding:6px 0 0}
+.sim-copa-bloco .sim-faixa-clube .sim-selo{margin-left:2px;font-size:9.5px;padding:0 5px}
+#simulador .sim-copa .sobe{color:var(--pos)}
+.sim-copa-linha{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px}
+.sim-copa-linha+.sim-copa-linha{border-top:1px solid var(--line)}
+.sim-copa-campeao{display:inline-flex;align-items:center;gap:6px;flex:none;max-width:45%;font-size:12.5px;color:var(--mute)}
+.sim-final-res{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0;font-size:13.5px}

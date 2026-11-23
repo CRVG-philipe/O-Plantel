@@ -2,7 +2,7 @@
 // Rodar com:  npm test
 import fs from "node:fs";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { act, cleanup, configure, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, configure, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import App from "../src/App.jsx";
 import { dinheiro } from "../src/logica/dinheiro.js";
 import { corDeFundo } from "../src/logica/formato.js";
@@ -22,6 +22,7 @@ const ACESSO = JSON.parse(fs.readFileSync("public/acesso-rebaixamento.json", "ut
 const ZONAS = JSON.parse(fs.readFileSync("public/zonas-ligas.json", "utf8"));         // simulador: faixas da tabela
 const ATUAL = JSON.parse(fs.readFileSync("public/temporada-atual.json", "utf8"));     // simulador: tabelas reais de hoje
 const FORMATOS = JSON.parse(fs.readFileSync("public/formatos-ligas.json", "utf8"));   // simulador: formato de cada liga
+const COPAS = JSON.parse(fs.readFileSync("public/copas.json", "utf8"));               // simulador: copas
 let semEstimados = false; // true = simula o valores-estimados.json fora do ar
 const CHAVE = "plantel:v2";
 // Cotação que a "API de mentira" devolve nos testes
@@ -48,6 +49,7 @@ beforeEach(() => {
     if (String(url).includes("zonas-ligas")) return { ok: true, json: async () => structuredClone(ZONAS) };
     if (String(url).includes("temporada-atual")) return { ok: true, json: async () => structuredClone(ATUAL) };
     if (String(url).includes("formatos-ligas")) return { ok: true, json: async () => structuredClone(FORMATOS) };
+    if (String(url).includes("copas")) return { ok: true, json: async () => structuredClone(COPAS) };
     if (String(url).includes("overall")) return { ok: true, json: async () => structuredClone(OVERALL) };
     if (String(url).includes("valores-estimados")) {
       if (semEstimados) throw new Error("fora do ar");
@@ -1246,6 +1248,7 @@ test("simulador da temporada: página própria, previsão, vagas em aberto, jogo
   expect(document.querySelector("#simulador")).toBeTruthy();
   expect(document.querySelector("#sum")).toBeNull(); // sem os cards do plano
   const ROT = FORMATOS.ligas.BRA.rotulo; // "Brasileirão 2027" (o rótulo de formatos-ligas.json tem prioridade)
+  const sim = () => JSON.parse(localStorage.getItem("plantel:sim")).T5981;
   expect(document.querySelector("#sim-liga").textContent).toBe(ROT);
   expect(document.querySelector("#sim-aprox")).toBeNull(); // formato confirmado: sem o selo "formato aproximado"
   // "Ver tabela atual": a tabela real de hoje e a projeção do fim, lado a lado
@@ -1254,7 +1257,15 @@ test("simulador da temporada: página própria, previsão, vagas em aberto, jogo
   expect(painel().querySelectorAll("#sim-atual .card")[0].querySelectorAll(".sim-linha").length).toBe(20);
   expect(painel().querySelectorAll("#sim-atual .card")[1].textContent).toMatch(/38j/);
   clique(noPainel().getByRole("button", { name: /Fechar/ }));
-  expect(document.querySelector("#sim-status").textContent).toBe("Antes da temporada · 38 rodadas");
+  expect(document.querySelector("#sim-status").textContent).toBe("Antes da temporada · 38 rodadas e 3 copas");
+  // Copas: Copa do Brasil, Libertadores (Flamengo garantido nos grupos) e Sul-Americana; finais de 2026 em aberto
+  expect(document.querySelector("#copa-LIB summary").textContent).toContain("Classificado · fase de grupos");
+  expect(document.querySelector("#copa-CDB summary").textContent).toContain("Classificado · 5ª fase");
+  expect(document.querySelector("#copa-SUD summary").textContent).toContain("Não se classificou");
+  expect(document.querySelector("#copa-LIB").textContent).toMatch(/Flamengo.*real/);
+  expect(document.querySelector("#final-final_sud_2026")).toBeTruthy();
+  await waitFor(() => expect(sim().previsaoCopas).toBeTruthy()); // a previsão das copas chega logo depois
+  expect(document.querySelector("#copa-LIB summary .sim-copa-chance").textContent).toMatch(/^(\d+|<1)%$/);
   // Previsão do seu clube e de todos
   expect(document.querySelector("#sim-prev-meu").textContent).toMatch(/\d+ºprevisão\d+%chance de título\d+%risco de queda/);
   expect(document.querySelectorAll("#sim-previsao .sim-prev").length).toBe(20);
@@ -1271,7 +1282,6 @@ test("simulador da temporada: página própria, previsão, vagas em aberto, jogo
   marcados().forEach((n) => clique([...pend().querySelectorAll(".sim-op")].find((b) => b.textContent === n)));
   ["Corinthians", "Grêmio", "Internacional"].forEach((n) => clique([...pend().querySelectorAll(".sim-op")].find((b) => b.textContent === n)));
   expect(marcados().sort()).toEqual(["Corinthians", "Grêmio", "Internacional"]);
-  const sim = () => JSON.parse(localStorage.getItem("plantel:sim")).T5981;
   expect(sim().escolhas["BRA>BRB"].modo).toBe("escolher");
   // Selo "escolhido" com classe própria (".esc" é a tela de escolha de clube e esticava o selo)
   expect(document.querySelectorAll("#sim-composicao .sim-selo-escolhido").length).toBe(3);
@@ -1300,10 +1310,12 @@ test("simulador da temporada: página própria, previsão, vagas em aberto, jogo
   expect(document.querySelector("#rod-n").textContent).toBe("Rodada 1 de 38");
   expect(document.querySelector("#sim-jogo-meu .sim-placar-n").textContent).toBe(`${meu[2]} × ${meu[3]}`);
   expect(document.querySelectorAll("#sim-rodadas .sim-jogo").length).toBe(10);
-  // "Mais opções": só a próxima rodada, sem assistir
+  // "Mais opções": só a próxima data (uma rodada da liga ou um jogo de copa), sem assistir
+  const d0 = sim().dataAtual;
   clique(document.querySelector("#sim-opcoes"));
-  clique(noPainel().getByText("Simular só a próxima rodada"));
-  expect(sim().rodadaAtual).toBe(2);
+  clique(noPainel().getByText("Simular só a próxima data"));
+  expect(sim().dataAtual).toBe(d0 + 1);
+  const rodada = sim().rodadaAtual;
   // O elenco mudou (contratação no Mercado): aviso para reiniciar; "Continuar assim" mantém a rodada
   clique(document.querySelector("#sim-voltar"));
   clique(screen.getByRole("tab", { name: "Mercado" }));
@@ -1313,7 +1325,7 @@ test("simulador da temporada: página própria, previsão, vagas em aberto, jogo
   expect(document.querySelector("#sim-mudou").textContent).toContain("Seu elenco mudou — reiniciar a temporada?");
   clique(document.querySelector("#sim-continuar"));
   expect(document.querySelector("#sim-mudou")).toBeNull();
-  expect(sim().rodadaAtual).toBe(2);
+  expect(sim().rodadaAtual).toBe(rodada);
   // Até a rodada 10 (Mais opções), depois até o fim
   clique(document.querySelector("#sim-opcoes"));
   fireEvent.change(noPainel().getByLabelText("Simular até a rodada"), { target: { value: "10" } });
@@ -1326,11 +1338,30 @@ test("simulador da temporada: página própria, previsão, vagas em aberto, jogo
   expect(document.querySelectorAll("#sim-selecao .sim-campo-jog").length).toBe(11);
   expect(document.querySelectorAll("#sim-selecao .kv").length).toBe(11);
   expect(document.querySelector("#sim-prev-res").textContent).toMatch(/Resultado\d+º/);
-  // Estatísticas: artilharia, notas e o seu clube
+  // Campanha nas copas e o campeão de cada uma
+  expect(document.querySelectorAll("#sim-copas-clube .sim-copa-linha").length).toBe(3);
+  expect(document.querySelectorAll("#sim-copas-clube .sim-copa-campeao").length).toBe(3);
+  // Tabela da Libertadores: fase de grupos (8 grupos de 4) e o mata-mata em chaveamento
+  clique(document.querySelector("#sv-tabela"));
+  clique(document.querySelector("#sc-LIB"));
+  expect([...document.querySelectorAll("#sim-fases button")].map((b) => b.textContent)).toEqual(["Pré-Libertadores", "Fase de grupos", "Mata-mata"]);
+  clique([...document.querySelectorAll("#sim-fases button")].find((b) => b.textContent === "Fase de grupos"));
+  expect(document.querySelectorAll("#sim-tabelas .sim-tabela").length).toBe(8);
+  clique([...document.querySelectorAll("#sim-fases button")].find((b) => b.textContent === "Mata-mata"));
+  expect([...document.querySelectorAll(".sim-chave-col > .sim-rot")].map((s) => s.textContent.replace(" · ida e volta", ""))).toEqual(["Oitavas", "Quartas", "Semifinal", "Final"]);
+  // Jogos da Copa do Brasil
+  clique(document.querySelector("#sv-jogos"));
+  clique(document.querySelector("#sc-CDB"));
+  expect(document.querySelector("#rod-n").textContent).toMatch(/Final|Semifinal|Quartas|Oitavas|fase/);
+  // Estatísticas: total (todas as competições), da liga e de cada copa
   clique(document.querySelector("#sv-estat"));
+  clique(document.querySelector("#sc-total"));
   expect(document.querySelectorAll("#sim-artilharia .sim-jog").length).toBe(15);
+  clique(document.querySelector("#sc-LIB"));
+  expect(document.querySelectorAll("#sim-artilharia .sim-jog").length).toBeGreaterThan(5);
+  clique(document.querySelector("#sc-total"));
   clique(document.querySelector("#se-nota"));
-  expect(document.querySelector("#sim-notas h2").textContent).toMatch(/mínimo de 12 jogos/);
+  expect(document.querySelector("#sim-notas h2").textContent).toMatch(/mínimo de \d+ jogos/);
   clique(document.querySelector("#se-meu"));
   expect(document.querySelectorAll("#sim-meu-clube .sim-jog").length).toBeGreaterThan(11);
   // "Simular de novo": semente nova e volta para antes da temporada (a escolha do rebaixamento continua)
@@ -1339,7 +1370,7 @@ test("simulador da temporada: página própria, previsão, vagas em aberto, jogo
   expect(sim().rodadaAtual).toBe(0);
   expect(sim().semente).not.toBe(semente);
   expect(sim().escolhas["BRA>BRB"].sel.sort()).toEqual(["T1957", "T1966", "T5926"]);
-  expect(document.querySelector("#sim-status").textContent).toBe("Antes da temporada · 38 rodadas");
+  expect(document.querySelector("#sim-status").textContent).toBe("Antes da temporada · 38 rodadas e 3 copas");
   // Voltar ao plano
   clique(document.querySelector("#sim-voltar"));
   expect(document.querySelector("#simulador")).toBeNull();
@@ -1353,7 +1384,7 @@ test("simulador com formato especial (Argentina): seletor Apertura | Clausura | 
   clique(await screen.findByRole("button", { name: /2027/ }));
   clique(document.querySelector("#simular-temporada"));
   expect(document.querySelector("#sim-liga").textContent).toBe("Liga Profesional 2027");
-  expect(document.querySelector("#sim-status").textContent).toMatch(/^Antes da temporada · \d+ rodadas$/);
+  expect(document.querySelector("#sim-status").textContent).toMatch(/^Antes da temporada · \d+ rodadas e 3 copas$/);
   clique(document.querySelector("#sim-fim"));
   clique(document.querySelector("#sv-tabela"));
   const fases = [...document.querySelectorAll("#sim-fases button")].map((b) => b.textContent);

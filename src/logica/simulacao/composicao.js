@@ -229,18 +229,21 @@ function resolverPar(par, ctx) {
   return { modo: "escolher", movem: sel.filter(Boolean), detalhe: faltam > 0 ? ["Faltou marcar " + faltam + "; o resto veio da simulação."] : [], projecao: false, incompleto: faltam > 0 };
 }
 
+// Contexto de projeção compartilhado (composição e copas usam as mesmas tabelas projetadas)
+export const contextoProjecao = (semente, escolhas = {}) => novoContexto(semente, escolhas);
+
 // Resolve as pendências dos pares que mexem nas ligas indicadas. escolhas = { "<id do par>": { modo, sel } }
-export function resolverPendencias(ligas, semente, escolhas = {}) {
-  const ctx = novoContexto(semente, escolhas), out = {};
+export function resolverPendencias(ligas, semente, escolhas = {}, contexto = null) {
+  const ctx = contexto || novoContexto(semente, escolhas), out = {};
   for (const par of pares())
     if (temPendencia(par) && (ligas.includes(par.de) || ligas.includes(par.para))) out[idPar(par)] = resolverPar(par, ctx);
   return out;
 }
 
 // Tabela atual terminada de uma liga (a mesma usada nas projeções, com a mesma semente): linhas com os pontos finais
-export function projecaoAtual(lg, semente) {
+export function projecaoAtual(lg, semente, contexto = null) {
   if (!D.ATUAL?.[lg]) return null;
-  return novoContexto(semente, {}).linhas(lg);
+  return (contexto || novoContexto(semente, {})).linhas(lg);
 }
 const dataBr = (iso) => (/^\d{4}-\d{2}-\d{2}$/.test(iso || "") ? iso.slice(8) + "/" + iso.slice(5, 7) + "/" + iso.slice(0, 4) : iso || "hoje");
 

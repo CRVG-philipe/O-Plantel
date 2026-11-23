@@ -24,7 +24,7 @@ const pot2 = (x) => 2 ** Math.floor(Math.log2(x));
 const NOME_FASE = { 2: "Final", 4: "Semifinal", 8: "Quartas", 16: "Oitavas", 32: "16 avos" };
 
 // ---------- Calendário de pontos ----------
-function roundRobin(clubes, turnos, rng) {
+export function roundRobin(clubes, turnos, rng) {
   if (clubes.length < 2) return [];
   const base = gerarCalendario(embaralhar(rng, clubes)), meio = base.slice(0, base.length / 2);
   const out = [];

@@ -59,10 +59,35 @@ function montarBanco(sq, usados, lg, sobraEst) {
   return banco;
 }
 
+// Jogadores de cada clube (índice montado uma vez; refeito se D.ALL mudar, como nos testes que recarregam os dados)
+let indice = { de: null, mapa: new Map() };
+export function jogadoresDo(k) {
+  if (indice.de !== D.ALL) {
+    const mapa = new Map();
+    for (const p of D.ALL) { if (!mapa.has(p.club)) mapa.set(p.club, []); mapa.get(p.club).push(p); }
+    indice = { de: D.ALL, mapa };
+  }
+  return indice.mapa.get(k) || [];
+}
+
+// Força rápida (para potes e completar vagas): média dos 11 maiores overalls do elenco atual (em cache; o cache é
+// refeito junto com o índice de jogadores, quando os dados são recarregados)
+let cacheRapida = { de: null, mapa: new Map() };
+export function forcaRapida(k) {
+  if (cacheRapida.de !== D.ALL) cacheRapida = { de: D.ALL, mapa: new Map() };
+  let f = cacheRapida.mapa.get(k);
+  if (f === undefined) {
+    const o = jogadoresDo(k).map((p) => ovrDe(p)).sort((a, b) => b - a).slice(0, 11);
+    f = o.length ? o.reduce((s, x) => s + x, 0) / o.length : 50;
+    cacheRapida.mapa.set(k, f);
+  }
+  return f;
+}
+
 // Time de um clube que não é o seu. "fora" = ids que não podem jogar por ele (contratados pelo seu plano).
 // "lg" = liga em que ele joga na temporada simulada (a regra de estrangeiros é a dela).
 export function escalarClube(k, lg, fora = new Set()) {
-  const sq = D.ALL.filter((p) => p.club === k && !fora.has(p.id));
+  const sq = jogadoresDo(k).filter((p) => !fora.has(p.id));
   const pontas = sq.filter((p) => p.pos === "PE" || p.pos === "PD").length;
   const form = pontas >= 2 ? "4-3-3" : "4-4-2";
   const regra = regraDaLiga(lg);

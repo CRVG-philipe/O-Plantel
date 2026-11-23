@@ -8,7 +8,8 @@ import { calcularForca, jogarPartida, lambdas, sortearPlacar } from "../src/logi
 import { escalarClube, escalarPlano } from "../src/logica/simulacao/escalar.js";
 import { comporLiga, ligaNaTemporada, projecaoAtual, resolverPendencias, rotuloLiga, zonasDaLiga } from "../src/logica/simulacao/composicao.js";
 import { classificacao, fecharRodada, garantirRodada, montarEsqueleto, titulos } from "../src/logica/simulacao/formatos.js";
-import { criarEstado, montarTimes, narracao, simularAte, tabelaAtual, totalRodadas } from "../src/logica/simulacao/temporada.js";
+import { campeaoDe, criarEstado, datasDe, esqCopa, jogarProximoJogo, montarTimes, narracao, simularAte, tabelaAtual, totalRodadas } from "../src/logica/simulacao/temporada.js";
+import { finaisPendentes } from "../src/logica/simulacao/copas.js";
 import { novoPlano } from "../src/logica/elenco.js";
 import { escalarSozinho } from "../src/logica/escalacao.js";
 
@@ -132,6 +133,103 @@ test("semente: mesma semente → mesma temporada também nos formatos especiais 
     expect(a.st.resultados).toEqual(b.st.resultados);
     expect(titulos(a.st, a.E, a.sorteio)).toEqual(titulos(b.st, b.E, b.sorteio));
   }
+});
+
+// ---------- Copas (v2, etapa 2) ----------
+const paisDoClube = (k) => D.CL[k].lg.replace(/2$/, "");
+test("copas: Libertadores 2027 com 47 clubes (32 nos grupos); Flamengo, Palmeiras e Cruzeiro sempre dentro", () => {
+  for (const semente of [1, 2, 3]) {
+    const P = planoDe(porNome("BRA", "Flamengo"));
+    const E = criarEstado(P, { semente });
+    expect(Object.keys(E.copas).sort()).toEqual(["CDB", "LIB", "SUD"]);
+    const lib = E.copas.LIB.part;
+    expect(lib.grupos.length + lib.pre.length).toBe(47);
+    expect(lib.pre.length).toBe(19);
+    for (const nome of ["Flamengo", "Palmeiras", "Cruzeiro"]) expect([...lib.grupos, ...lib.pre]).toContain(porNome("BRA", nome));
+    expect(lib.selo[porNome("BRA", "Flamengo")]).toBe("real");
+    // Ninguém em duas copas continentais; rebaixado não joga
+    const sud = [...E.copas.SUD.part.direto, ...E.copas.SUD.part.primeira];
+    expect(sud.length).toBe(44);
+    expect(sud.some((k) => lib.grupos.includes(k) || lib.pre.includes(k))).toBe(false);
+    // Temporada inteira: 32 na fase de grupos (28 diretos + 4 da pré) e um campeão
+    const F = simularAte(E, P, 999);
+    const Ec = esqCopa(F, "LIB"), g = F.copas.LIB.grupos[Ec.grupos];
+    expect(g.length).toBe(8);
+    expect(g.flatMap((x) => x.clubes).length).toBe(32);
+    expect(campeaoDe(F, "LIB")).toBeTruthy();
+    expect(campeaoDe(F, "SUD")).toBeTruthy();
+  }
+});
+
+test("copas: Copa do Brasil 2027 coloca os 20 da Série A direto na 5ª fase (32 clubes)", () => {
+  const P = planoDe(porNome("BRA", "Flamengo"));
+  const F = simularAte(criarEstado(P, { semente: 5 }), P, 999);
+  const Ec = esqCopa(F, "CDB"), quinta = Ec.etapas.find((e) => e.fase === "5ª fase");
+  const ch = F.copas.CDB.chaves[quinta.i];
+  expect(ch.pares.length).toBe(16);
+  const serieA = F.composicao.clubes;
+  expect(serieA.length).toBe(20);
+  expect(serieA.every((k) => ch.pares.some((p) => p.includes(k)))).toBe(true);
+  // Antes da 5ª fase, só clubes da Série B e da Série C
+  Ec.etapas.filter((e) => e.i < quinta.i).forEach((e) => F.copas.CDB.chaves[e.i].pares.flat().forEach((k) => expect(serieA).not.toContain(k)));
+  expect(campeaoDe(F, "CDB")).toBeTruthy();
+});
+
+test("copas: Champions 2027/28 com 36 na fase de liga, 8 jogos por clube e nenhum rival do mesmo país", () => {
+  const P = planoDe(porNome("ENG", "Arsenal FC") || D.CLUBS.find((c) => c.lg === "ENG").k);
+  const F = simularAte(criarEstado(P, { semente: 4 }), P, 999);
+  expect(Object.keys(F.copas)).toEqual(expect.arrayContaining(["UCL", "UEL", "UECL", "FAC"]));
+  for (const [id, jogosPorClube] of [["UCL", 8], ["UEL", 8], ["UECL", 6]]) {
+    const Ec = esqCopa(F, id), e = Ec.etapas[Ec.liga], c = F.copas[id];
+    const clubes = c.grupos[e.i][0].clubes;
+    expect(clubes.length, id).toBe(36);
+    expect(new Set(clubes).size).toBe(36);
+    const j = {};
+    for (let r = e.inicio; r < e.inicio + e.rodadas; r++)
+      for (const [a, b] of c.resultados[r]) {
+        j[a] = (j[a] || 0) + 1; j[b] = (j[b] || 0) + 1;
+        expect(paisDoClube(a) === paisDoClube(b), `${id}: ${a} x ${b}`).toBe(false);
+      }
+    expect(clubes.every((k) => j[k] === jogosPorClube), id).toBe(true);
+    expect(campeaoDe(F, id)).toBeTruthy();
+  }
+  // Os 7 eliminados da qualificação da Champions vão à Europa League
+  const ucl = F.copas.UCL, q = ucl.chaves[esqCopa(F, "UCL").qual];
+  const perdedores = q.pares.map(([a, b], i) => (q.vence[i] === a ? b : a));
+  expect(perdedores.length).toBe(7);
+  expect(perdedores.every((k) => F.copas.UEL.grupos[esqCopa(F, "UEL").liga][0].clubes.includes(k))).toBe(true);
+});
+
+test("copas: mesma semente → mesmos campeões; o calendário intercala liga e copas", () => {
+  const P = planoDe(porNome("BRA", "Flamengo"));
+  const a = simularAte(criarEstado(P, { semente: 9 }), P, 999), b = simularAte(criarEstado(P, { semente: 9 }), P, 999);
+  for (const id of ["CDB", "LIB", "SUD"]) expect(campeaoDe(a, id)).toBe(campeaoDe(b, id));
+  expect(a.estatisticas).toEqual(b.estatisticas);
+  const datas = datasDe(a);
+  expect(datas.filter((x) => x.c === "liga").length).toBe(38);
+  expect(datas.findIndex((x) => x.c === "LIB")).toBeGreaterThan(0);
+  expect(datas.findIndex((x) => x.c === "CDB")).toBeLessThan(datas.findIndex((x) => x.c === "liga" && x.r === 37)); // a Copa do Brasil começa antes da última rodada
+  // Data a data dá o mesmo que tudo de uma vez
+  let c = criarEstado(P, { semente: 9 });
+  while (c.dataAtual < datas.length) c = jogarProximoJogo(c, P).estado;
+  expect(campeaoDe(c, "LIB")).toBe(campeaoDe(a, "LIB"));
+  expect(c.estatisticas).toEqual(a.estatisticas);
+  // Estatísticas por competição somam o total
+  const total = Object.values(a.estatisticas).reduce((s, x) => s + x[1], 0);
+  const porComp = Object.values(a.estatComp).reduce((s, comp) => s + Object.values(comp).reduce((t, x) => t + x[1], 0), 0);
+  expect(porComp).toBe(total);
+});
+
+test("copas: finais pendentes de 2026 — 'Escolher campeão' muda quem entra na Libertadores", () => {
+  const P = planoDe(porNome("BRA", "Flamengo"));
+  const fin = finaisPendentes().find((f) => f.id === "final_sud_2026");
+  const [a, b] = fin.jogo;
+  const Ea = criarEstado(P, { semente: 2, escolhasFinais: { final_sud_2026: a } });
+  const Eb = criarEstado(P, { semente: 2, escolhasFinais: { final_sud_2026: b } });
+  expect(Ea.finais.final_sud_2026.vence).toBe(a);
+  expect(Ea.copas.LIB.part.grupos).toContain(a);
+  expect(Eb.copas.LIB.part.grupos).toContain(b);
+  expect(Ea.copas.LIB.part.selo[a]).toBe("escolhido");
 });
 
 test("desempenho: temporada completa (com estatísticas) das ligas com formatos especiais abaixo de 300 ms", () => {
@@ -393,8 +491,8 @@ test("tela do simulador: classes sem o prefixo sim-/simp-/av- são só as peças
     txt.split(/\s+/).filter(Boolean).forEach((c) => classes.add(c));
   }
   const PERMITIDAS = new Set(["acts", "btn", "pri", "card", "col", "empty", "field", "kv", "kv-nome", "mute", "note", "num", "opt", "r", "ponto", "pos",
-    "sec", "seg", "tabs", "ind", "sobe", "desce", "meu", "c", "f", "a", "b", "cl", "zp", "ult", "fim", "r-",
-    "acesso"]); // "acesso" não é classe: é o texto comparado em x.tipo === "acesso" dentro do className
+    "sec", "seg", "tabs", "ind", "sobe", "desce", "meu", "c", "f", "a", "b", "cl", "zp", "ult", "fim", "r-", "so-largo", "so-celular",
+    "acesso", "real", "escolhido"]); // não são classes: são textos comparados dentro do className (x.tipo === "acesso", selo === "real")
   const soltas = [...classes].filter((c) => !/^(sim-|simp-|simp$|av-)/.test(c) && !PERMITIDAS.has(c));
   expect(soltas).toEqual([]);
 });

@@ -14,19 +14,26 @@
 //                        (ver formatos.js); as rodadas de cada etapa só existem depois que ela começa
 //   atual                projeção da temporada atual da liga do clube: { lg, linhas: [[clube, pontos finais, jogos]] }
 //   resultados           [rodada: [[casa, fora, gols casa, gols fora, eventos: [[minuto, lado, autor, assistência]]]]]
-//   estatisticas         { "<id do jogador>": [jogos, gols, assistências, soma das notas × 10, clube] }
+//   estatisticas         { "<id do jogador>": [jogos, gols, assistências, soma das notas × 10, clube] } (todas as competições)
+//   estatComp            { "liga"|"<copa>": { mesmo formato } } (por competição)
 //   previsao             { "<clube>": { pos, titulo, queda, acesso } } (300 temporadas rápidas)
+//   copas                { "<copa>": { part, selo, agenda, chaves, grupos, resultados } } (ver copas.js)
+//   finais               finais pendentes de 2026 resolvidas: { "<id>": { modo, vence, vice, placar } }
+//   escolhasFinais       { "<id>": clube campeão escolhido } ("Escolher campeão")
+//   previsaoCopas        { "<copa>": { "<clube>": chance de título (%) } }
+//   dataAtual            quantas "datas" do calendário integrado (rodadas da liga e jogos das copas) já foram jogadas
 //   assinatura           "impressão digital" do plano quando a temporada começou (para avisar que o elenco mudou)
 import { D } from "../dados.js";
 import { FORMS } from "../constantes.js";
 import { compatibilidade } from "../compatibilidade.js";
 import { misturar, novaSemente, rngDe } from "./aleatorio.js";
 import { jogarPartida, sortearPlacar } from "./motor.js";
-import { escalarClube, escalarPlano, idsDoPlano } from "./escalar.js";
-import { comporLiga, ligaNaTemporada, projecaoAtual, resolverPendencias, rotuloLiga, zonasDaLiga } from "./composicao.js";
+import { escalarClube, escalarPlano, forcaRapida, idsDoPlano } from "./escalar.js";
+import { comporLiga, contextoProjecao, ligaNaTemporada, movimentos, pares, projecaoAtual, resolverPendencias, rotuloLiga, zonasDaLiga } from "./composicao.js";
 import { classificacao, confronto, esqueletoDe, fecharRodada, garantirRodada, tabelaDe, tabelasDoSplit, titulos } from "./formatos.js";
+import { campeaoCopa, classificarCopas, copasDaLiga, defCopa, esqueletoCopa, fecharRodadaCopa, garantirRodadaCopa, ligasComCopa, nomeCopa, posicoesCopa, resolverFinais } from "./copas.js";
 
-export const VERSAO = 2;
+export const VERSAO = 3;
 export const N_PREVISAO = 300;
 
 // ---------- Salvar ----------
@@ -58,16 +65,17 @@ export const assinaturaDoPlano = (plano) =>
 // ---------- Preparar ----------
 // Monta a composição: resolve as pendências da liga do clube (e da liga nova, se ele subir ou cair).
 // Time criado do zero entra no lugar de um clube da liga escolhida (substitui, ou o mais fraco).
-export function prepararTemporada(plano, semente, escolhas = {}, substitui = null) {
+export function prepararTemporada(plano, semente, escolhas = {}, substitui = null, escolhasFinais = {}) {
   const k = plano.club, c = D.CL[k], criado = !!c?.criado, L0 = c.lg;
-  let resolvidas = resolverPendencias([L0], semente, escolhas);
+  const ctx = contextoProjecao(semente, escolhas); // as mesmas tabelas projetadas para a composição e para as copas
+  let resolvidas = resolverPendencias([L0], semente, escolhas, ctx);
   let lg = criado ? L0 : ligaNaTemporada(k, resolvidas);
   const avisos = [];
   if (lg === null) {
     avisos.push(`O ${c.n} cai para uma divisão que não está no site. Nesta versão, ele joga a ${rotuloLiga(L0)} mesmo assim.`);
     lg = L0;
   } else if (lg !== L0) {
-    resolvidas = resolverPendencias([L0, lg], semente, escolhas);
+    resolvidas = resolverPendencias([L0, lg], semente, escolhas, ctx);
     const subiu = D.LG[lg].div < D.LG[L0].div;
     avisos.push(`O ${c.n} ${subiu ? "subiu" : "caiu"} para a ${D.LG[lg].n}: a temporada simulada é a ${rotuloLiga(lg)}.`);
   }
@@ -79,9 +87,35 @@ export function prepararTemporada(plano, semente, escolhas = {}, substitui = nul
     composicao.substituido = alvo || null;
   } else if (!composicao.clubes.includes(k)) composicao.clubes.push(k);
   // Tabela real de hoje da liga do clube e como ela termina (a mesma projeção usada nas vagas de acesso/rebaixamento)
-  const proj = projecaoAtual(L0, semente);
+  const proj = projecaoAtual(L0, semente, ctx);
   const atual = proj ? { lg: L0, linhas: proj.map((l) => [l.k, l.pts, l.j]) } : null;
-  return { liga: lg, composicao, pendenciasResolvidas: resolvidas, avisos, atual };
+  const cop = prepararCopas(lg, composicao, semente, escolhas, ctx, escolhasFinais);
+  return { liga: lg, composicao, pendenciasResolvidas: resolvidas, avisos, atual, ...cop };
+}
+
+// Copas da liga do clube (copas.json, "por_liga"): finais pendentes de 2026, composição das ligas envolvidas
+// (para saber quem caiu e quem joga as copas nacionais) e a classificação de cada copa.
+function prepararCopas(lg, composicao, semente, escolhas, ctx, escolhasFinais) {
+  const ids = copasDaLiga(lg);
+  if (!ids.length) return { copas: {}, finais: {} };
+  const ligas = new Set();
+  for (const id of ids) {
+    const def = defCopa(id);
+    if (id === "LIB" || id === "SUD") Object.keys(def.vagas_por_pais || {}).forEach((x) => ligas.add(x));
+    if (id === "CDB") ["BRA", "BRB", "BRC"].forEach((x) => ligas.add(x));
+    (def.participantes?.ligas || []).forEach((x) => ligas.add(x));
+  }
+  const resolv = resolverPendencias([...ligas].filter((x) => D.LG[x]), semente, escolhas, ctx);
+  const caem = new Set(pares().filter((p) => p.tipo !== "acesso").flatMap((p) => movimentos(p, resolv)));
+  const finais = ids.includes("LIB") || ids.includes("SUD") ? resolverFinais(semente, escolhasFinais) : {};
+  const part = classificarCopas(ids, {
+    tabela: (x) => (D.LG[x] ? ctx.tabela(x) : []),
+    clubes2027: (x) => (x === lg ? composicao.clubes : D.LG[x] ? comporLiga(x, resolv).clubes : []),
+    rebaixado: (k) => caem.has(k),
+    finais,
+  });
+  const copas = Object.fromEntries(Object.entries(part).map(([id, p]) => [id, { part: p, agenda: [], chaves: {}, grupos: {}, resultados: [] }]));
+  return { copas, finais };
 }
 
 // Times da temporada: o seu pelo plano; os outros pelo elenco atual (sem quem o seu plano contratou)
@@ -90,6 +124,69 @@ export function montarTimes(plano, clubes, lg) {
   for (const k of clubes) times[k] = k === plano.club ? escalarPlano(plano) : escalarClube(k, lg, fora);
   return times;
 }
+// Times de todas as competições: os da liga (com a regra de estrangeiros dela) e, sob demanda, os das copas
+function timesDoMundo(plano, estado) {
+  const times = montarTimes(plano, estado.composicao.clubes, estado.liga), fora = idsDoPlano(plano);
+  const t = (k) => (times[k] ??= k === plano.club ? escalarPlano(plano) : escalarClube(k, D.CL[k]?.lg, fora));
+  return { t, forca: (k) => t(k).forca };
+}
+
+// ---------- Copas e calendário integrado ----------
+export const copasDe = (estado) => Object.keys(estado.copas || {}).filter((id) => defCopa(id));
+const cacheEsqCopa = new Map();
+export function esqCopa(estado, id) {
+  const chave = `${estado.semente}|${id}|${JSON.stringify(estado.copas[id].part)}`;
+  if (!cacheEsqCopa.has(chave)) { if (cacheEsqCopa.size > 60) cacheEsqCopa.clear(); cacheEsqCopa.set(chave, esqueletoCopa(id, estado.copas[id].part)); }
+  return cacheEsqCopa.get(chave);
+}
+const esqsDe = (estado) => Object.fromEntries(copasDe(estado).map((id) => [id, esqCopa(estado, id)]));
+const mundoDe = (estado, copas, forca, esq = esqsDe(estado)) => ({ copas, esq, semente: estado.semente, forca });
+
+// Datas da temporada: as rodadas da liga e as rodadas de cada copa, na ordem do calendário ("calendario" do copas.json:
+// 0 = 1ª rodada da liga, 1 = última). Cada data é { c: "liga" | "<copa>", r }.
+const cacheDatas = new Map();
+export function datasDe(estado) {
+  const E = esqueleto(estado), ids = copasDe(estado);
+  const chave = `${estado.semente}|${estado.liga}|${E.total}|${ids.map((id) => id + esqCopa(estado, id).total).join(",")}`;
+  if (cacheDatas.has(chave)) return cacheDatas.get(chave);
+  const itens = Array.from({ length: E.total }, (_, r) => ({ c: "liga", r, p: (r + 0.5) / E.total, o: 0 }));
+  ids.forEach((id, oi) => posicoesCopa(esqCopa(estado, id)).forEach((p, r) => itens.push({ c: id, r, p, o: oi + 1 })));
+  itens.sort((a, b) => a.p - b.p || a.o - b.o || a.r - b.r);
+  const datas = itens.map(({ c, r }) => ({ c, r }));
+  if (cacheDatas.size > 40) cacheDatas.clear();
+  cacheDatas.set(chave, datas);
+  return datas;
+}
+export const totalDatas = (estado) => datasDe(estado).length;
+export const nomeCompeticao = (estado, c) => (c === "liga" ? rotuloLiga(estado.liga) : nomeCopa(c));
+export const nomeDaRodadaCopa = (estado, id, r) => esqCopa(estado, id).nomes[r] || `Rodada ${r + 1}`;
+// Nome de uma data: "Rodada 12" (liga) ou "Copa do Brasil 2027 · Oitavas (ida)"
+export const nomeDaData = (estado, d) => { const x = datasDe(estado)[d]; return !x ? "" : x.c === "liga" ? nomeDaRodada(estado, x.r) : `${nomeCopa(x.c)} · ${nomeDaRodadaCopa(estado, x.c, x.r)}`; };
+// Resultados e jogos de uma competição
+export const resultadosDe = (estado, c) => (c === "liga" ? estado.resultados : estado.copas[c]?.resultados || []);
+const copiaCopas = (estado) => Object.fromEntries(Object.entries(estado.copas || {}).map(([id, x]) => [id, { ...x, agenda: [...x.agenda], chaves: structuredClone(x.chaves), grupos: { ...x.grupos }, resultados: [...x.resultados] }]));
+// Jogos de uma rodada de copa (gerados agora, numa cópia, se a fase anterior já acabou); null = ainda sem confrontos
+export function jogosDaRodadaCopa(estado, id, r) {
+  const c = estado.copas[id];
+  if (c.agenda[r]) return c.agenda[r].jogos;
+  if (c.resultados.length < r) return null;
+  return garantirRodadaCopa(id, r, mundoDe(estado, copiaCopas(estado), forcaRapida));
+}
+// Jogos de uma data (da liga ou de uma copa)
+export const jogosDaData = (estado, d) => { const x = datasDe(estado)[d]; return !x ? null : x.c === "liga" ? jogosDaRodada(estado, x.r) : jogosDaRodadaCopa(estado, x.c, x.r); };
+// Próxima data em que o clube joga (olhando só o que já dá para saber): { d, jogo } ou null
+export function proximoJogo(estado, k) {
+  const datas = datasDe(estado);
+  for (let d = estado.dataAtual || 0; d < datas.length; d++) {
+    const jogos = jogosDaData(estado, d);
+    if (!jogos) return { d, jogo: null };
+    const jogo = jogos.find(([a, b]) => a === k || b === k);
+    if (jogo) return { d, jogo };
+  }
+  return null;
+}
+// Título de cada copa e a chance de título do clube (previsão)
+export const campeaoDe = (estado, id) => campeaoCopa(estado.copas[id], esqCopa(estado, id));
 
 // Esqueleto do formato da liga (etapas e rodadas; ver formatos.js), fixo para a semente e os clubes
 export const esqueleto = (estado) => esqueletoDe(estado.liga, estado.composicao.clubes, estado.semente);
@@ -105,45 +202,86 @@ export function jogosDaRodada(estado, r) {
   return garantirRodada(copiaSt(estado), esqueleto(estado), r, sorteioDe(estado));
 }
 
-// Estado novo (antes da 1ª rodada), já com a previsão
-export function criarEstado(plano, { semente = novaSemente(), escolhas = {}, substitui = null } = {}) {
-  const prep = prepararTemporada(plano, semente, escolhas, substitui);
+// Estado novo (antes da 1ª rodada), já com a previsão (liga e copas)
+// semPrevisaoCopas = true: a previsão das copas (a parte mais demorada) fica para depois (a tela calcula logo em seguida)
+export function criarEstado(plano, { semente = novaSemente(), escolhas = {}, substitui = null, escolhasFinais = {}, semPrevisaoCopas = false } = {}) {
+  const prep = prepararTemporada(plano, semente, escolhas, substitui, escolhasFinais);
   const estado = {
-    v: VERSAO, semente, rodadaAtual: 0, liga: prep.liga, composicao: prep.composicao, pendenciasResolvidas: prep.pendenciasResolvidas,
-    escolhas, substitui, avisos: prep.avisos, atual: prep.atual, agenda: [], chaves: {}, grupos: {}, resultados: [], estatisticas: {},
-    assinatura: assinaturaDoPlano(plano),
+    v: VERSAO, semente, rodadaAtual: 0, dataAtual: 0, liga: prep.liga, composicao: prep.composicao, pendenciasResolvidas: prep.pendenciasResolvidas,
+    escolhas, substitui, escolhasFinais, avisos: prep.avisos, atual: prep.atual, agenda: [], chaves: {}, grupos: {}, resultados: [],
+    copas: prep.copas, finais: prep.finais, estatisticas: {}, estatComp: {}, assinatura: assinaturaDoPlano(plano),
   };
   estado.previsao = calcularPrevisao(estado, montarTimes(plano, estado.composicao.clubes, estado.liga));
+  estado.previsaoCopas = semPrevisaoCopas ? null : calcularPrevisaoCopas(estado, plano);
   return estado;
 }
 
 // ---------- Simular ----------
-// Joga as rodadas até "ate" (sem passar do fim). Cada jogo tem a sua própria semente (semente + rodada + jogo),
-// então simular rodada a rodada ou tudo de uma vez dá o mesmo resultado. Devolve um estado novo.
-export function simularAte(estado, plano, ate) {
-  const E = esqueleto(estado), fim = Math.min(ate, E.total);
-  if (estado.rodadaAtual >= fim) return estado;
-  const novo = { ...estado, ...copiaSt(estado), resultados: [...estado.resultados], estatisticas: { ...estado.estatisticas } };
-  const times = montarTimes(plano, estado.composicao.clubes, estado.liga);
-  const forca = Object.fromEntries(Object.entries(times).map(([k, t]) => [k, t.forca]));
+// Joga as datas do calendário integrado (rodadas da liga e jogos das copas) até a data "ate" (sem incluir).
+// Cada jogo tem a sua própria semente (semente + competição + rodada + jogo): simular data a data ou tudo de uma vez
+// dá o mesmo resultado. Devolve um estado novo.
+export function simularDatas(estado, plano, ate) {
+  const datas = datasDe(estado), fim = Math.min(ate, datas.length);
+  const inicio = estado.dataAtual || 0;
+  if (inicio >= fim) return estado;
+  const novo = { ...estado, ...copiaSt(estado), resultados: [...estado.resultados], copas: copiaCopas(estado), estatisticas: { ...estado.estatisticas },
+    estatComp: Object.fromEntries(Object.entries(estado.estatComp || {}).map(([c, s]) => [c, { ...s }])) };
+  const E = esqueleto(estado), mundoT = timesDoMundo(plano, estado);
+  const forcaLiga = Object.fromEntries(estado.composicao.clubes.map((k) => [k, mundoT.forca(k)]));
   const sorteio = sorteioDe(estado), penaltis = (e, i) => rngDe(estado.semente, "penaltis", e, i)();
-  for (let r = estado.rodadaAtual; r < fim; r++) {
-    const jogos = garantirRodada(novo, E, r, sorteio);
-    if (!jogos) break;
-    novo.resultados.push(jogos.map(([c, f, neutro], i) => {
-      const jogo = jogarPartida(rngDe(estado.semente, r, i), times[c], times[f], !!neutro);
-      for (const [id, lado, g, a, nota] of jogo.jogadores) {
-        const s = novo.estatisticas[id] ? [...novo.estatisticas[id]] : [0, 0, 0, 0, lado ? f : c];
+  const mundo = mundoDe(estado, novo.copas, forcaRapida);
+  const jogar = (c, r, jogos, semente) => jogos.map(([x, y, neutro], i) => {
+    const jogo = jogarPartida(rngDe(...semente, i), mundoT.t(x), mundoT.t(y), !!neutro);
+    const comp = (novo.estatComp[c] ??= {});
+    for (const [id, lado, g, a, nota] of jogo.jogadores) {
+      for (const alvo of [novo.estatisticas, comp]) {
+        const s = alvo[id] ? [...alvo[id]] : [0, 0, 0, 0, lado ? y : x];
         s[0]++; s[1] += g; s[2] += a; s[3] += Math.round(nota * 10);
-        novo.estatisticas[id] = s;
+        alvo[id] = s;
       }
-      // Jogos do seu clube guardam também as substituições (para o jogo ao vivo)
-      return c === plano.club || f === plano.club ? [c, f, jogo.gc, jogo.gf, jogo.eventos, jogo.subs] : [c, f, jogo.gc, jogo.gf, jogo.eventos];
-    }));
-    fecharRodada(novo, E, r, forca, penaltis);
-    novo.rodadaAtual = r + 1;
+    }
+    // Jogos do seu clube guardam também as substituições (para o jogo ao vivo)
+    return x === plano.club || y === plano.club ? [x, y, jogo.gc, jogo.gf, jogo.eventos, jogo.subs] : [x, y, jogo.gc, jogo.gf, jogo.eventos];
+  });
+  for (let d = inicio; d < fim; d++) {
+    const { c, r } = datas[d];
+    if (c === "liga") {
+      const jogos = garantirRodada(novo, E, r, sorteio);
+      if (!jogos) break;
+      novo.resultados.push(jogar("liga", r, jogos, [estado.semente, r]));
+      fecharRodada(novo, E, r, forcaLiga, penaltis);
+      novo.rodadaAtual = r + 1;
+    } else {
+      const jogos = garantirRodadaCopa(c, r, mundo);
+      if (!jogos) break;
+      novo.copas[c].resultados.push(jogar(c, r, jogos, [estado.semente, "copa", c, r]));
+      fecharRodadaCopa(c, r, mundo, (e, i) => rngDe(estado.semente, "penaltis", c, e, i)());
+    }
+    novo.dataAtual = d + 1;
   }
   return novo;
+}
+
+// Joga até a rodada "ate" da liga (inclusive as datas de copa que vêm antes dela). ate ≥ total = até o fim de tudo.
+export function simularAte(estado, plano, ate) {
+  const datas = datasDe(estado), total = esqueleto(estado).total;
+  if (ate >= total) return simularDatas(estado, plano, datas.length);
+  const d = datas.findIndex((x) => x.c === "liga" && x.r === ate - 1);
+  return d < 0 ? estado : simularDatas(estado, plano, d + 1);
+}
+
+// Joga data a data até o próximo jogo do clube (inclusive). Devolve { estado, d } (d = data do jogo; null se não houver mais)
+export function jogarProximoJogo(estado, plano) {
+  const total = totalDatas(estado), k = plano.club;
+  let e = estado;
+  while ((e.dataAtual || 0) < total) {
+    const d = e.dataAtual || 0;
+    e = simularDatas(e, plano, d + 1);
+    if (e.dataAtual === d) break;
+    const x = datasDe(e)[d], jogos = resultadosDe(e, x.c)[x.r] || [];
+    if (jogos.some(([a, b]) => a === k || b === k)) return { estado: e, d };
+  }
+  return { estado: e, d: null };
 }
 
 // Classificação principal (anual / split / fase de pontos) e os títulos da temporada
@@ -224,8 +362,8 @@ export function vistaAtual(estado, vistas) {
 // não viraram gol (finalização para fora, defesa do goleiro, bola na trave), sorteados com a semente do jogo, então
 // o mesmo jogo tem sempre a mesma narração. Devolve [{ min, tipo: "gol"|"sub"|"chance", lado, ... }] em ordem.
 const TIPOS_CHANCE = [["fora", 0.45], ["defesa", 0.35], ["trave", 0.2]];
-export function narracao(estado, plano, r, i) {
-  const jogo = estado.resultados[r]?.[i];
+export function narracao(estado, plano, r, i, comp = "liga") {
+  const jogo = resultadosDe(estado, comp)[r]?.[i];
   if (!jogo) return [];
   const [c, f, , , eventos, subs = []] = jogo;
   const lances = [];
@@ -233,13 +371,14 @@ export function narracao(estado, plano, r, i) {
   for (const [min, lado, sai, entra] of subs) lances.push({ min, tipo: "sub", lado, sai, entra });
   // Quem está em campo em cada minuto (titulares e quem entrou), para escolher quem finaliza
   const fora = idsDoPlano(plano);
-  const times = [c, f].map((k) => (k === plano.club ? escalarPlano(plano) : escalarClube(k, estado.liga, fora)));
+  const naLiga = (k) => estado.composicao.clubes.includes(k);
+  const times = [c, f].map((k) => (k === plano.club ? escalarPlano(plano) : escalarClube(k, naLiga(k) ? estado.liga : D.CL[k]?.lg, fora)));
   const emCampo = (lado, min) => {
     const s = subs.filter((x) => x[1] === lado && x[0] <= min);
     const saiu = new Set(s.map((x) => x[2]));
     return [...times[lado].onze.map((x) => x.p).filter((p) => p && !saiu.has(p.id)), ...s.map((x) => D.BYID[x[3]] || (plano.custom || []).find((p) => p.id === x[3]))].filter((p) => p && p.pos !== "GOL");
   };
-  const rng = rngDe(estado.semente, "lances", r, i);
+  const rng = comp === "liga" ? rngDe(estado.semente, "lances", r, i) : rngDe(estado.semente, "lances", comp, r, i);
   [0, 1].forEach((lado) => {
     const n = 2 + Math.floor(rng() * 5) + Math.round((times[lado].forca - times[1 - lado].forca) / 6);
     for (let k = 0; k < Math.max(1, n); k++) {
@@ -293,16 +432,42 @@ export function calcularPrevisao(estado, times, n = N_PREVISAO) {
   }]));
 }
 
+// Copas: 300 temporadas rápidas (só placares), na ordem do calendário (a Sul-Americana depende da Libertadores, a Europa
+// League da Champions). Devolve { "<copa>": { "<clube>": chance de título em % } }.
+export function calcularPrevisaoCopas(estado, plano, n = N_PREVISAO) {
+  const ids = copasDe(estado);
+  if (!ids.length) return {};
+  const datas = datasDe(estado).filter((x) => x.c !== "liga");
+  const mundoT = timesDoMundo(plano, estado);
+  const fc = {};
+  const forcaJogo = (k) => (fc[k] ??= mundoT.forca(k));
+  const rng = rngDe(estado.semente, "previsao-copas"), sorte = () => rng();
+  const conta = Object.fromEntries(ids.map((id) => [id, {}])), esq = esqsDe(estado);
+  for (let s = 0; s < n; s++) {
+    const copas = Object.fromEntries(ids.map((id) => [id, { part: estado.copas[id].part, agenda: [], chaves: {}, grupos: {}, resultados: [] }]));
+    const mundo = mundoDe(estado, copas, forcaRapida, esq);
+    for (const { c, r } of datas) {
+      const jogos = garantirRodadaCopa(c, r, mundo);
+      if (!jogos) continue;
+      copas[c].resultados.push(jogos.map(([x, y, neutro]) => { const [a, b] = sortearPlacar(rng, forcaJogo(x), forcaJogo(y), !!neutro); return [x, y, a, b]; }));
+      fecharRodadaCopa(c, r, mundo, sorte);
+    }
+    for (const id of ids) { const k = campeaoCopa(copas[id], mundo.esq[id]); if (k) conta[id][k] = (conta[id][k] || 0) + 1; }
+  }
+  return Object.fromEntries(ids.map((id) => [id, Object.fromEntries(Object.entries(conta[id]).map(([k, x]) => [k, Math.round((x / n) * 1000) / 10]))]));
+}
+
 // ---------- Estatísticas ----------
 // Jogador pelo id (da base ou criado no plano)
 export const jogadorSim = (plano, id) => D.BYID[id] || (plano.custom || []).find((c) => c.id === id) || null;
-// Linhas de estatística: [{ p, k, j, g, a, nota }]
-export function linhasEstatisticas(estado, plano) {
-  return Object.entries(estado.estatisticas).map(([id, [j, g, a, s, k]]) => ({ p: jogadorSim(plano, id), id, k, j, g, a, nota: j ? s / 10 / j : 0 })).filter((x) => x.p);
+// Linhas de estatística: [{ p, k, j, g, a, nota }]. comp = "total" (todas as competições), "liga" ou o id de uma copa.
+const estatDe = (estado, comp) => (comp && comp !== "total" ? estado.estatComp?.[comp] || {} : estado.estatisticas);
+export function linhasEstatisticas(estado, plano, comp = "total") {
+  return Object.entries(estatDe(estado, comp)).map(([id, [j, g, a, s, k]]) => ({ p: jogadorSim(plano, id), id, k, j, g, a, nota: j ? s / 10 / j : 0 })).filter((x) => x.p);
 }
 // Mínimo de jogos para entrar em "melhores notas" e na seleção: 30% dos jogos de quem mais jogou
-// (com playoffs, nem todo clube joga todas as rodadas)
-export const minimoJogos = (estado) => Math.max(1, Math.ceil(Math.max(0, ...Object.values(estado.estatisticas).map((s) => s[0])) * 0.3));
+// (com playoffs e copas, nem todo clube joga todas as rodadas)
+export const minimoJogos = (estado, comp = "total") => Math.max(1, Math.ceil(Math.max(0, ...Object.values(estatDe(estado, comp)).map((s) => s[0])) * 0.3));
 
 // Seleção da temporada: 4-3-3 com as melhores notas (cada vaga só aceita quem é ideal nela)
 export function selecaoDaTemporada(estado, plano) {
