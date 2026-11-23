@@ -1,11 +1,12 @@
 // Página do simulador da temporada (botão "Simular temporada", no topo do plano). Lógica em src/logica/simulacao/;
 // o estado fica em "plantel:sim". Versão 2 (etapa 1): temporada atual real e formatos especiais das ligas (split, playoffs,
-// Apertura/Clausura...). Sem copas, lesões ou suspensões; os outros clubes não contratam.
+// Apertura/Clausura...). Etapa 2: copas. Etapa 3: mercado da IA (aba Mercado, em MercadoIA.jsx). Sem lesões ou suspensões.
 //   Resumo        antes da temporada (previsão, quem chega e quem sai, vagas em aberto), durante (campanha e próximo jogo)
 //                 e no fim (campeão, sua campanha, seleção da temporada no campinho, faixas)
 //   Tabela        seletor de fase (pontos, split, grupos, torneios, anual) com as faixas; mata-mata como chaveamento
 //   Jogos         placares de cada rodada; tocar num jogo mostra os gols
 //   Estatísticas  artilharia, assistências, melhores notas e os números do seu clube
+//   Mercado       a janela de transferências dos clubes da IA, as propostas pelos seus jogadores e os interruptores
 //   Ao vivo       o seu jogo minuto a minuto (gols, substituições e lances), com velocidade 1x a 8x
 import { useEffect, useMemo, useState } from "react";
 import { D } from "../logica/dados.js";
@@ -16,6 +17,7 @@ import { Escudo, LogoLiga } from "./Imagens.jsx";
 import { Avatar, Pos } from "./Jogador.jsx";
 import { Cabecalho } from "./Painel.jsx";
 import Rodape from "./Rodape.jsx";
+import MercadoIA from "./MercadoIA.jsx";
 import { idPar, opcoesDaPendencia, pares, rotuloLiga, temporadaAtual, vagasDaPendencia, zonasDaLiga } from "../logica/simulacao/composicao.js";
 import { formatoDa } from "../logica/simulacao/formatos.js";
 import { atualDa, dataAtual } from "../logica/simulacao/atual.js";
@@ -56,7 +58,7 @@ function carregar(plano) {
   return novo;
 }
 
-const ABAS = [["resumo", "Resumo"], ["tabela", "Tabela"], ["jogos", "Jogos"], ["estat", "Estatísticas"]];
+const ABAS = [["resumo", "Resumo"], ["tabela", "Tabela"], ["jogos", "Jogos"], ["estat", "Estatísticas", "Números"], ["mercado", "Mercado"]];
 // Nome curto de uma copa para botões: sem o ano ("Copa Libertadores 2027" → "Libertadores")
 export const copaCurta = (id) => nomeCopa(id).replace(/\s+\d{4}(\/\d{2})?$/, "").replace(/^Copa (?!do |del |de )/, "");
 // Texto do botão de jogar: "Jogar rodada 15", "Jogar Libertadores"
@@ -84,7 +86,9 @@ export default function Simulador({ app }) {
   const ids = copasDe(estado);
 
   const guardar = (e) => { salvarSim(k, e); setEstado(e); };
-  const criar = (mudar = {}) => criarEstado(plano, { semente: estado.semente, escolhas: estado.escolhas, substitui: estado.substitui, escolhasFinais: estado.escolhasFinais || {}, semPrevisaoCopas: true, ...mudar });
+  // (o mercado da IA guarda os interruptores, a semente própria e as respostas às propostas)
+  const criar = (mudar = {}) => criarEstado(plano, { semente: estado.semente, escolhas: estado.escolhas, substitui: estado.substitui, escolhasFinais: estado.escolhasFinais || {}, semPrevisaoCopas: true,
+    mercadoOpcoes: estado.mercadoOpcoes, mercadoSemente: estado.mercadoSemente ?? null, respostasMercado: estado.respostasMercado || {}, ...mudar });
   // Refaz antes de começar, com a mesma semente (as vagas e a previsão só mudam pelo que foi mexido)
   const refazer = (mudar = {}) => guardar(criar(mudar));
   const ir = (v) => { setVista(v); setAoVivo(null); window.scrollTo(0, 0); };
@@ -99,7 +103,7 @@ export default function Simulador({ app }) {
     setAoVivo({ c: x.c, r: x.r, d });
     window.scrollTo(0, 0);
   };
-  const reSimular = () => { guardar(criar({ semente: undefined })); ir("resumo"); app.aviso("Nova temporada sorteada"); };
+  const reSimular = () => { guardar(criar({ semente: undefined, mercadoSemente: null })); ir("resumo"); app.aviso("Nova temporada sorteada"); };
   const recomecar = () => { refazer(); ir("resumo"); };
   const continuar = () => guardar({ ...estado, assinatura });
   const opcoes = () => app.abrirPainel("simOpcoes", { atual: estado.rodadaAtual, total, onAte: simularRodada, onProx: () => simularData(dataAt + 1), onResimular: reSimular, onRecomecar: recomecar });
@@ -157,7 +161,8 @@ export default function Simulador({ app }) {
           {aoVivo === null && (
             <div className="tabs simp-abas" role="tablist" style={{ "--i": indice, "--n": ABAS.length }}>
               <span className="ind" aria-hidden="true"></span>
-              {ABAS.map(([v, nome]) => <button key={v} role="tab" id={"sv-" + v} aria-selected={vista === v} onClick={() => ir(v)}>{nome}</button>)}
+              {/* no celular, "Estatísticas" não cabe com 5 abas: vira "Números" */}
+              {ABAS.map(([v, nome, curto]) => <button key={v} role="tab" id={"sv-" + v} aria-selected={vista === v} onClick={() => ir(v)}>{curto ? <><span className="so-largo">{nome}</span><span className="so-celular">{curto}</span></> : nome}</button>)}
             </div>
           )}
         </div>
@@ -179,12 +184,13 @@ export default function Simulador({ app }) {
                 </span>
               </div>
             )}
-            {vista === "resumo" && (dataAt === 0 ? <Antes estado={estado} k={k} refazer={refazer} app={app} />
+            {vista === "resumo" && (dataAt === 0 ? <Antes estado={estado} k={k} refazer={refazer} app={app} irMercado={() => ir("mercado")} />
               : fim ? <Fim estado={estado} tabela={tabela} k={k} plano={plano} />
                 : <Andamento estado={estado} tabela={tabela} k={k} total={total} plano={plano} jogarAoVivo={jogarAoVivo} verJogos={() => ir("jogos")} />)}
             {vista === "tabela" && <><Comps /><Tabela key={compTab} estado={estado} k={k} comp={compTab} /></>}
             {vista === "jogos" && <><Comps /><Jogos key={compTab} estado={estado} total={total} k={k} plano={plano} jogarAoVivo={jogarAoVivo} comp={compTab} /></>}
             {vista === "estat" && <><Comps comTotal /><Estatisticas estado={estado} k={k} plano={plano} comp={comp} /></>}
+            {vista === "mercado" && <MercadoIA estado={estado} k={k} plano={plano} app={app} refazer={refazer} atualizar={(fn) => guardar(fn(estado))} aberto={dataAt === 0} />}
           </>
         )}
       </main>
@@ -261,7 +267,7 @@ const textoMov = (x, entra) => {
 };
 
 // ---------- Resumo: antes da temporada ----------
-function Antes({ estado, k, refazer, app }) {
+function Antes({ estado, k, refazer, app, irMercado }) {
   const { composicao: comp, previsao, liga } = estado;
   const meu = previsao[k];
   const temQueda = Object.values(previsao).some((x) => x.queda > 0), temAcesso = Object.values(previsao).some((x) => x.acesso > 0);
@@ -311,6 +317,8 @@ function Antes({ estado, k, refazer, app }) {
       )}
 
       {!!D.CL[k]?.criado && <Substituto estado={estado} k={k} refazer={refazer} />}
+
+      <ResumoMercado estado={estado} plano={app.plano} irMercado={irMercado} />
 
       <section className="sec" id="sim-composicao">
         <h2><span>Quem chega e quem sai</span><span>{comp.clubes.length} clubes</span></h2>
@@ -365,6 +373,23 @@ function Antes({ estado, k, refazer, app }) {
         </div>
         <p className="note sim-leg">Ordem pela posição média. A barra é a chance de título.</p>
       </section>
+    </>
+  );
+}
+
+// Mercado da IA no Resumo (antes da temporada): o resumo da janela, as propostas e quem pode se aposentar
+function ResumoMercado({ estado, plano, irMercado }) {
+  const m = estado.mercadoIA;
+  const props = (m?.propostas || []).filter((x) => D.BYID[x.id] && !(plano.st || {})[x.id]).length;
+  const compras = m ? m.transf.filter((t) => t[4] === "c" && estado.composicao.clubes.includes(t[2])).length : 0;
+  return (
+    <>
+      {m?.avisos?.map((t) => <p className="sim-aviso sim-mi-aviso" key={t}>{t}</p>)}
+      <button className="card sim-atual-bt" id="sim-ver-mercado" onClick={irMercado}>
+        <span><b>Mercado da IA{props ? ` · ${props} ${props > 1 ? "propostas" : "proposta"} para você` : ""}</b>
+          <small>{m ? `Os rivais fizeram ${compras} ${compras === 1 ? "compra" : "compras"} antes da temporada. A previsão já conta com os elencos novos.` : "Desligado: os outros clubes jogam com o elenco de hoje."}</small></span>
+        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M9 5l7 7-7 7" /></svg>
+      </button>
     </>
   );
 }

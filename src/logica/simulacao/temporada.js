@@ -22,6 +22,10 @@
 //   escolhasFinais       { "<id>": clube campeão escolhido } ("Escolher campeão")
 //   previsaoCopas        { "<copa>": { "<clube>": chance de título (%) } }
 //   dataAtual            quantas "datas" do calendário integrado (rodadas da liga e jogos das copas) já foram jogadas
+//   mercadoIA            janela de transferências dos clubes da IA (ver mercadoIA.js): { semente, opcoes, transf, difs,
+//                        propostas, ovrs, meio, avisos, gastos } ou null (com "Clubes da IA contratam" desligado)
+//   mercadoOpcoes        interruptores { ativo, propostas, meio, evolucao }; mercadoSemente (null = a da temporada)
+//   respostasMercado     { "<id>|<clube>": "recusada" | "contra-recusada" } (propostas respondidas não voltam)
 //   assinatura           "impressão digital" do plano quando a temporada começou (para avisar que o elenco mudou)
 import { D } from "../dados.js";
 import { FORMS } from "../constantes.js";
@@ -31,9 +35,10 @@ import { jogarPartida, sortearPlacar } from "./motor.js";
 import { escalarClube, escalarPlano, forcaRapida, idsDoPlano } from "./escalar.js";
 import { comporLiga, contextoProjecao, ligaNaTemporada, movimentos, pares, projecaoAtual, resolverPendencias, rotuloLiga, zonasDaLiga } from "./composicao.js";
 import { classificacao, confronto, esqueletoDe, fecharRodada, garantirRodada, tabelaDe, tabelasDoSplit, titulos } from "./formatos.js";
-import { campeaoCopa, classificarCopas, copasDaLiga, defCopa, esqueletoCopa, fecharRodadaCopa, garantirRodadaCopa, ligasComCopa, nomeCopa, posicoesCopa, resolverFinais } from "./copas.js";
+import { campeaoCopa, classificarCopas, copasDaLiga, defCopa, esqueletoCopa, fecharRodadaCopa, garantirRodadaCopa, ligasComCopa, nomeCopa, participantesDe, posicoesCopa, resolverFinais } from "./copas.js";
+import { OPCOES_MERCADO, elencoDepois, rodarJanela } from "./mercadoIA.js";
 
-export const VERSAO = 3;
+export const VERSAO = 4;
 export const N_PREVISAO = 300;
 
 // ---------- Salvar ----------
@@ -118,18 +123,24 @@ function prepararCopas(lg, composicao, semente, escolhas, ctx, escolhasFinais) {
   return { copas, finais };
 }
 
-// Times da temporada: o seu pelo plano; os outros pelo elenco atual (sem quem o seu plano contratou)
-export function montarTimes(plano, clubes, lg) {
+// Times da temporada: o seu pelo plano; os outros pelo elenco atual (sem quem o seu plano contratou) ou, com o mercado
+// da IA, pelo elenco depois da janela (fase "inicio" ou, com a janela do meio, "meio"), com a evolução se ligada
+export function montarTimes(plano, clubes, lg, mercado = null, fase = "inicio") {
   const fora = idsDoPlano(plano), times = {};
-  for (const k of clubes) times[k] = k === plano.club ? escalarPlano(plano) : escalarClube(k, lg, fora);
+  for (const k of clubes) times[k] = timeDe(plano, k, lg, fora, mercado, fase);
   return times;
 }
+const timeDe = (plano, k, lg, fora, mercado, fase) =>
+  k === plano.club ? escalarPlano(plano, k, mercado?.ovrs) : escalarClube(k, lg, fora, mercado ? elencoDepois(k, mercado, fase) : null, mercado?.ovrs);
 // Times de todas as competições: os da liga (com a regra de estrangeiros dela) e, sob demanda, os das copas
-function timesDoMundo(plano, estado) {
-  const times = montarTimes(plano, estado.composicao.clubes, estado.liga), fora = idsDoPlano(plano);
-  const t = (k) => (times[k] ??= k === plano.club ? escalarPlano(plano) : escalarClube(k, D.CL[k]?.lg, fora));
+function timesDoMundo(plano, estado, fase = "inicio") {
+  const m = estado.mercadoIA || null;
+  const times = montarTimes(plano, estado.composicao.clubes, estado.liga, m, fase), fora = idsDoPlano(plano);
+  const t = (k) => (times[k] ??= timeDe(plano, k, D.CL[k]?.lg, fora, m, fase));
   return { t, forca: (k) => t(k).forca };
 }
+// Data a partir da qual vale a janela do meio (metade das datas)
+const dataDoMeio = (estado) => (estado.mercadoIA?.meio ? Math.floor(totalDatas(estado) / 2) : Infinity);
 
 // ---------- Copas e calendário integrado ----------
 export const copasDe = (estado) => Object.keys(estado.copas || {}).filter((id) => defCopa(id));
@@ -204,16 +215,32 @@ export function jogosDaRodada(estado, r) {
 
 // Estado novo (antes da 1ª rodada), já com a previsão (liga e copas)
 // semPrevisaoCopas = true: a previsão das copas (a parte mais demorada) fica para depois (a tela calcula logo em seguida)
-export function criarEstado(plano, { semente = novaSemente(), escolhas = {}, substitui = null, escolhasFinais = {}, semPrevisaoCopas = false } = {}) {
+// mercadoOpcoes: interruptores do mercado da IA; mercadoSemente: semente só do mercado ("Refazer mercado"; null = a da temporada)
+export function criarEstado(plano, { semente = novaSemente(), escolhas = {}, substitui = null, escolhasFinais = {}, semPrevisaoCopas = false,
+  mercadoOpcoes = OPCOES_MERCADO, mercadoSemente = null, respostasMercado = {} } = {}) {
   const prep = prepararTemporada(plano, semente, escolhas, substitui, escolhasFinais);
   const estado = {
     v: VERSAO, semente, rodadaAtual: 0, dataAtual: 0, liga: prep.liga, composicao: prep.composicao, pendenciasResolvidas: prep.pendenciasResolvidas,
     escolhas, substitui, escolhasFinais, avisos: prep.avisos, atual: prep.atual, agenda: [], chaves: {}, grupos: {}, resultados: [],
     copas: prep.copas, finais: prep.finais, estatisticas: {}, estatComp: {}, assinatura: assinaturaDoPlano(plano),
+    mercadoOpcoes: { ...OPCOES_MERCADO, ...mercadoOpcoes }, mercadoSemente, respostasMercado,
   };
-  estado.previsao = calcularPrevisao(estado, montarTimes(plano, estado.composicao.clubes, estado.liga));
+  // Mercado da IA (antes da previsão): os clubes da IA que jogam a temporada (liga e copas)
+  estado.mercadoIA = estado.mercadoOpcoes.ativo ? rodarMercado(estado, plano) : null;
+  estado.previsao = calcularPrevisao(estado, montarTimes(plano, estado.composicao.clubes, estado.liga, estado.mercadoIA));
   estado.previsaoCopas = semPrevisaoCopas ? null : calcularPrevisaoCopas(estado, plano);
   return estado;
+}
+
+// Janela do mercado da IA para este estado (mesma semente = mesmas transferências)
+export function rodarMercado(estado, plano) {
+  const k = plano.club, lg = estado.liga;
+  const naLiga = new Set(estado.composicao.clubes);
+  const ativos = [...new Set([...estado.composicao.clubes, ...copasDe(estado).flatMap((id) => participantesDe(id, estado.copas[id].part))])].filter((x) => x !== k && D.CL[x] && !D.CL[x].criado);
+  return rodarJanela({
+    semente: estado.mercadoSemente ?? misturar(estado.semente, "mercado"), plano, liga: lg, ativos,
+    ligaDe: (x) => (naLiga.has(x) ? lg : D.CL[x].lg), opcoes: estado.mercadoOpcoes, respostas: estado.respostasMercado || {},
+  });
 }
 
 // ---------- Simular ----------
@@ -226,8 +253,11 @@ export function simularDatas(estado, plano, ate) {
   if (inicio >= fim) return estado;
   const novo = { ...estado, ...copiaSt(estado), resultados: [...estado.resultados], copas: copiaCopas(estado), estatisticas: { ...estado.estatisticas },
     estatComp: Object.fromEntries(Object.entries(estado.estatComp || {}).map(([c, s]) => [c, { ...s }])) };
-  const E = esqueleto(estado), mundoT = timesDoMundo(plano, estado);
-  const forcaLiga = Object.fromEntries(estado.composicao.clubes.map((k) => [k, mundoT.forca(k)]));
+  // Times: os de antes da janela do meio e (se ela existir) os de depois, montados só quando precisa
+  const E = esqueleto(estado), meio = dataDoMeio(estado), tempos = {};
+  const mundoNa = (d) => { const f = d >= meio ? "meio" : "inicio"; return (tempos[f] ??= timesDoMundo(plano, estado, f)); };
+  let mundoT = mundoNa(inicio);
+  const forcaLiga = new Proxy({}, { get: (_, k) => mundoT.forca(k) });
   const sorteio = sorteioDe(estado), penaltis = (e, i) => rngDe(estado.semente, "penaltis", e, i)();
   const mundo = mundoDe(estado, novo.copas, forcaRapida);
   const jogar = (c, r, jogos, semente) => jogos.map(([x, y, neutro], i) => {
@@ -245,6 +275,7 @@ export function simularDatas(estado, plano, ate) {
   });
   for (let d = inicio; d < fim; d++) {
     const { c, r } = datas[d];
+    mundoT = mundoNa(d);
     if (c === "liga") {
       const jogos = garantirRodada(novo, E, r, sorteio);
       if (!jogos) break;
@@ -372,7 +403,9 @@ export function narracao(estado, plano, r, i, comp = "liga") {
   // Quem está em campo em cada minuto (titulares e quem entrou), para escolher quem finaliza
   const fora = idsDoPlano(plano);
   const naLiga = (k) => estado.composicao.clubes.includes(k);
-  const times = [c, f].map((k) => (k === plano.club ? escalarPlano(plano) : escalarClube(k, naLiga(k) ? estado.liga : D.CL[k]?.lg, fora)));
+  const d = datasDe(estado).findIndex((x) => x.c === comp && x.r === r);
+  const fase = d >= dataDoMeio(estado) ? "meio" : "inicio";
+  const times = [c, f].map((k) => timeDe(plano, k, naLiga(k) ? estado.liga : D.CL[k]?.lg, fora, estado.mercadoIA || null, fase));
   const emCampo = (lado, min) => {
     const s = subs.filter((x) => x[1] === lado && x[0] <= min);
     const saiu = new Set(s.map((x) => x[2]));

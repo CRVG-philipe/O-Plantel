@@ -116,6 +116,7 @@ Foi inspirado no reconstruindo.thefenomeno.com, mas **não deve copiá-lo**. O f
   - `testes/estrangeiros.test.js`: limite de estrangeiros (Brasileirão, Argentina, LaLiga e o filtro do Mercado).
   - `testes/overall.test.js`: overall (Mbappé = 91), ajustes manuais (Fábio = 78, Thiago Mendes = 79), força do time, ordem Overall e o overall na recomendação.
   - `testes/simulacao.test.js`: simulador da temporada (calendário, calibração do motor, composição, semente, faixas, previsão e desempenho).
+  - `testes/mercado.test.js`: mercado da IA do simulador (goleiros e tamanho dos elencos, orçamento, jogador repetido, compras do usuário, semente, interruptor desligado, propostas, evolução e tempo).
 - Com as ~30 mil fotos, o `npm run dev` às vezes demora para servir as imagens. Para conferir fotos, use `npm run build` e `npm run preview`.
 - `npm run build`: gera a versão final em `dist/` (não vai para o git). `npm run preview` serve o `dist/` para conferir.
 
@@ -363,10 +364,11 @@ React 19 + Vite 6, em JavaScript (sem TypeScript).
     - Resumo: chegam, saem (com os emprestados vendidos), voltam de empréstimo, devolvidos e comprados (`#voltam`, `#devolvidos`, `#comprados`).
   - **Testes:** `testes/emprestimos.test.js` (regras) e o teste "empréstimos no Botafogo" em `app.test.jsx` (tela).
 - Simulador da temporada (versão 1, 22/11/2026; página própria, `componentes/Simulador.jsx`; lógica em `src/logica/simulacao/`):
-  - **O que simula:** a PRÓXIMA temporada da liga do clube aberto. Só a liga, sem copas, lesões ou suspensões; os outros clubes não contratam.
+  - **O que simula:** a PRÓXIMA temporada da liga do clube aberto. Sem lesões ou suspensões. As copas entraram na etapa 2 e o mercado da IA na etapa 3.
     - Rótulo (`rotuloLiga`): o `rotulo` de `formatos-ligas.json` ("Brasileirão 2027", "Liga MX 2027/28", "MLS 2027 (Sprint Season)"). Sem ele, a regra antiga: `season` "2026" → "2027"; "26/27" → "2027/28".
     - **Versão 2, etapa 1 (22/11/2026): temporada atual real e formatos especiais** (ver os dois arquivos abaixo).
-    - **Versão 2, etapa 2 (23/11/2026): copas** (ver "Copas", abaixo). A etapa 3 (mercado da IA) ainda não foi feita: o prompt está em `PROMPT-3-mercado-ia.md`, na raiz (fora do git).
+    - **Versão 2, etapa 2 (23/11/2026): copas** (ver "Copas", abaixo). 
+    - **Versão 2, etapa 3 (23/11/2026): mercado da IA** (ver "Mercado da IA", abaixo).
   - **Arquivos de dados** (carregados em `D.ACESSO`, `D.ZONAS`, `D.ATUAL` e `D.FORMATOS`; se falharem, o simulador volta ao comportamento da v1: composição atual, temporada atual simulada do zero, pontos corridos):
     - `public/temporada-atual.json` (**atualizar de tempos em tempos**): `{atualizado, ligas: {"<liga>": {rotulo, total_jogos, nota, tabela: [{k, j, v, e, d, gp, gc, pts}], fases?, grupos?}}}`, tabelas reais do Transfermarkt em 22/11/2026 (48 ligas; as outras 18 não estão).
       - `atual.js`, `terminarAtual(lg, rng, forca)`: parte da tabela real e cada clube joga só os `total_jogos − j` que faltam, contra adversários da mesma liga sorteados de forma equilibrada (quem enfrentou menos aquele clube vem primeiro), com mando alternado. Liga já encerrada (ARG, COL, ARG2...) não muda.
@@ -440,9 +442,30 @@ React 19 + Vite 6, em JavaScript (sem TypeScript).
     - **Previsão das copas** (`calcularPrevisaoCopas`): 300 simulações rápidas de todas as copas na ordem do calendário; `previsaoCopas = { copa: { clube: % } }`. É a parte mais demorada (~300 ms nas copas europeias), então a tela calcula logo depois de abrir ("…" até ficar pronta).
     - **Simplificações:** só clubes do site (a Copa do Brasil real tem 128; a Sul-Americana, 56); sem Concacaf, AFC, CAF, Supercopas, Recopa e Mundial (`fora_nesta_versao`); "ranking" = força; vagas por país iguais às de 2026/27 (aproximação); copas nacionais europeias simplificadas.
   - **Estado v3** (`v: 3`): `copas`, `finais`, `escolhasFinais`, `previsaoCopas`, `dataAtual` e `estatComp` (estatísticas por competição; `estatisticas` continua sendo o total). Um estado v2 é refeito.
+  - **Mercado da IA** (`mercadoIA.js`, `rodarJanela`; tela em `componentes/MercadoIA.jsx`; etapa 3, 23/11/2026):
+    - **Quando:** uma janela antes da temporada, rodada ao criar o estado (antes da previsão), com a semente do mercado (`misturar(semente, "mercado")`, ou `mercadoSemente` depois de "Refazer mercado"). Mesma semente = mesmas transferências. A previsão, o motor, a narração e as copas usam os elencos depois da janela (`elencoDepois(k, mercado, fase)` em `montarTimes`/`timesDoMundo`).
+    - **Quem compra:** só os clubes da IA da temporada simulada (os da liga e os participantes das copas; `ativos` em `rodarMercado`). O resto do mundo só vende. Os clubes da liga do usuário compram primeiro em cada rodada.
+    - **Interruptores** (`mercadoOpcoes`, padrão `OPCOES_MERCADO`): "Clubes da IA contratam" (`ativo`, ligado; desligado = `mercadoIA: null` e a temporada fica igual à de antes desta etapa), "Receber propostas" (ligado), "Janela do meio" (desligado: mais 2 rodadas de compras, valendo a partir da metade das datas, `dataDoMeio`) e "Evolução dos jogadores" (desligado). Só mudam antes da 1ª data.
+    - **Passo a passo:**
+      1. Contratos: quem tem `end26` renova 45% das vezes (+15% se tiver mais de 30 anos, +15% se o overall estiver abaixo da média do elenco); senão fica livre. Aposentadoria: 36–37 anos 25%, 38+ 60%. Emprestados não mudam.
+      2. Carências: grupos (`GRUPOS`: GOL, ZAG, LAT, MEIO, PONTA, ATA) com menos de 2 "bons" (overall ≥ média dos 11 melhores − 4; no gol, menos de 2 goleiros) e o grupo de um titular vendido.
+      3. 4 rodadas (`RODADAS`); cada clube tenta no máximo 1 compra por rodada, para a maior carência (sem carência, 35% de chance de um reforço acima da média). Alvos entre M − 4 e M + 7 de overall, que caibam no orçamento, ordenados por afinidade das ligas (60%, a mesma do "Recomendados") e ganho de overall por euro (40%). Preço = valor × 1,1 (+0,2 se o vendedor é de liga mais forte, +0,2 com contrato de mais de 24 meses; máximo × 1,5; mínimo € 0,1 mi); livre = 0.
+      4. Chance do negócio: 55%, +20% se o comprador é de liga mais forte, +10% pagando ≥ 1,4× o valor; −35% pelo melhor jogador do vendedor, −45% por quem chegou nesta janela, −30% se o vendedor ficaria sem 2 no grupo, −35% se o vendedor é bem mais forte (força rápida > M + 4: o jogador não quer "descer"). Entre 5% e 95%.
+      5. Limites: até 5 chegadas e 5 saídas por clube (`MAX_MOV`); o vendedor não fica abaixo de 22. Estrangeiros: no limite, o estrangeiro perde nota; nunca passa de `relacionados` + 3.
+      6. Fechamento: menos de 2 goleiros ou menos de 22 jogadores (`MIN_ELENCO`) → contrata livres; mais de 30 (`MAX_ELENCO`) → dispensa os mais fracos (tipo "d"), sem ficar com menos de 2 goleiros.
+    - **Orçamento:** 25% do valor do elenco + 60% das vendas na janela (+ o preço das vendas que o usuário combinou com o clube). **Desvio do pedido:** o pedido era o "caixa estimado", mas a regra do site daria o mesmo caixa a todos os clubes de uma liga; 25% do valor do elenco diferencia ricos e pobres.
+    - **Seu clube:** nunca é mexido sem você. Quem o seu plano comprou não pode ser comprado pela IA. Quem você vendeu vai para o clube de destino (`st[id].para`, campo opcional) se ele comprar nesta temporada; senão fica livre com o preço da venda. Emprestados do seu clube a outros não são vendidos.
+    - **Propostas** (`propostas`, até 3, sorteio próprio `rngDe(semente, "propostas")`): clubes com carência no grupo do jogador e verba. "Aceitar" grava a venda no plano (`st[id] = {s: "vende", fee, para}`) e o simulador refaz a temporada; "Recusar" e a contraproposta recusada ficam em `respostasMercado` (`"<id>|<clube>"`) e não voltam; "Pedir +20%": a IA aceita 50% das vezes (`rngDe(semente, "contra", id, clube)`). Só antes da 1ª data.
+    - **Aposentadoria no seu elenco:** nunca acontece; o Resumo só avisa ("X tem 38 anos e pode se aposentar", `avisos`, para quem tem 36+).
+    - **Evolução** (opcional): ≤21 anos +1 a +3; 22–28 −1 a +1; 29–32 −2 a 0; 33+ −3 a −1; no máximo +4 sobre o overall atual (com os ajustes manuais) e no mínimo 40. Só dentro do simulador (`ovrs`, aplicado por `comOvrs` em `escalar.js`).
+    - **Guardado** em `estado.mercadoIA` = `{ semente, opcoes, transf: [[id, de, para, valor, tipo]], ren: [ids renovados], propostas: [{id, k, valor}], ovrs, meio: {transf} | null, avisos, gastos: {k: [orçamento, gasto, vendas]} }`. Tipos: c compra, l livre (`para` null = ficou sem clube), a aposentadoria, d dispensa (renovação "r" fica em `ren`). As diferenças de elenco saem das transferências (`difsDoMercado`, em cache). ~20–45 KB por clube.
+    - **Tela** (aba "Mercado", `#sv-mercado`): interruptores (`#mi-ativo`, `#mi-propostas`, `#mi-meio`, `#mi-evolucao`), "Refazer mercado" (`#mi-refazer`), "Propostas recebidas" (`#sim-propostas`, botões `#prop-aceitar-<id>` etc.), transferências por tipo (`#mic-compras`, `#mic-livres`, `#mic-saidas`, `#mic-ren`), liga (`#mi-liga`, padrão "Rivais") e clube (`#mi-clube`, que mostra quem chegou e saiu, `#mi-por-clube`), lista `#mi-lista` (rivais destacados) e "Seus rivais" (`#sim-mi-rivais`). No Resumo antes: cartão `#sim-ver-mercado` e os avisos de aposentadoria. No celular, a aba "Estatísticas" aparece como "Números".
+    - **Desempenho** (23/11/2026): a janela leva ~0,1–0,35 s (Brasileirão com as copas: 134 clubes compram); abrir o simulador ~0,8–0,9 s no navegador.
+    - **Simplificações:** só os clubes da temporada compram; sem salários nem multas; a janela do meio não refaz contratos nem o fechamento; a previsão das copas usa os elencos da pré-temporada.
+  - **Estado v4** (`v: 4`): `mercadoIA`, `mercadoOpcoes`, `mercadoSemente` e `respostasMercado`. Um estado v3 é refeito.
   - **Página própria** (`componentes/Simulador.jsx`, desde 22/11/2026; antes era uma 5ª aba):
     - Abre pelo botão "Simular temporada" (`#simular-temporada`), o 4º card do topo do plano, na cor do clube. No celular, ele divide a linha com o "chegam · saem".
-    - Estado `simulador` no `Plantel.jsx` (`app.abrirSimulador`/`app.fecharSimulador`). A página tem topo próprio (voltar `#sim-voltar`, logo e nome da liga, status `#sim-status`, barra de progresso das rodadas), abas `#sv-resumo`, `#sv-tabela`, `#sv-jogos` e `#sv-estat`, o rodapé do site e uma **barra de ações fixa embaixo**: "⋯" (`#sim-opcoes`), "Simular até o fim" (`#sim-fim`) e "Jogar rodada N" (`#sim-aovivo`, ao vivo). No fim: "Ver tabela" e "Simular de novo" (`#sim-de-novo`).
+    - Estado `simulador` no `Plantel.jsx` (`app.abrirSimulador`/`app.fecharSimulador`). A página tem topo próprio (voltar `#sim-voltar`, logo e nome da liga, status `#sim-status`, barra de progresso das rodadas), abas `#sv-resumo`, `#sv-tabela`, `#sv-jogos`, `#sv-estat` e `#sv-mercado`, o rodapé do site e uma **barra de ações fixa embaixo**: "⋯" (`#sim-opcoes`), "Simular até o fim" (`#sim-fim`) e "Jogar rodada N" (`#sim-aovivo`, ao vivo). No fim: "Ver tabela" e "Simular de novo" (`#sim-de-novo`).
     - "⋯" abre o `PainelSimOpcoes` (tipo `simOpcoes` em `PAINEIS`): "Simular só a próxima rodada" (`#sim-prox`, sem assistir), "Simular até a rodada X" (`#sim-ate-n` + `#sim-ate`), "Recomeçar" (mesma semente, rodada 0) e "Re-simular" (semente nova).
     - **Resumo antes:** cartão com a previsão do seu clube (`#sim-prev-meu`: posição, chance de título, risco de queda/chance de acesso), "Quem chega e quem sai" em duas colunas (`#sim-composicao`, selos confirmado/simulado/projeção/escolhido), "Vagas em aberto" recolhidas num `<details>` ("Ajustar"; `#pend-BRA-BRB` etc.) e a previsão da liga (barra = chance de título).
     - **Resumo durante** (`#sim-andamento`): cartão da campanha (posição, pontos, V-E-D, saldo, últimos 5), próximo jogo com "Assistir ao vivo", último jogo (com os autores dos gols do seu clube) e a tabela curta.
@@ -459,7 +482,7 @@ React 19 + Vite 6, em JavaScript (sem TypeScript).
     - `resultados`: por rodada, `[casa, fora, gols casa, gols fora, [[minuto, lado, autor, assistência]]]`; os jogos do seu clube têm um 6º campo, as substituições `[[minuto, lado, sai, entra]]`. `estatisticas`: `{id: [jogos, gols, assistências, soma das notas × 10, clube]}`. `assinatura`: impressão digital do elenco, titulares, reservas e formação.
     - Estado com `v` diferente de 1, liga inexistente ou clube que sumiu é refeito.
   - **Desempenho** (23/11/2026): temporada inteira com as copas em ~60–140 ms; preparar + previsão da liga em ~200–400 ms; previsão das copas ~270–400 ms (calculada depois de a tela abrir). Sem Web Worker.
-  - **Testes:** `testes/simulacao.test.js` e o teste "simulador da temporada" em `app.test.jsx`.
+  - **Testes:** `testes/simulacao.test.js`, `testes/mercado.test.js` e os testes "simulador da temporada" e "aba Mercado" em `app.test.jsx`.
 
 ## Pendências (em ordem sugerida)
 1. Completar as estatísticas e fotos que faltam.
@@ -467,7 +490,7 @@ React 19 + Vite 6, em JavaScript (sem TypeScript).
    - Fotos HD (coletadas em 21/11/2026): faltam 1.124 jogadores, 325 deles da Série C. Quando chegarem mais, rodar `python dados-brutos/marcar_fotos_hd.py`.
    - Os sprites `p_*.webp` ficam como reserva por enquanto: 11 jogadores sem foto HD ainda usam o sprite. Quando não houver mais nenhum, apagar os sprites e o código de sprite em `Foto` (`src/componentes/Imagens.jsx`).
 2. Script de atualização periódica dos dados (Transfermarkt e Sofascore).
-3. Simulador, versão 2: etapa 3 (mercado da IA, `PROMPT-3-mercado-ia.md`). Lesões e suspensões ficam fora.
+3. Simulador: lesões e suspensões ficam fora. Decidir se baixa o 0,075 da fórmula do placar (a tabela sai mais espalhada que a real).
    - Atualizar `temporada-atual.json`, `copas.json` ("pendentes") e `acesso-rebaixamento.json` quando acabarem o Brasileirão 2026, os playoffs da Série B e as finais (Libertadores, Sul-Americana e Copa do Brasil 2026).
 4. Link compartilhável do plano e modo "desafio diário" (para depois).
 
@@ -475,6 +498,7 @@ React 19 + Vite 6, em JavaScript (sem TypeScript).
 - 20/11/2026: migração para React + Vite (a versão antiga sem framework está na tag git `antes-do-react`), publicada na Vercel. Escudos em alta resolução.
 - 21/11/2026: fotos HD dos jogadores (95%, em WebP 150×150, qualidade 82) e estatísticas das 36 ligas novas. Overall e atributos (`overall.json`), com balanceamento por liga.
 - 22/11/2026: menu com "Criar time do zero" e "Lista de jogadores"; fotos da rodada 3 (partes 2 a 4); simulador da temporada (versão 1, numa página própria, com jogo ao vivo).
+- 23/11/2026: simulador v2: formatos das ligas e temporada atual real (etapa 1), copas (etapa 2) e mercado da IA (etapa 3).
 
 ## Cuidados
 - Fotos novas em `public/img/players/`: rodar `python dados-brutos/converter_fotos_webp.py` antes do commit.

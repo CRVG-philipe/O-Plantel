@@ -6,7 +6,7 @@
 import { D } from "../dados.js";
 import { FORMS, ORDER } from "../constantes.js";
 import { compatibilidade } from "../compatibilidade.js";
-import { elencoAtual, jogador } from "../elenco.js";
+import { elencoAtual } from "../elenco.js";
 import { passada, reservasDa } from "../escalacao.js";
 import { ehEstrangeiro, regraDaLiga } from "../estrangeiros.js";
 import { calcularForca, ovrDe } from "./motor.js";
@@ -86,8 +86,9 @@ export function forcaRapida(k) {
 
 // Time de um clube que não é o seu. "fora" = ids que não podem jogar por ele (contratados pelo seu plano).
 // "lg" = liga em que ele joga na temporada simulada (a regra de estrangeiros é a dela).
-export function escalarClube(k, lg, fora = new Set()) {
-  const sq = jogadoresDo(k).filter((p) => !fora.has(p.id));
+// "elenco" (opcional) = lista de jogadores depois do mercado da IA; "ovrs" (opcional) = overalls com evolução { id: overall }
+export function escalarClube(k, lg, fora = new Set(), elenco = null, ovrs = null) {
+  const sq = comOvrs((elenco || jogadoresDo(k)).filter((p) => p && !fora.has(p.id)), ovrs);
   const pontas = sq.filter((p) => p.pos === "PE" || p.pos === "PD").length;
   const form = pontas >= 2 ? "4-3-3" : "4-4-2";
   const regra = regraDaLiga(lg);
@@ -103,12 +104,16 @@ export function escalarClube(k, lg, fora = new Set()) {
 
 // Time do seu clube, a partir do plano: a escalação da aba Time; vagas vazias são completadas sozinhas.
 // Banco: os reservas escolhidos na aba Time (na ordem das vagas) e, se faltar para chegar a 7, os melhores que sobraram.
-export function escalarPlano(plano, k = plano.club) {
-  const sq = elencoAtual(plano).filter(Boolean);
+// Jogadores com o overall trocado pela evolução (cópias: o resto do site não muda)
+export const comOvrs = (lista, ovrs) => (ovrs ? lista.map((p) => (ovrs[p.id] != null ? { ...p, ovr: ovrs[p.id] } : p)) : lista);
+
+export function escalarPlano(plano, k = plano.club, ovrs = null) {
+  const sq = comOvrs(elencoAtual(plano).filter(Boolean), ovrs);
+  const porId = new Map(sq.map((p) => [p.id, p]));
   const ids = new Set(sq.map((p) => p.id)), usados = new Set();
   const onze = FORMS[plano.form].map(([vaga], i) => {
     const id = plano.xi[i];
-    const p = id && ids.has(id) && !usados.has(id) ? jogador(plano, id) : null;
+    const p = id && ids.has(id) && !usados.has(id) ? porId.get(id) : null;
     if (p) usados.add(p.id);
     return { vaga, p };
   });
@@ -116,7 +121,7 @@ export function escalarPlano(plano, k = plano.club) {
   preencher(onze, sq, usados, lg);
   const banco = [];
   FORMS[plano.form].forEach((v, i) => reservasDa(plano, i).forEach((id) => {
-    if (ids.has(id) && !usados.has(id)) { banco.push(jogador(plano, id)); usados.add(id); }
+    if (ids.has(id) && !usados.has(id)) { banco.push(porId.get(id)); usados.add(id); }
   }));
   const escolhidos = banco.length > TAM_BANCO ? banco.sort(porOverall).slice(0, TAM_BANCO) : banco;
   for (const p of sq.filter((x) => !usados.has(x.id)).sort(porOverall)) {
