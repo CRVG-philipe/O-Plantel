@@ -1270,8 +1270,10 @@ test("simulador da temporada: página própria, previsão, vagas em aberto, jogo
   expect(sim().rodadaAtual).toBe(1);
   expect(document.querySelector("#sim-ao-vivo")).toBeTruthy();
   expect(document.querySelector("#av-placar").textContent).toBe("0–0"); // começa no 0'
+  expect(document.querySelectorAll("#sim-ao-vivo .av-linha s").length).toBe(0); // nenhum gol na linha antes de acontecer
   clique(document.querySelector("#av-pular"));
   const meu = sim().resultados[0].find((j) => j[0] === "T5981" || j[1] === "T5981");
+  expect(document.querySelectorAll("#sim-ao-vivo .av-linha s").length).toBe(meu[2] + meu[3]);
   expect(document.querySelector("#av-placar").textContent).toBe(`${meu[2]}–${meu[3]}`);
   expect(document.querySelector("#av-relogio").textContent).toBe("Fim de jogo");
   expect([...document.querySelectorAll("#av-feed .av-gol")].length).toBe(meu[2] + meu[3]);

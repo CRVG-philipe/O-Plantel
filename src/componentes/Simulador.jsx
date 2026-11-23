@@ -660,7 +660,8 @@ function AoVivo({ estado, r, plano, k, total, onSair, onProxima }) {
         <span className={"av-relogio" + (acabou ? " fim" : "")} id="av-relogio">{!acabou && <i aria-hidden="true"></i>}{relogio}</span>
         <div className="av-linha" aria-hidden="true">
           <i style={{ width: (min / 90) * 100 + "%" }}></i>
-          {meu && meu[4].map((e, n) => <s key={n} className={e[1] ? "b" : "a"} style={{ left: (e[0] / 90) * 100 + "%", opacity: e[0] <= min ? 1 : 0.25 }}></s>)}
+          {/* Cada gol só aparece na linha quando acontece (antes disso, entregaria o placar) */}
+          {meu && meu[4].filter((e) => e[0] <= min).map((e, n) => <s key={n} className={e[1] ? "b" : "a"} style={{ left: (e[0] / 90) * 100 + "%" }}></s>)}
         </div>
       </div>
 
