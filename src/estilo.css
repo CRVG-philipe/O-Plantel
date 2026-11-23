@@ -864,3 +864,66 @@ button.sim-jogo-linha:not(:disabled):hover{background:var(--sf2)}
 .sim-elenco-vaga{font-size:12px}
 .sim-novo{background:color-mix(in srgb,var(--pos) 16%,var(--sf));color:var(--pos);font-weight:700}
 .sim-elenco-saiu{margin-top:12px}
+/* ---------- Página escondida /debug-motor (DebugMotor.jsx) ---------- */
+.dbg{max-width:720px;margin:0 auto;padding:24px 16px 48px;background:var(--bg);color:var(--ink);min-height:100vh}
+.dbg h1{font-size:22px;margin:0 0 6px}
+.dbg h2{font-size:15px;margin:24px 0 8px}
+.dbg-nota{color:var(--mute);font-size:13px}
+.dbg-ctrl{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}
+.dbg-ctrl select,.dbg-ctrl button{min-height:38px;border:0;border-radius:10px;background:var(--sf);box-shadow:0 0 0 1px var(--line);padding:0 12px;font-weight:600;color:var(--ink)}
+.dbg-tab{width:100%;border-collapse:collapse;font-size:14px;background:var(--sf);border-radius:12px;overflow:hidden;box-shadow:0 0 0 1px var(--line)}
+.dbg-tab th,.dbg-tab td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--line)}
+.dbg-tab th{font-size:12px;color:var(--mute);text-transform:uppercase}
+.dbg-ok td:last-child{color:var(--pos);font-weight:700}
+.dbg-falha td{background:color-mix(in srgb,var(--neg) 10%,transparent)}
+.dbg-falha td:last-child{color:var(--neg);font-weight:700}
+.dbg-pre{background:var(--sf2);border-radius:10px;padding:12px;font-size:12px;overflow-x:auto}
+/* ---------- Jogo ao vivo v2: lances com ícones, estatísticas ao lado e animação de gol ---------- */
+.av-corpo{display:grid;grid-template-columns:minmax(0,1fr);gap:0 14px}
+@media (min-width:640px){.av-corpo{grid-template-columns:minmax(0,1fr) 230px}.av-lado{order:2}}
+@media (max-width:639px){.av-lado{order:-1}}
+.av-ev{align-items:flex-start}
+.av-ev>b{padding-top:1px}
+.av-ico{flex:none;display:inline-flex;width:18px;padding-top:2px;color:var(--mute)}
+.av-gol .av-ico{color:var(--pos)}
+.av-ev.av-meu .av-ico{color:var(--clubVis)}
+.av-gol.av-meu .av-ico{color:var(--pos)}
+.av-est{padding:6px 12px}
+.av-est-l{padding:7px 0}
+.av-est-l+.av-est-l{border-top:1px solid var(--line)}
+.av-est-nums{display:flex;justify-content:space-between;align-items:baseline;gap:6px;font-size:13px}
+.av-est-nums span{color:var(--mute);font-size:12px}
+.av-est-barra{display:block;height:5px;margin-top:5px;border-radius:3px;background:var(--eb,#9aa)}
+.av-est-barra i{display:block;height:100%;border-radius:3px 0 0 3px;background:var(--ea,#567);border-right:2px solid var(--sf)}
+@media (max-width:639px){.av-est{display:grid;grid-template-columns:1fr 1fr;column-gap:14px}.av-est-l+.av-est-l{border-top:0}.av-est-l:nth-child(n+3){border-top:1px solid var(--line)}}
+.av-pulo{animation:av-pulo .5s cubic-bezier(.3,1.6,.5,1)}
+@keyframes av-pulo{0%{transform:scale(1)}35%{transform:scale(1.28)}100%{transform:scale(1)}}
+/* Animação de gol */
+.av-festa{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,.72);cursor:pointer;animation:av-escurece .25s ease}
+.av-festa-contra{background:rgba(0,0,0,.35);align-items:flex-start;padding-top:calc(90px + env(safe-area-inset-top,0px))}
+@keyframes av-escurece{from{opacity:0}to{opacity:1}}
+.av-festa-in{position:relative;display:flex;flex-direction:column;align-items:center;gap:10px;max-width:100%;padding:26px 28px 20px;border-radius:22px;background:#111317;color:#fff;text-align:center;overflow:hidden;animation:av-surge .45s cubic-bezier(.2,1.4,.4,1)}
+.av-festa-contra .av-festa-in{padding:14px 18px 12px;gap:6px;background:#22252b;border-radius:16px;animation:av-desce .3s ease}
+@keyframes av-surge{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes av-desce{from{transform:translateY(-20px);opacity:0}to{transform:none;opacity:1}}
+.av-rede{position:absolute;inset:0;opacity:.13;background:repeating-linear-gradient(45deg,#fff 0 1px,transparent 1px 14px),repeating-linear-gradient(-45deg,#fff 0 1px,transparent 1px 14px);animation:av-rede .9s ease-out 2;pointer-events:none}
+.av-festa-contra .av-rede{display:none}
+@keyframes av-rede{0%{transform:none}25%{transform:translateY(6px) scaleY(1.04)}55%{transform:translateY(-3px)}100%{transform:none}}
+.av-gooool{position:relative;display:inline-block;padding:4px 18px;border-radius:12px;background:var(--cf);color:#fff;font-size:44px;font-weight:900;letter-spacing:.02em;text-shadow:0 2px 0 rgba(0,0,0,.35);box-shadow:0 0 0 2px rgba(255,255,255,.25);animation:av-grito .8s ease}
+.av-festa-contra .av-gooool{font-size:16px;font-weight:800;padding:3px 10px;border-radius:8px;animation:none}
+@keyframes av-grito{0%{transform:scale(.4) rotate(-6deg)}50%{transform:scale(1.15) rotate(2deg)}100%{transform:none}}
+.av-festa-quem{position:relative;display:flex;align-items:center;gap:12px}
+.av-festa-quem .esc,.av-festa-quem img{background:#fff;border-radius:50%}
+.av-festa-nome{position:relative;font-size:20px;font-weight:800}
+.av-festa-contra .av-festa-nome{font-size:15px}
+.av-festa-sub{position:relative;font-size:13.5px;opacity:.8}
+.av-festa-toque{position:relative;font-size:11.5px;opacity:.5;margin-top:4px}
+.av-confete{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.av-confete i{position:absolute;top:-12px;left:var(--x);width:8px;height:12px;border-radius:2px;background:var(--c);animation:av-cai 2.4s linear var(--d) forwards}
+.av-confete i:nth-child(3n){width:6px;height:6px;border-radius:50%}
+@keyframes av-cai{to{transform:translateY(105vh) rotate(540deg)}}
+@media (prefers-reduced-motion:reduce){.av-festa,.av-festa-in,.av-gooool,.av-rede,.av-pulo{animation:none}.av-confete{display:none}}
+/* Dupla nacionalidade: duas bandeiras juntas (Bandeiras, em Jogador.jsx) */
+.fls{display:inline-flex;align-items:center;vertical-align:-1px}
+.fls .fl{vertical-align:0}
+.fls .fl+.fl{margin-left:3px}

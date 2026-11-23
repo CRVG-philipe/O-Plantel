@@ -39,6 +39,16 @@ const CODIGO = {
 
 // Jogadores com dupla nacionalidade vêm como "Bolívia/Argentina" (rodada 3). nacionalidades() separa os países;
 // a bandeira mostrada é a do primeiro.
+import { D } from "./dados.js";
+
 export const nacionalidades = (nat) => String(nat || "").split("/").map((n) => n.trim()).filter(Boolean);
 export const codigoDoPais = (nat) => CODIGO[nacionalidades(nat)[0]] || null;
+// Todas as nacionalidades do jogador: as do data.json (campo nat) e, depois, as de public/nacionalidades.json
+// (D.NACS, chave "Nome|AAAA-MM-DD"). Sem repetir; a do data.json vem primeiro.
+export function nacionalidadesDe(p) {
+  const base = nacionalidades(p?.nat);
+  const extra = p && p.nasc ? D.NACS?.get(p.n + "|" + p.nasc) : null;
+  if (!extra) return base;
+  return [...new Set([...base, ...extra])];
+}
 export const TODOS_OS_CODIGOS = Object.values(CODIGO);

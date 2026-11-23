@@ -2,7 +2,7 @@
 import { D } from "./dados.js";
 import { CHIPS, FAIXA_TODA, FILTROS_PADRAO, VALOR_MAX } from "./constantes.js";
 import { norm } from "./formato.js";
-import { nacionalidades } from "./nacionalidades.js";
+import { nacionalidadesDe } from "./nacionalidades.js";
 import { ehEstrangeiro } from "./estrangeiros.js";
 import { calcularDinheiro, precoDeCompra } from "./dinheiro.js";
 
@@ -28,7 +28,7 @@ export function nacionalidadesDoMercado(plano, lg, club) {
   const conta = new Map();
   for (const p of D.ALL) {
     if (!p.nat || !deFora(p, plano) || (lg && p.lg !== lg) || (club && p.club !== club)) continue;
-    for (const n of nacionalidades(p.nat)) conta.set(n, (conta.get(n) || 0) + 1); // dupla nacionalidade conta nos dois
+    for (const n of nacionalidadesDe(p)) conta.set(n, (conta.get(n) || 0) + 1); // dupla nacionalidade conta nos dois
   }
   return [...conta].sort((a, b) => a[0].localeCompare(b[0], "pt-BR"));
 }
@@ -68,7 +68,7 @@ export function buscarJogadores(plano, busca, chip, F, notas) {
     (!ps || ps.includes(p.pos)) &&
     (!F.lg || p.lg === F.lg) &&
     (!F.club || p.club === F.club) &&
-    (!F.nat || nacionalidades(p.nat).includes(F.nat)) &&
+    (!F.nat || nacionalidadesDe(p).includes(F.nat)) &&
     naFaixa(p.a, F.idade) &&
     naFaixa(p.ovr, F.ovr) &&
     naFaixa(p.v, F.valor, 0, VALOR_MAX) && // valor de mercado (o real, ou o estimado quando não há)

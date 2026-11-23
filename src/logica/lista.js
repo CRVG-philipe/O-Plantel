@@ -3,7 +3,7 @@
 import { D } from "./dados.js";
 import { PAISES, VALOR_MAX } from "./constantes.js";
 import { norm } from "./formato.js";
-import { nacionalidades } from "./nacionalidades.js";
+import { nacionalidadesDe } from "./nacionalidades.js";
 import { nomesPorApelido } from "./mercado.js";
 
 export const POR_PAGINA = 50;
@@ -48,7 +48,7 @@ export function filtrarLista(F) {
     naFaixa(p.a, F.idade, 0, 100) &&
     naFaixa(p.v, F.valor, 0, VALOR_MAX) &&
     naFaixa(p.ovr, F.ovr, 0, 100) &&
-    (!F.nat || nacionalidades(p.nat).includes(F.nat)) &&
+    (!F.nat || nacionalidadesDe(p).includes(F.nat)) &&
     (!F.fim || p.end26) &&
     (!F.emp || !!p.emp) &&
     (!q || p.nn.includes(q) || D.CL[p.club].nn.includes(q) || porApelido.has(p.nn))
@@ -64,7 +64,7 @@ export function nacionalidadesDaLista(F) {
   const conta = new Map();
   for (const p of D.ALL) {
     if ((ligasDoPais && !ligasDoPais.includes(p.lg)) || (F.liga && p.lg !== F.liga) || (F.clube && p.club !== F.clube)) continue;
-    for (const n of nacionalidades(p.nat)) conta.set(n, (conta.get(n) || 0) + 1);
+    for (const n of nacionalidadesDe(p)) conta.set(n, (conta.get(n) || 0) + 1);
   }
   return [...conta].sort((a, b) => a[0].localeCompare(b[0], "pt-BR"));
 }

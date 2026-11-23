@@ -23,6 +23,7 @@ const ZONAS = JSON.parse(fs.readFileSync("public/zonas-ligas.json", "utf8"));   
 const ATUAL = JSON.parse(fs.readFileSync("public/temporada-atual.json", "utf8"));     // simulador: tabelas reais de hoje
 const FORMATOS = JSON.parse(fs.readFileSync("public/formatos-ligas.json", "utf8"));   // simulador: formato de cada liga
 const COPAS = JSON.parse(fs.readFileSync("public/copas.json", "utf8"));               // simulador: copas
+const NACS = JSON.parse(fs.readFileSync("public/nacionalidades.json", "utf8"));       // dupla nacionalidade
 let semEstimados = false; // true = simula o valores-estimados.json fora do ar
 const CHAVE = "plantel:v2";
 // Cotação que a "API de mentira" devolve nos testes
@@ -50,6 +51,7 @@ beforeEach(() => {
     if (String(url).includes("temporada-atual")) return { ok: true, json: async () => structuredClone(ATUAL) };
     if (String(url).includes("formatos-ligas")) return { ok: true, json: async () => structuredClone(FORMATOS) };
     if (String(url).includes("copas")) return { ok: true, json: async () => structuredClone(COPAS) };
+    if (String(url).includes("nacionalidades")) return { ok: true, json: async () => structuredClone(NACS) };
     if (String(url).includes("overall")) return { ok: true, json: async () => structuredClone(OVERALL) };
     if (String(url).includes("valores-estimados")) {
       if (semEstimados) throw new Error("fora do ar");
@@ -318,7 +320,8 @@ test("fluxo completo: clube, vender, contratar, filtros, escalação, resumo, re
   const brasileiros = document.querySelectorAll("#mList .row");
   expect(brasileiros.length).toBeGreaterThan(0);
   brasileiros.forEach((l) => {
-    expect(l.querySelector(".nm img.fl").getAttribute("alt")).toBe("Brasil");
+    // Dupla nacionalidade: o Brasil pode ser a 2ª bandeira (ex.: "Itália" no data.json e Brasil em nacionalidades.json)
+    expect([...l.querySelectorAll(".nm img.fl")].map((i) => i.getAttribute("alt"))).toContain("Brasil");
     expect([...nomesEsp].some((n) => l.querySelector(".sub").textContent.includes(n))).toBe(true);
   });
   // Faixas de overall e idade (0 a 100), digitadas nas caixas. A ordem se arruma sozinha: máximo 20 e mínimo 25 viram 20–25
@@ -1267,7 +1270,7 @@ test("simulador da temporada: página própria, previsão, vagas em aberto, jogo
   await waitFor(() => expect(sim().previsaoCopas).toBeTruthy()); // a previsão das copas chega logo depois
   expect(document.querySelector("#copa-LIB summary .sim-copa-chance").textContent).toMatch(/^(\d+|<1)%$/);
   // Previsão do seu clube e de todos
-  expect(document.querySelector("#sim-prev-meu").textContent).toMatch(/\d+ºprevisão\d+%chance de título\d+%risco de queda/);
+  expect(document.querySelector("#sim-prev-meu").textContent).toMatch(/\d+ºprevisão(\d+|<1)%chance de título(\d+|<1)%risco de queda/);
   expect(document.querySelectorAll("#sim-previsao .sim-prev").length).toBe(20);
   // Quem chega e quem sai: Novorizontino sobe (confirmado) e a Chapecoense cai
   const comp = document.querySelector("#sim-composicao").textContent;
@@ -1450,3 +1453,32 @@ test("simulador: janela da IA (card no Resumo, Ver todas com filtro, Refazer, in
   expect(document.querySelector("#janela-ativa").getAttribute("aria-checked")).toBe("false");
   expect(document.querySelector("#janela-top")).toBe(null);
 }, 90000);
+test("página escondida ?debug-motor: mede o motor e mostra as metas (todas passando no Brasileirão)", async () => {
+  window.history.replaceState(null, "", "/?debug-motor");
+  try {
+    render(<App />);
+    await waitFor(() => expect(document.querySelectorAll("#dbg-metricas tbody tr").length).toBeGreaterThan(8), { timeout: 20000 });
+    expect(document.querySelectorAll("#dbg-metricas .dbg-falha").length).toBe(0);
+    expect(document.querySelector("#dbg-liga").value).toBe("BRA");
+  } finally {
+    window.history.replaceState(null, "", "/");
+  }
+}, 60000);
+test("dupla nacionalidade na tela: Jorginho (Flamengo) com as bandeiras da Itália e do Brasil e sem o selo EST", async () => {
+  const k = DATA.clubs.find((c) => c.lg === "BRA" && c.n === "Flamengo").k;
+  localStorage.setItem(CHAVE, JSON.stringify({ plans: { [k]: { club: k, budget: 50, st: {}, ins: [], form: "4-3-3", xi: {}, custom: [] } }, last: k }));
+  render(<App />);
+  clique(await screen.findByRole("button", { name: /2027/ }));
+  const linha = [...document.querySelectorAll(".row")].find((r) => r.querySelector(".nm")?.textContent.startsWith("Jorginho"));
+  expect(linha).toBeTruthy();
+  const bandeiras = [...linha.querySelectorAll(".nm img.fl")].map((i) => i.getAttribute("alt"));
+  expect(bandeiras).toEqual(["Itália", "Brasil"]);
+  expect(linha.querySelector(".fls").getAttribute("title")).toBe("Itália / Brasil");
+  // Na busca do Mercado também
+  clique(screen.getByRole("tab", { name: "Mercado" }));
+  fireEvent.change(document.querySelector("#q"), { target: { value: "Lucas Piton" } });
+  await waitFor(() => expect([...document.querySelectorAll("#mList .row")].some((r) => r.querySelectorAll(".nm img.fl").length === 2)).toBe(true));
+  // Sem o selo "Estrangeiro" (ele não ocupa vaga no Brasileirão)
+  const piton = [...document.querySelectorAll("#mList .row")].find((r) => r.querySelector(".nm")?.textContent.startsWith("Lucas Piton"));
+  expect(piton.querySelector(".selo-est")).toBe(null);
+});

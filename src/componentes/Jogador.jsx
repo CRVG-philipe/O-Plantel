@@ -3,7 +3,7 @@
 import { D } from "../logica/dados.js";
 import { corDoSetor } from "../logica/constantes.js";
 import { dec } from "../logica/formato.js";
-import { codigoDoPais, nacionalidades } from "../logica/nacionalidades.js";
+import { codigoDoPais, nacionalidades, nacionalidadesDe } from "../logica/nacionalidades.js";
 import { valorJogador } from "../logica/dinheiro.js";
 import { Foto, Escudo } from "./Imagens.jsx";
 
@@ -24,6 +24,20 @@ export function Bandeira({ nat }) {
   if (!c) return null;
   const nome = nacionalidades(nat).join(" / ");
   return <img className="fl" src={`img/flags/paises/${c}.svg`} alt={nome} title={nome} loading="lazy" decoding="async" width="16" height="12" />;
+}
+
+// Bandeiras do jogador: até 2 (dupla nacionalidade, do data.json e de public/nacionalidades.json). País sem
+// bandeira no site fica de fora. O nome de todos aparece ao passar o mouse.
+export function Bandeiras({ p }) {
+  const nats = nacionalidadesDe(p);
+  const comBandeira = nats.filter((n) => codigoDoPais(n)).slice(0, 2);
+  if (!comBandeira.length) return null;
+  const nome = nats.join(" / ");
+  return (
+    <span className={"fls" + (comBandeira.length > 1 ? " dupla" : "")} title={nome}>
+      {comBandeira.map((n) => <img key={n} className="fl" src={`img/flags/paises/${codigoDoPais(n)}.svg`} alt={n} loading="lazy" decoding="async" width="16" height="12" />)}
+    </span>
+  );
 }
 
 // Valor de mercado do jogador: o real, ou o estimado com "~" e o aviso "valor estimado" ao passar o mouse

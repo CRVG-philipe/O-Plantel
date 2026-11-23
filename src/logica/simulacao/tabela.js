@@ -1,7 +1,6 @@
 // Classificação: pontos, vitórias, saldo, gols pró, confronto direto e sorteio (nessa ordem).
 // Também a temporada "rápida" (só placares, sem autores nem notas), usada na previsão e nas projeções.
-import { lambdas } from "./motor.js";
-import { poisson } from "./aleatorio.js";
+import { sortearPlacar } from "./motor.js";
 
 export const novaLinha = (k) => ({ k, j: 0, v: 0, e: 0, d: 0, gp: 0, gc: 0, pts: 0, ultimos: [] });
 
@@ -60,8 +59,7 @@ export function temporadaRapida(rng, clubes, forca, calendario) {
   for (const rodada of calendario)
     for (const [c, f] of rodada) {
       const i = idx[c], j = idx[f];
-      const [lc, lf] = lambdas(forca[c], forca[f]);
-      const a = poisson(rng, lc), b = poisson(rng, lf);
+      const [a, b] = sortearPlacar(rng, forca[c], forca[f]);
       gp[i] += a; gp[j] += b; sg[i] += a - b; sg[j] += b - a;
       if (a > b) { pts[i] += 3; v[i]++; } else if (b > a) { pts[j] += 3; v[j]++; } else { pts[i]++; pts[j]++; }
     }

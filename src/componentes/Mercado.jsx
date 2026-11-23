@@ -7,7 +7,7 @@ import { dinheiro, calcularDinheiro, precoDeCompra } from "../logica/dinheiro.js
 import { buscarJogadores, contarFiltros } from "../logica/mercado.js";
 import { notasDoMercado } from "../logica/recomendacao.js";
 import { ehEstrangeiro, regraDaLiga, temLimite } from "../logica/estrangeiros.js";
-import { Avatar, Ovr, Bandeira, MiniStats, Nota, Pos, Valor } from "./Jogador.jsx";
+import { Avatar, Ovr, Bandeiras, MiniStats, Nota, Pos, Valor } from "./Jogador.jsx";
 
 const ORDEM = { rec: "Recomendados", vd: "Valor ↓", va: "Valor ↑", a: "Idade ↑", n: "Nota ↓", o: "Overall ↓" };
 const N_SELO = 10; // os 10 primeiros da lista em "Recomendados" ganham o selo
@@ -71,7 +71,7 @@ export default function Mercado({ app }) {
                   <button className={"row" + (cabe ? "" : " too")} key={p.id} onClick={() => app.abrirJogador(p.id)}>
                     <Avatar p={p} z={46} clube={p.club} /><Ovr p={p} />
                     <div className="mid">
-                      <div className="nm">{p.n}<Bandeira nat={p.nat} /></div>
+                      <div className="nm">{p.n}<Bandeiras p={p} /></div>
                       <div className="sub meta">
                         <Pos pos={p.pos} />{p.a} anos<span className="pt"></span>{D.CL[p.club].n}
                         {p.end26 && <><span className="pt"></span><span className="w">contrato até {ctrTxt(p.ctr)}</span></>}

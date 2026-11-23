@@ -14,6 +14,7 @@
 //                        (ver formatos.js); as rodadas de cada etapa só existem depois que ela começa
 //   atual                projeção da temporada atual da liga do clube: { lg, linhas: [[clube, pontos finais, jogos]] }
 //   resultados           [rodada: [[casa, fora, gols casa, gols fora, eventos: [[minuto, lado, autor, assistência]]]]]
+//                        (jogos do seu clube: + subs [[minuto, lado, sai, entra]] + cartões [[minuto, lado, id]])
 //   estatisticas         { "<id do jogador>": [jogos, gols, assistências, soma das notas × 10, clube] } (todas as competições)
 //   estatComp            { "liga"|"<copa>": { mesmo formato } } (por competição)
 //   previsao             { "<clube>": { pos, titulo, queda, acesso } } (300 temporadas rápidas)
@@ -37,6 +38,7 @@ import { comporLiga, contextoProjecao, ligaNaTemporada, movimentos, pares, proje
 import { classificacao, confronto, esqueletoDe, fecharRodada, garantirRodada, tabelaDe, tabelasDoSplit, titulos } from "./formatos.js";
 import { campeaoCopa, classificarCopas, copasDaLiga, defCopa, esqueletoCopa, fecharRodadaCopa, garantirRodadaCopa, ligasComCopa, nomeCopa, participantesDe, posicoesCopa, resolverFinais } from "./copas.js";
 import { elencoDepois, janelaDaTemporada, proibidosDoPlano } from "./mercadoIA.js";
+import { narrarJogo } from "./narracao.js";
 
 export const VERSAO = 5;
 export const N_PREVISAO = 300;
@@ -279,8 +281,8 @@ export function simularDatas(estado, plano, ate) {
         alvo[id] = s;
       }
     }
-    // Jogos do seu clube guardam também as substituições (para o jogo ao vivo)
-    return x === plano.club || y === plano.club ? [x, y, jogo.gc, jogo.gf, jogo.eventos, jogo.subs] : [x, y, jogo.gc, jogo.gf, jogo.eventos];
+    // Jogos do seu clube guardam também as substituições e os cartões (para o jogo ao vivo; saves antigos não têm cartões)
+    return x === plano.club || y === plano.club ? [x, y, jogo.gc, jogo.gf, jogo.eventos, jogo.subs, jogo.cartoes] : [x, y, jogo.gc, jogo.gf, jogo.eventos];
   });
   for (let d = inicio; d < fim; d++) {
     const { c, r } = datas[d];
@@ -397,43 +399,19 @@ export function vistaAtual(estado, vistas) {
 }
 
 // ---------- Jogo ao vivo ----------
-// Narração minuto a minuto de um jogo já simulado (rodada r, jogo i): gols e substituições (salvos) e lances que
-// não viraram gol (finalização para fora, defesa do goleiro, bola na trave), sorteados com a semente do jogo, então
-// o mesmo jogo tem sempre a mesma narração. Devolve [{ min, tipo: "gol"|"sub"|"chance", lado, ... }] em ordem.
-const TIPOS_CHANCE = [["fora", 0.45], ["defesa", 0.35], ["trave", 0.2]];
-export function narracao(estado, plano, r, i, comp = "liga") {
+// Lance a lance de um jogo já simulado (rodada r, jogo i da competição): ver narracao.js. A semente é própria do jogo
+// ("lances"), então o mesmo jogo tem sempre a mesma narração. Devolve { lances, acrescimos, base } ou null.
+export function jogoAoVivo(estado, plano, r, i, comp = "liga") {
   const jogo = resultadosDe(estado, comp)[r]?.[i];
-  if (!jogo) return [];
-  const [c, f, , , eventos, subs = []] = jogo;
-  const lances = [];
-  for (const [min, lado, autor, assist] of eventos) lances.push({ min, tipo: "gol", lado, autor, assist });
-  for (const [min, lado, sai, entra] of subs) lances.push({ min, tipo: "sub", lado, sai, entra });
-  // Quem está em campo em cada minuto (titulares e quem entrou), para escolher quem finaliza
+  if (!jogo) return null;
   const fora = idsDoPlano(plano);
   const naLiga = (k) => estado.composicao.clubes.includes(k);
-  const times = [c, f].map((k) => timeDe(plano, k, naLiga(k) ? estado.liga : D.CL[k]?.lg, fora, estado.mercadoIA || null));
-  const emCampo = (lado, min) => {
-    const s = subs.filter((x) => x[1] === lado && x[0] <= min);
-    const saiu = new Set(s.map((x) => x[2]));
-    return [...times[lado].onze.map((x) => x.p).filter((p) => p && !saiu.has(p.id)), ...s.map((x) => D.BYID[x[3]] || (plano.custom || []).find((p) => p.id === x[3]))].filter((p) => p && p.pos !== "GOL");
-  };
+  const times = [jogo[0], jogo[1]].map((k) => timeDe(plano, k, naLiga(k) ? estado.liga : D.CL[k]?.lg, fora, estado.mercadoIA || null));
   const rng = comp === "liga" ? rngDe(estado.semente, "lances", r, i) : rngDe(estado.semente, "lances", comp, r, i);
-  [0, 1].forEach((lado) => {
-    const n = 2 + Math.floor(rng() * 5) + Math.round((times[lado].forca - times[1 - lado].forca) / 6);
-    for (let k = 0; k < Math.max(1, n); k++) {
-      const min = 1 + Math.floor(rng() * 90);
-      const ps = emCampo(lado, min);
-      if (!ps.length) continue;
-      const p = ps[Math.floor(rng() * ps.length)];
-      let x = rng(), tipo = "fora";
-      for (const [t, w] of TIPOS_CHANCE) { if ((x -= w) < 0) { tipo = t; break; } }
-      lances.push({ min, tipo: "chance", lado, autor: p.id, como: tipo });
-    }
-  });
-  const ordem = { chance: 0, sub: 1, gol: 2 };
-  return lances.sort((a, b) => a.min - b.min || ordem[a.tipo] - ordem[b.tipo]);
+  return narrarJogo(rng, jogo, times, (id) => jogadorSim(plano, id), (k) => nomeClube(k));
 }
-
+// Só os lances (sem os marcos de começo, intervalo e fim), em ordem
+export const narracao = (estado, plano, r, i, comp = "liga") => (jogoAoVivo(estado, plano, r, i, comp)?.lances || []).filter((x) => x.tipo !== "marco");
 // ---------- Previsão ----------
 // 300 temporadas rápidas (só placares), com o formato real da liga (fases, split, playoffs, torneios).
 // Para cada clube: posição média na classificação, chance de título pela regra "campeao" (nas ligas com dois campeões,

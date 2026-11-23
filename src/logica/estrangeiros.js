@@ -16,7 +16,7 @@ import { D } from "./dados.js";
 import { elencoAtual, jogador } from "./elenco.js";
 import { todosReservas } from "./escalacao.js";
 import { norm } from "./formato.js";
-import { nacionalidades } from "./nacionalidades.js";
+import { nacionalidadesDe } from "./nacionalidades.js";
 
 // Os nomes dos países são comparados sem acento, porque o arquivo de regras usa a grafia do Brasil ("Polônia",
 // "Romênia") e os jogadores, a de Portugal ("Polónia", "Roménia"). "Tcheca" e "Checa" são o mesmo país.
@@ -50,7 +50,8 @@ export const temLimite = (regra) => regra.relacionados != null || regra.campo !=
 // O jogador conta como estrangeiro num clube da liga "lg"?
 export function ehEstrangeiro(p, lg) {
   const L = D.LG[lg];
-  const nats = nacionalidades(p?.nat).map(chavePais);
+  // Dupla nacionalidade: vale qualquer uma (data.json + public/nacionalidades.json)
+  const nats = nacionalidadesDe(p).map(chavePais);
   if (!L || !nats.length) return false;
   if (nats.includes(chavePais(L.nat))) return false;
   if (regraDaLiga(lg).tipo === "extracomunitario") {

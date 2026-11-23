@@ -31,7 +31,7 @@ Foi inspirado no reconstruindo.thefenomeno.com, mas **não deve copiá-lo**. O f
   - Ganharam fotos: CYP 214, USL 165, HUN 141, SVK 128, BUL 123, ISR 118, RSA 111, CRC 93, AUS 90, SVN 83, CAN 62, MAR 53 e HON 53.
   - Parte 3 (22/11/2026): mais 1.992 fotos e 1.958 jogadores com foto (USL 294, RSA 216, BUL 181, ISR 159, MAR 147, SVN 142, HUN 140, CRC 134, SVK 132, CYP 130, AUS 119, HON 85 e CAN 79). Ficaram 6.789 de 9.259 com foto (73%).
   - Parte 4 (22/11/2026): mais 973 fotos e 876 jogadores com foto (RSA 156, USL 132, AUS 97, HON 69, MAR 68, HUN 58, BUL 49, ISR 45, CYP 44, SVN 43, CAN 41, SVK 39 e CRC 35). Hoje são 7.665 de 9.259 com foto (83%). Ainda têm pouca foto: PER2 (48%), COL2 (57%) e HON (57%).
-  - **Dupla nacionalidade:** 1.580 jogadores da rodada 3 vêm com dois países, como "Bolívia/Argentina" (campo 6). `nacionalidades(nat)` (`nacionalidades.js`) separa os países; a bandeira é a do primeiro, e o filtro de nacionalidade acha o jogador por qualquer um dos dois.
+  - **Dupla nacionalidade:** 1.580 jogadores da rodada 3 vêm com dois países, como "Bolívia/Argentina" (campo 6). `nacionalidades(nat)` (`nacionalidades.js`) separa os países; as linhas mostram as duas bandeiras, e o filtro de nacionalidade acha o jogador por qualquer um dos dois. Para todas as ligas, a dupla nacionalidade agora também vem de `public/nacionalidades.json` (ver "Quem é estrangeiro").
   - Arquivos em `dados-brutos/rodada3/`:
     - `novas_ligas_3.json`: ligas e clubes no formato final, lido pelo `build_final.py` (que tira o campo `ci` dos clubes);
     - `fotos-ids-3.json`: `{clube: {nome: ID Sofascore}}`, lido pelo `marcar_fotos_hd.py`;
@@ -113,9 +113,9 @@ Foi inspirado no reconstruindo.thefenomeno.com, mas **não deve copiá-lo**. O f
   - `testes/recomendacao.test.js` e `testes/busca.test.js`: a nota de recomendação e a busca por apelido.
   - `testes/emprestimos.test.js`: regras dos empréstimos (Botafogo, T1958).
   - `testes/time.test.js`: compatibilidade de posição, reservas e escalar pelo valor ou pelo overall.
-  - `testes/estrangeiros.test.js`: limite de estrangeiros (Brasileirão, Argentina, LaLiga e o filtro do Mercado).
+  - `testes/estrangeiros.test.js`: limite de estrangeiros (Brasileirão, Argentina, LaLiga, o filtro do Mercado e a dupla nacionalidade).
   - `testes/overall.test.js`: overall (Mbappé = 91), ajustes manuais (Fábio = 78, Thiago Mendes = 79), força do time, ordem Overall e o overall na recomendação.
-  - `testes/simulacao.test.js`: simulador da temporada (calendário, calibração do motor, composição, semente, faixas, previsão e desempenho).
+  - `testes/simulacao.test.js`: simulador da temporada (calendário, metas de calibração do motor com 1.000 Brasileirões, substituições, lance a lance, composição, semente, faixas, previsão e desempenho).
   - `testes/mercado.test.js`: janela da IA do simulador (caixa, no máximo 4 contratações, jogador repetido, jogadores do plano, regras do reforço, semente, interruptor desligado e tempo).
 - Com as ~30 mil fotos, o `npm run dev` às vezes demora para servir as imagens. Para conferir fotos, use `npm run build` e `npm run preview`.
 - `npm run build`: gera a versão final em `dist/` (não vai para o git). `npm run preview` serve o `dist/` para conferir.
@@ -329,7 +329,11 @@ React 19 + Vite 6, em JavaScript (sem TypeScript).
     - `nota`: de onde veio a regra (aparece no aviso).
     - Campo ausente ou `null` = sem limite. Liga fora de `ligas` usa `padrao`. O campo `proximo` (Brasileirão: limite dos próximos anos) ainda não é usado.
   - **Para mudar o limite de uma liga:** editar o JSON. Não precisa rodar nada.
-  - **Quem é estrangeiro** (`ehEstrangeiro(p, liga)`): nacionalidade diferente do `nat` da liga. Dupla nacionalidade com o país da liga não conta; em liga "extracomunitario", um passaporte da UE também não conta. Jogador criado (sem nacionalidade) não conta.
+  - **Quem é estrangeiro** (`ehEstrangeiro(p, liga)`): nenhuma nacionalidade do jogador é o `nat` da liga. É **nacional** se qualquer nacionalidade dele for a do país da liga; em liga "extracomunitario" (Espanha, França...), é comunitário se qualquer nacionalidade for de país da UE. Jogador criado (sem nacionalidade) não conta.
+    - **Dupla nacionalidade** (23/11/2026): `public/nacionalidades.json` = `{ "Nome|AAAA-MM-DD": ["Itália", "Brasil"] }` (7.178 jogadores; 7.167 batem com o data.json; mesma grafia dos países). Carregado em `D.NACS` (um `Map`); o data.json não muda. `nacionalidadesDe(p)` (`nacionalidades.js`) junta o `nat` do data.json (primeiro) com as do arquivo. Se o arquivo falhar, segue só com o data.json.
+    - Vale em tudo que conta estrangeiros (todos usam `ehEstrangeiro`): contador e selo "Estrangeiro" do Mercado, filtro "Só jogadores que não ocupam vaga de estrangeiro", vagas na lista de escolha, aba Time, Elenco/Resumo, escalação dos clubes da IA, janela da IA (o Web Worker recebe o `nat` já com todas as nacionalidades) e simulador. O filtro de nacionalidade e a lista de nacionalidades do Mercado e da Lista também.
+    - Tela: `Bandeiras` (`Jogador.jsx`) mostra até 2 bandeiras nas linhas (Elenco, Mercado e busca, Time, Lista); o nome de todos os países ao passar o mouse. 12 países do arquivo não têm SVG em `public/img/flags/paises/` (Camboja, Guernsey, Fiji, Aruba, Reunião, Mónaco, Sri Lanka, Ilha de Man, Jersey, San Marino, Bermuda, Mayotte): ficam sem bandeira.
+    - Exemplo (teste): Jorginho (Flamengo) e Lucas Piton (Vasco), "Itália" no data.json e Itália/Brasil no arquivo, não contam como estrangeiros no Brasileirão; um jogador só italiano continua contando.
     - Os países são comparados sem acento, porque o arquivo usa a grafia do Brasil ("Polônia") e os jogadores, a de Portugal ("Polónia"). "República Tcheca" = "República Checa".
   - **Na tela** (o selo "EST" só aparece em ligas com algum limite):
     - Aba Time: "Estrangeiros: X/limite" (`#est-rel`) e "Em campo: Y/limite" (`#est-campo`), em vermelho quando passa, com o aviso "Limite de estrangeiros excedido" e a regra (`#est-aviso`). Não bloqueia nada. Selo "EST" no campo, nos mini-cards do banco e nas listas.
@@ -397,11 +401,24 @@ React 19 + Vite 6, em JavaScript (sem TypeScript).
     - Overall = `p.ovr` (overall.json + overall-ajustes.json). Sem overall (jogador criado) = 60.
   - **Motor** (`motor.js`):
     - Força = média ponderada do overall dos 11 pelo setor da vaga (GOL 1,0; defesa 1,0; meio 1,05; ataque 1,1), com penalidade no overall de quem está fora da posição (ideal 0, boa −2, improvisado −6) + 0,1 × (média dos 7 melhores reservas − média dos titulares). Vaga vazia = 40; banco que falta para 7 = 45.
-    - Placar por Poisson: λ_casa = 1,35 × e^(0,075 × (F_casa − F_fora) + 0,07); λ_fora = 1,15 × e^(0,075 × (F_fora − F_casa) − 0,02); λ entre 0,15 e 4,5. Campo neutro: 1,29 × e^(0,075 × diferença).
-      - **Calibração:** o pedido era +0,12/−0,04, que deu 47% de vitórias do mandante. Com +0,07/−0,02 (`CASA` e `FORA`): ~45% e ~2,7 gols por jogo (Brasileirão, Premier League e Série B simulados 200 vezes; o teste confere 2,4–2,8 gols e 43–47% do mandante).
-      - Observação (22/11/2026): com 0,075, a tabela sai mais espalhada que a real (Brasileirão: campeão ~80 pontos e último ~15). Para aproximar, baixar o 0,075.
-    - Gols: autor sorteado entre quem jogou (titulares e 3 substituições sorteadas entre os 7 do banco, entre 55' e 85'), com peso CA 5, SA 4, PE/PD 3,5, MEI 3, ME/MD 2,5, MC 1,5, VOL 1, LE/LD 0,8, ZAG 0,6, GOL 0, × (1 + gols/jogo da temporada atual) × (overall/75)² × tempo em campo. Assistência em 75% dos gols, entre os outros em campo: MEI 4, PE/PD 3,5, ME/MD 3, SA 3, MC 2,5, LE/LD 2, CA 2, VOL 1,2, ZAG 0,5, GOL 0,1.
-    - Nota (6,0–9,5): 6,6 + vitória 0,3 / derrota −0,3 + 0,8 por gol + 0,5 por assistência + 0,4 para goleiro e defensor sem sofrer gol + ruído de até ±0,3.
+    - **Placar (versão 2, 23/11/2026: menos goleadas e tabela mais realista)**, `jogarBlocos`/`sortearPlacar`, constantes em `MOTOR`:
+      1. Forma do dia: cada time ganha um ruído N(0; 1,5) na força, sorteado com a semente do jogo.
+      2. Diferença comprimida: d = F_casa − F_fora (já com a forma) e d′ = 7 × tanh(d / 7) (`comprimir`; 15 pontos valem ~6,8, 8 pontos ~5,7).
+      3. λ_casa = 1,41 × e^(0,063 × d′); λ_fora = 1,02 × e^(−0,063 × d′); campo neutro 1,215 para os dois. λ entre 0,15 e 3,2.
+      4. Poisson bivariado: gols = parte própria (λ − 0,1) + parte comum (0,1) que vale para os dois (placares mais "parecidos", empates realistas).
+      5. Jogo em 6 blocos de 15 minutos (cada um com 1/6 dos λ). Controle de jogo: quem abre 3 gols tem o λ multiplicado por 0,55 (−45%) e o adversário por 1,10 no resto da partida.
+      - Os minutos dos gols saem dos blocos (`jogarBlocos(..., comMinutos)`); a previsão, a temporada atual (`atual.js`) e a temporada rápida (`tabela.js`) usam o mesmo `sortearPlacar`.
+      - **Calibração** (`calibracao.js`, `medirMotor`; teste com 1.000 Brasileirões e a página escondida **`/debug-motor`** ou `?debug-motor`, `DebugMotor.jsx`, com rewrite no `vercel.json`). Metas (`METAS`) e resultado em 23/11/2026 (3 sementes): gols por jogo 2,3–2,6 (2,47); mandante vence 44–50% (46%); empate 24–29% (26,7%); visitante 24–30% (27,3%); diferença de 4+ gols ≤ 3% (2,7%); time marcando 5+ ≤ 1,5% **por time em cada jogo** (0,9%; contando "algum dos dois", ~1,7%, só informativo); pontos do campeão 72–82 (~72,5); do último 28–38 (~28,8); diferença 1º − último 38–52 (~44); mais fraco vence o mais forte ≥ 12% (16–17%).
+      - O pedido era K ~0,045, mas com a compressão e a forma do dia o campeão ficava com ~71 pontos; K = 0,063 cumpre todas as metas. Campeão e último ficam perto da borda da faixa (subir um derruba o outro). **Para recalibrar:** mudar `MOTOR` em `motor.js` e conferir em `/debug-motor` (ou no teste).
+    - **Gols, cartões e substituições** (`jogarPartida`): o jogo é processado em ordem de minuto (paradas para troca, gols, cartões).
+      - Autor do gol: entre quem está em campo naquele minuto, com peso CA 5, SA 4, PE/PD 3,5, MEI 3, ME/MD 2,5, MC 1,5, VOL 1, LE/LD 0,8, ZAG 0,6, GOL 0, × (1 + gols/jogo da temporada atual) × (overall/75)². Assistência em 75% dos gols, entre os outros em campo: MEI 4, PE/PD 3,5, ME/MD 3, SA 3, MC 2,5, LE/LD 2, CA 2, VOL 1,2, ZAG 0,5, GOL 0,1.
+      - Cartões amarelos: Poisson de média 1,9 por time, num minuto sorteado, com peso por posição (`PESO_CARTAO`: VOL 1,6, ZAG 1,4, laterais 1,2...). Sem segundo amarelo/expulsão nesta versão.
+      - **Substituições:** até 5 por time (`MAX_TROCAS`), em no máximo 3 paradas + o intervalo (46'). A 1ª parada entre 55' e 65' (perdendo: 55'–60'), as outras entre 65' e 85'; o intervalo é usado em 60% das vezes por quem está perdendo e 15% pelos outros.
+      - Quem entra substitui um titular e ocupa a vaga dele (a formação não muda). Precisa ser "ideal" ou "boa" naquela vaga (`podeEntrar`, tabela de `compatibilidade.js`), nunca improvisado; sem reserva compatível, não troca.
+      - Seu clube: primeiro os 2 reservas escolhidos para aquela vaga na aba Time, na ordem (`time.reservas[i]`, montado por `escalarPlano`).
+      - Quem sai: primeiro quem tem amarelo, depois a menor nota parcial do jogo, depois o mais velho (cansaço). Nunca o goleiro.
+      - Quem entra (entre os compatíveis): perdendo, o mais ofensivo; ganhando por 2+, o mais defensivo (volante/defensor no lugar de atacante só se a compatibilidade deixar); senão, ideal antes de boa e o maior overall.
+    - Nota (6,0–9,5): 6,6 + vitória 0,3 / derrota −0,3 + 0,8 por gol + 0,5 por assistência + 0,4 para goleiro e defensor sem sofrer gol − 0,2 por amarelo + a forma do jogador no dia (até ±0,3).
     - Semente (`aleatorio.js`, mulberry32): cada jogo usa `semente + rodada + jogo`, então rodada a rodada ou tudo de uma vez dá o mesmo resultado. Mesma semente + mesmo plano = mesma temporada. "Re-simular" e "Simular de novo" trocam a semente.
     - Calendário (`calendario.js`): método do círculo, mando alternado, returno espelhado; a ordem dos clubes é sorteada pela semente. Número ímpar de clubes: cada rodada tem uma folga.
   - **Formatos** (`formatos.js`; `formatos-ligas.json`): cada liga vira um **esqueleto** (`montarEsqueleto`/`esqueletoDe`) = lista de **etapas** com número fixo de rodadas (o total da temporada é conhecido desde o começo):
@@ -471,10 +488,16 @@ React 19 + Vite 6, em JavaScript (sem TypeScript).
     - **Tabela:** classificação com as faixas e a legenda. **Jogos:** rodada a rodada; o seu jogo vem primeiro e aberto; tocar num jogo mostra os gols. **Estatísticas:** Artilharia, Assistências, Notas (mínimo de 30% das rodadas jogadas) e o seu clube (J, G, A, nota), com foto.
     - Se o plano mudar depois da 1ª rodada: "Seu elenco mudou — reiniciar a temporada?" (`#sim-mudou`), com "Reiniciar" (mesma semente, do zero) ou "Continuar assim" (as próximas rodadas usam o elenco novo).
   - **Jogo ao vivo** (`AoVivo`): "Jogar rodada N" simula a rodada (o resultado já fica salvo) e mostra o seu jogo minuto a minuto.
-    - Placar com as cores dos dois clubes, relógio ("Intervalo" no 45', com pausa um pouco maior; "Fim de jogo"), linha do tempo com os gols, "Lance a lance" (`#av-feed`) e os outros jogos da rodada ao vivo.
-    - Barra de baixo: pausar (`#av-pausa`), velocidade 1x/2x/4x/8x (1000, 500, 250 e 110 ms por minuto; guardada em `plantel:velocidade`, padrão 4x) e "Pular" (`#av-pular`). No fim: "Ver tabela" (`#av-sair`) e "Jogar rodada N+1".
+    - Placar com escudos e as cores dos dois clubes (o número dá um "pulo" ao mudar), relógio de 0' a 45' + acréscimos, "Intervalo" (pausa maior), 46' a 90' + acréscimos e "Fim de jogo", linha do tempo com os gols, "Lance a lance" (`#av-feed`, com ícones em SVG), estatísticas ao lado (`#av-est`; no celular, em cima, em 2 colunas) e os outros jogos da rodada ao vivo.
+    - Barra de baixo: pausar (`#av-pausa`), velocidade 1x/2x/4x/8x (1000, 500, 250 e 110 ms por minuto; guardada em `plantel:velocidade`, padrão 4x) e "Pular para o fim" (`#av-pular`). No fim: "Ver tabela" (`#av-sair`) e "Jogar rodada N+1".
     - Durante o jogo, o topo mostra "Rodada N de M · ao vivo" (sem a posição, para não entregar o resultado).
-    - Narração (`narracao(estado, plano, r, i)` em `temporada.js`): gols e substituições salvos + lances que não viraram gol (para fora, defesa do goleiro, trave), sorteados com `semente + "lances" + rodada + jogo` entre quem está em campo naquele minuto. O mesmo jogo tem sempre a mesma narração. Clube folgando: só os outros jogos.
+    - **Lance a lance** (`narracao.js`, `narrarJogo`; em `temporada.js`, `jogoAoVivo` e `narracao`): gerado a partir do resultado já sorteado, com a semente `semente + "lances" + rodada + jogo` (nada disso muda o resultado; o mesmo jogo tem sempre o mesmo lance a lance).
+      - Gols, minutos, substituições e cartões vêm do motor (os jogos do seu clube guardam subs e cartões; saves antigos sem cartões ganham cartões sorteados na narração).
+      - Em volta: 8 a 14 lances (finalização para fora, defesa do goleiro, bola na trave, escanteio, falta perigosa e impedimento), divididos pela força (o mais forte e o mandante atacam mais), mais os marcos de começo, intervalo e fim. Acréscimos: 1–4 minutos no 1º tempo e 2–6 no 2º (alguns lances caem neles).
+      - Textos em português com o nome dos jogadores (`FRASES`, 6 ou mais variações por tipo).
+      - Tipo do gol pela posição do autor (`GOL_POR_POS`): zagueiro → cabeça (em escanteio), rebote; lateral/volante → cabeça, de fora, rebote; meia → de fora, na área, contra-ataque; ponta → contra-ataque, chute cruzado; centroavante → na área, cabeça. Pênalti só em gol sem assistência (35% deles).
+      - Estatísticas (`estatisticasAte`): posse (pela força e o mando, 32–68%), finalizações (gols + finalizações), no alvo (gols + defesas), escanteios (escanteios + lances que citam escanteio), faltas (faltas comuns + faltas perigosas sofridas pelo outro + amarelos) e cartões.
+    - **Animação de gol** (`FestaDeGol`, ~2,5 s; tocar pula): tela escurece, "GOOOL!" numa faixa da cor do clube (`corVisivel`: cor principal, senão a 2ª, senão cinza, para o texto branco aparecer), escudo, foto do autor, nome, minuto, tipo do gol e assistência; a rede balança (CSS). Gol do seu clube tem confete; gol contra ele é um aviso menor no topo (~1,6 s). O relógio para durante a animação. Com `prefers-reduced-motion`, sem movimento.
   - **CSS:** classes novas com prefixo `simp-` (página), `sim-` (conteúdo) e `av-` (ao vivo). **Não usar nomes curtos soltos**: `.esc` (tela de escolha, altura da tela inteira) e `.top` (topo do plano) já existem e estragaram o simulador. Um teste em `simulacao.test.js` confere isso.
   - **Salvar:** `plantel:sim` = `{ "<clube>": { v, semente, rodadaAtual, liga, composicao, pendenciasResolvidas, escolhas, substitui, avisos, resultados, estatisticas, previsao, assinatura } }`. Nada vai para o `plantel:v2`.
     - `resultados`: por rodada, `[casa, fora, gols casa, gols fora, [[minuto, lado, autor, assistência]]]`; os jogos do seu clube têm um 6º campo, as substituições `[[minuto, lado, sai, entra]]`. `estatisticas`: `{id: [jogos, gols, assistências, soma das notas × 10, clube]}`. `assinatura`: impressão digital do elenco, titulares, reservas e formação.
@@ -488,7 +511,7 @@ React 19 + Vite 6, em JavaScript (sem TypeScript).
    - Fotos HD (coletadas em 21/11/2026): faltam 1.124 jogadores, 325 deles da Série C. Quando chegarem mais, rodar `python dados-brutos/marcar_fotos_hd.py`.
    - Os sprites `p_*.webp` ficam como reserva por enquanto: 11 jogadores sem foto HD ainda usam o sprite. Quando não houver mais nenhum, apagar os sprites e o código de sprite em `Foto` (`src/componentes/Imagens.jsx`).
 2. Script de atualização periódica dos dados (Transfermarkt e Sofascore).
-3. Simulador: lesões e suspensões ficam fora. Decidir se baixa o 0,075 da fórmula do placar (a tabela sai mais espalhada que a real).
+3. Simulador: lesões, suspensões e expulsões (segundo amarelo) ficam fora.
    - Atualizar `temporada-atual.json`, `copas.json` ("pendentes") e `acesso-rebaixamento.json` quando acabarem o Brasileirão 2026, os playoffs da Série B e as finais (Libertadores, Sul-Americana e Copa do Brasil 2026).
 4. Link compartilhável do plano e modo "desafio diário" (para depois).
 
@@ -497,6 +520,7 @@ React 19 + Vite 6, em JavaScript (sem TypeScript).
 - 21/11/2026: fotos HD dos jogadores (95%, em WebP 150×150, qualidade 82) e estatísticas das 36 ligas novas. Overall e atributos (`overall.json`), com balanceamento por liga.
 - 22/11/2026: menu com "Criar time do zero" e "Lista de jogadores"; fotos da rodada 3 (partes 2 a 4); simulador da temporada (versão 1, numa página própria, com jogo ao vivo).
 - 23/11/2026: simulador v2: formatos das ligas e temporada atual real (etapa 1), copas (etapa 2) e janela da IA (etapa 3; no mesmo dia, o mercado completo foi trocado pela versão simples, só com contratações).
+- 23/11/2026 (tarde): motor de placar v2 (menos goleadas, calibrado; página /debug-motor), substituições coerentes, lance a lance com estatísticas e animação de gol, dupla nacionalidade (public/nacionalidades.json).
 
 ## Cuidados
 - Fotos novas em `public/img/players/`: rodar `python dados-brutos/converter_fotos_webp.py` antes do commit.

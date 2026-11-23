@@ -3,6 +3,10 @@ import { useEffect, useState } from "react";
 import { carregarDados } from "./logica/dados.js";
 import { lerCotacaoSalva } from "./logica/cotacao.js";
 import Plantel from "./Plantel.jsx";
+import DebugMotor from "./componentes/DebugMotor.jsx";
+
+// Página escondida de calibração do motor: "/debug-motor" ou "?debug-motor"
+const ehDebugMotor = () => typeof location !== "undefined" && (/\/debug-motor\/?$/.test(location.pathname) || new URLSearchParams(location.search).has("debug-motor"));
 import { Moldura, COR_INICIO } from "./componentes/EscolhaClube.jsx";
 
 export default function App() {
@@ -14,7 +18,7 @@ export default function App() {
       .catch((e) => { console.error(e); setEstado("erro"); });
   }, []);
 
-  if (estado === "pronto") return <Plantel />;
+  if (estado === "pronto") return ehDebugMotor() ? <DebugMotor /> : <Plantel />;
 
   return (
     <Moldura cor={COR_INICIO} cotacao={lerCotacaoSalva()}>

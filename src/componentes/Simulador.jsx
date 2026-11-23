@@ -8,7 +8,7 @@
 //   Jogos         placares de cada rodada; tocar num jogo mostra os gols
 //   Estatísticas  artilharia, assistências, melhores notas e os números do seu clube
 //   Ao vivo       o seu jogo minuto a minuto (gols, substituições e lances), com velocidade 1x a 8x
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { D } from "../logica/dados.js";
 import { FORMS, corDoSetor } from "../logica/constantes.js";
 import { rotuloVaga } from "../logica/compatibilidade.js";
@@ -20,6 +20,7 @@ import { elencoAtual } from "../logica/elenco.js";
 import { novaSemente } from "../logica/simulacao/aleatorio.js";
 import { chegaram, difsDoMercado, elencoDepois, listaTransferencias } from "../logica/simulacao/mercadoIA.js";
 import { calcularResto } from "../logica/simulacao/janelaResto.js";
+import { TIPOS_GOL, estatisticasAte } from "../logica/simulacao/narracao.js";
 import { Cabecalho } from "./Painel.jsx";
 import Rodape from "./Rodape.jsx";
 import { idPar, opcoesDaPendencia, pares, rotuloLiga, temporadaAtual, vagasDaPendencia, zonasDaLiga } from "../logica/simulacao/composicao.js";
@@ -29,7 +30,7 @@ import { campanhaCopa, comoEntra, defCopa, finaisPendentes, nomeCopa, participan
 import { escalarClube, idsDoPlano } from "../logica/simulacao/escalar.js";
 import {
   VELOCIDADES, assinaturaDoPlano, calcularPrevisaoCopas, campeaoDe, copasDe, criarEstado, datasDe, esqCopa, jogadorSim, jogarProximoJogo,
-  jogosDaRodada, jogosDaRodadaCopa, juntarResto, lerSim, pedidoDoResto, timeNaTemporada, lerVelocidade, linhasEstatisticas, minimoJogos, narracao, nomeClube, nomeDaData, nomeDaRodada,
+  jogoAoVivo, jogosDaRodada, jogosDaRodadaCopa, juntarResto, lerSim, pedidoDoResto, timeNaTemporada, lerVelocidade, linhasEstatisticas, minimoJogos, nomeClube, nomeDaData, nomeDaRodada,
   nomeDaRodadaCopa, proximoJogo, resultadosDe, salvarSim, salvarVelocidade, selecaoDaTemporada, simularAte, simularDatas, tabelaAtual,
   titulosDe, totalDatas, totalRodadas, vistaAtual, vistasTabela,
 } from "../logica/simulacao/temporada.js";
@@ -1060,78 +1061,172 @@ function Estatisticas({ estado, k, plano, comp = "total" }) {
 }
 
 // ---------- Ao vivo ----------
-// O jogo já foi simulado (o resultado está salvo); aqui ele é mostrado minuto a minuto.
-const COMO = {
-  fora: (n) => `${n} finaliza, mas a bola vai para fora.`,
-  defesa: (n) => `${n} chuta e o goleiro faz a defesa.`,
-  trave: (n) => `Na trave! ${n} quase marca.`,
+// O jogo já foi simulado (o resultado está salvo); aqui ele é mostrado minuto a minuto, com o lance a lance de
+// narracao.js (gols, minutos, trocas e cartões do motor; o resto preenchido em volta, sempre igual para o mesmo jogo).
+// Relógio: 0' a 45' + acréscimos, intervalo, 46' a 90' + acréscimos. Gol: animação de ~2,5 s (toque para pular).
+
+// Passos do relógio: [{ t (instante, como nos lances), rot (texto), intervalo?, fim? }]
+function passosDoRelogio([a1, a2]) {
+  const l = [{ t: 0, rot: "Começando" }];
+  for (let m = 1; m <= 45; m++) l.push({ t: m, rot: `${m}'` });
+  for (let x = 1; x <= a1; x++) l.push({ t: 45 + x / 10, rot: `45+${x}'` });
+  l.push({ t: 45 + (a1 + 0.5) / 10, rot: "Intervalo", intervalo: true });
+  for (let m = 46; m <= 90; m++) l.push({ t: m, rot: `${m}'` });
+  for (let x = 1; x <= a2; x++) l.push({ t: 90 + x / 10, rot: `90+${x}'` });
+  l.push({ t: 90 + (a2 + 0.5) / 10, rot: "Fim de jogo", fim: true });
+  return l;
+}
+const minutoDoLance = (x) => (x.acr >= 1 ? `${x.min}+${Math.floor(x.acr)}'` : `${x.min}'`);
+// Cor do clube que aparece bem sobre fundo claro e com texto branco: a principal, senão a 2ª, senão cinza
+// (e diferente de "outra", para as barras dos dois times não ficarem iguais)
+const luz = (hex) => {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex || "");
+  if (!m) return 0.5;
+  const n = parseInt(m[1], 16);
+  return (0.2126 * ((n >> 16) & 255) + 0.7152 * ((n >> 8) & 255) + 0.0722 * (n & 255)) / 255;
 };
+export function corVisivel(k, outra = "") {
+  const ok = (x) => x && luz(x) < 0.78 && x.toLowerCase() !== outra.toLowerCase();
+  const c = D.CL[k]?.c, c2 = D.CL[k]?.c2;
+  return ok(c) ? c : ok(c2) ? c2 : "#8a8f98";
+}
+
+// Ícones dos lances (SVG: emoji de bandeira/cartão não aparece em todo Windows)
+function IconeLance({ x }) {
+  const k = x.tipo === "chance" ? x.como : x.tipo === "marco" ? "apito" : x.tipo;
+  const svg = (filhos, cor = "currentColor") => <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke={cor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{filhos}</svg>;
+  switch (k) {
+    case "gol": return svg(<><circle cx="12" cy="12" r="9" /><path d="M12 7l4 3-1.5 4.5h-5L8 10z" fill="currentColor" stroke="none" /></>);
+    case "cartao": return <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><rect x="7" y="3" width="10" height="18" rx="2" fill="#f2c500" /></svg>;
+    case "sub": return svg(<><path d="M7 20V6M3.5 9.5 7 6l3.5 3.5" stroke="#1a9e55" /><path d="M17 4v14M13.5 14.5 17 18l3.5-3.5" stroke="#d33" /></>);
+    case "defesa": return svg(<path d="M6 13V7a2 2 0 0 1 4 0v4M10 11V5a2 2 0 0 1 4 0v6M14 11V7a2 2 0 0 1 4 0v7a6 6 0 0 1-6 6h-1a6 6 0 0 1-5-3l-2-3a2 2 0 0 1 3-2l2 2" />);
+    case "trave": return svg(<path d="M4 20V5h16v15" />);
+    case "fora": return svg(<><path d="M4 20V8h10v12" /><path d="M13 9l7-6M15 3h5v5" /></>);
+    case "escanteio": return svg(<><path d="M6 21V3" /><path d="M6 4h11l-3 4 3 4H6" fill="currentColor" fillOpacity=".25" /></>);
+    case "impedimento": return svg(<><path d="M6 21V3" /><path d="M6 4h12v8H6zM12 4v8M6 8h12" /></>);
+    case "falta": return svg(<><circle cx="12" cy="12" r="9" /><path d="M12 7v6M12 16.5v.5" /></>);
+    default: return svg(<><circle cx="9" cy="14" r="5" /><path d="M13 11l8-5M14 14h7" /></>);
+  }
+}
+
+// Estatísticas do jogo até o momento (barra dos dois lados)
+function EstatisticasDoJogo({ s }) {
+  const linhas = [["Posse de bola", s.posse, "%"], ["Finalizações", s.final], ["No alvo", s.alvo], ["Escanteios", s.esc], ["Faltas", s.faltas], ["Cartões", s.cartoes]];
+  return (
+    <div className="card av-est" id="av-est">
+      {linhas.map(([nome, [a, b], suf = ""]) => (
+        <div className="av-est-l" key={nome}>
+          <span className="av-est-nums num"><b>{a}{suf}</b><span>{nome}</span><b>{b}{suf}</b></span>
+          <span className="av-est-barra"><i style={{ width: (a + b ? (a / (a + b)) * 100 : 50) + "%" }}></i></span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// Animação de gol: tela escurece, "GOOOL!" na cor do clube, escudo, foto, nome, minuto e assistência. Gol do seu
+// clube tem confete; gol contra ele é mais discreto. Tocar pula. Com prefers-reduced-motion, sem movimento (CSS).
+function FestaDeGol({ x, clube, meu, plano, onFim }) {
+  const autor = x.autor && jogadorSim(plano, x.autor), assist = x.assist && jogadorSim(plano, x.assist);
+  const cor = corVisivel(clube);
+  return (
+    <div className={"av-festa " + (meu ? "av-festa-meu" : "av-festa-contra")} id="av-festa" role="status" aria-live="assertive" onClick={onFim} style={{ "--cf": cor }}>
+      {meu && <div className="av-confete" aria-hidden="true">{Array.from({ length: 28 }, (_, n) => <i key={n} style={{ "--x": ((n * 37) % 100) + "%", "--d": (n % 7) * 0.12 + "s", "--c": ["#f2c500", "#fff", cor, "#1a9e55", "#e86a10"][n % 5] }}></i>)}</div>}
+      <div className="av-festa-in">
+        <div className="av-rede" aria-hidden="true"></div>
+        <b className="av-gooool">{meu ? "GOOOL!" : `Gol do ${nomeClube(clube)}`}</b>
+        <span className="av-festa-quem">
+          <Escudo k={clube} z={meu ? 48 : 30} />
+          {autor && <Avatar p={autor} z={meu ? 64 : 40} />}
+        </span>
+        <span className="av-festa-nome">{autor ? autor.n : nomeClube(clube)}</span>
+        <span className="av-festa-sub">{minutoDoLance(x)}{x.golTipo && TIPOS_GOL[x.golTipo] ? ` · ${TIPOS_GOL[x.golTipo]}` : ""}{assist ? ` · assistência de ${short(assist.n)}` : ""}</span>
+        <span className="av-festa-toque">toque para continuar</span>
+      </div>
+    </div>
+  );
+}
+
 // c = competição ("liga" ou o id da copa), r = rodada dela, d = data no calendário integrado
 function AoVivo({ estado, c = "liga", r, d, plano, k, onSair, onProxima }) {
   const jogos = resultadosDe(estado, c)[r] || [];
   const i = jogos.findIndex((j) => j[0] === k || j[1] === k);
   const meu = i >= 0 ? jogos[i] : null;
-  const lances = useMemo(() => (i >= 0 ? narracao(estado, plano, r, i, c) : []), [r, c]); // eslint-disable-line
-  const [min, setMin] = useState(0);
+  const narr = useMemo(() => (i >= 0 ? jogoAoVivo(estado, plano, r, i, c) : null), [r, c]); // eslint-disable-line
+  const passos = useMemo(() => passosDoRelogio(narr?.acrescimos || [2, 4]), [narr]);
+  const [p, setP] = useState(0);
   const [vel, setVel] = useState(lerVelocidade);
   const [pausa, setPausa] = useState(false);
-  const acabou = min >= 90;
-  // Relógio: 1 minuto a cada VELOCIDADES[vel] ms; uma pausa mais longa no intervalo
+  const [festa, setFesta] = useState(null);
+  const vistos = useRef(0);
+  const passo = passos[p], t = passo.t, acabou = !!passo.fim;
+  // Relógio: 1 passo a cada VELOCIDADES[vel] ms; pausa mais longa no intervalo; parado durante a animação de gol
   useEffect(() => {
-    if (pausa || acabou) return;
-    const t = setTimeout(() => setMin((m) => Math.min(90, m + 1)), VELOCIDADES[vel] * (min === 45 ? 4 : 1));
-    return () => clearTimeout(t);
-  }, [min, pausa, vel, acabou]);
+    if (pausa || acabou || festa) return;
+    const tm = setTimeout(() => setP((x) => Math.min(passos.length - 1, x + 1)), VELOCIDADES[vel] * (passo.intervalo ? 4 : 1));
+    return () => clearTimeout(tm);
+  }, [p, pausa, vel, acabou, festa]); // eslint-disable-line
+  const gols = narr ? narr.lances.filter((x) => x.tipo === "gol" && x.t <= t) : [];
+  // Gol novo no relógio: animação
+  useEffect(() => {
+    if (gols.length > vistos.current) { vistos.current = gols.length; setFesta(gols[gols.length - 1]); }
+  }, [gols.length]); // eslint-disable-line
+  const ladoMeu = meu ? (meu[0] === k ? 0 : 1) : -1;
+  useEffect(() => {
+    if (!festa) return;
+    const tm = setTimeout(() => setFesta(null), festa.lado === ladoMeu ? 2500 : 1600);
+    return () => clearTimeout(tm);
+  }, [festa]); // eslint-disable-line
+  const pular = () => { vistos.current = narr ? narr.lances.filter((x) => x.tipo === "gol").length : 0; setFesta(null); setP(passos.length - 1); };
   const mudarVel = (v) => { setVel(v); salvarVelocidade(v); };
-  const placar = (j) => [j[4].filter((e) => e[1] === 0 && e[0] <= min).length, j[4].filter((e) => e[1] === 1 && e[0] <= min).length];
-  const nomeLado = (lado) => nomeClube(meu[lado]);
-  // Lances até o minuto atual (o mais novo em cima), com o início e o intervalo no meio
-  const feed = [{ min: 0, tipo: "marco", txt: "Começa o jogo!" }, ...lances, { min: 45, tipo: "marco", txt: "Intervalo.", fimDoMinuto: true }]
-    .map((x, n) => ({ ...x, n }))
-    .sort((p, q) => p.min - q.min || (p.fimDoMinuto ? 1 : 0) - (q.fimDoMinuto ? 1 : 0) || p.n - q.n)
-    .filter((x) => x.min <= min)
-    .reverse();
-  const relogio = acabou ? "Fim de jogo" : min === 45 ? "Intervalo" : min === 0 ? "Começando" : `${min}'`;
+  const placar = (j) => [j[4].filter((e) => e[1] === 0 && e[0] <= t).length, j[4].filter((e) => e[1] === 1 && e[0] <= t).length];
+  const feed = narr ? narr.lances.filter((x) => x.t <= t).reverse() : [];
   const [a, b] = meu ? placar(meu) : [0, 0];
+  const stats = narr ? estatisticasAte(narr, t) : null;
   const ultimaRodada = !proximoJogo(estado, k); // o clube não tem mais jogos na temporada
+  const minAtual = Math.min(90, Math.floor(t));
 
   return (
-    <div id="sim-ao-vivo">
+    <div id="sim-ao-vivo" style={meu ? (() => { const ea = corVisivel(meu[0]); return { "--ea": ea, "--eb": corVisivel(meu[1], ea) }; })() : undefined}>
+      {festa && meu && <FestaDeGol x={festa} clube={meu[festa.lado]} meu={festa.lado === ladoMeu} plano={plano} onFim={() => setFesta(null)} />}
       <div className="av-placar" style={meu ? { "--ca": D.CL[meu[0]]?.c || "#444", "--cb": D.CL[meu[1]]?.c || "#444" } : undefined}>
         <span className="av-rot">{c === "liga" ? `${nomeDaRodada(estado, r)} · ${rotuloLiga(estado.liga)}` : nomeDaData(estado, d)}</span>
         {meu ? (
           <div className="av-times">
             <span className="av-time"><Escudo k={meu[0]} z={52} /><b>{nomeClube(meu[0])}</b></span>
-            <span className="av-gols num" id="av-placar" aria-live="polite">{a}<i>–</i>{b}</span>
+            <span className={"av-gols num" + (a + b ? " av-pulo" : "")} key={a + "-" + b} id="av-placar" aria-live="polite">{a}<i>–</i>{b}</span>
             <span className="av-time"><Escudo k={meu[1]} z={52} /><b>{nomeClube(meu[1])}</b></span>
           </div>
         ) : <p className="av-folga">Seu clube folga nesta rodada. Acompanhe os outros jogos.</p>}
-        <span className={"av-relogio" + (acabou ? " fim" : "")} id="av-relogio">{!acabou && <i aria-hidden="true"></i>}{relogio}</span>
+        <span className={"av-relogio" + (acabou ? " fim" : "")} id="av-relogio">{!acabou && <i aria-hidden="true"></i>}{passo.rot}</span>
         <div className="av-linha" aria-hidden="true">
-          <i style={{ width: (min / 90) * 100 + "%" }}></i>
+          <i style={{ width: (minAtual / 90) * 100 + "%" }}></i>
           {/* Cada gol só aparece na linha quando acontece (antes disso, entregaria o placar) */}
-          {meu && meu[4].filter((e) => e[0] <= min).map((e, n) => <s key={n} className={e[1] ? "b" : "a"} style={{ left: (e[0] / 90) * 100 + "%" }}></s>)}
+          {meu && meu[4].filter((e) => e[0] <= t).map((e, n) => <s key={n} className={e[1] ? "b" : "a"} style={{ left: (e[0] / 90) * 100 + "%" }}></s>)}
         </div>
       </div>
 
-      {meu && (
-        <section className="sec">
-          <h2><span>Lance a lance</span><span>{feed.filter((x) => x.tipo === "chance" || x.tipo === "gol").length} finalizações até agora</span></h2>
-          <div className="card av-feed" id="av-feed">
-            {acabou && <div className="av-ev av-marco"><b>90'</b><span>Fim de jogo: {nomeLado(0)} {meu[2]} × {meu[3]} {nomeLado(1)}.</span></div>}
-            {feed.map((x) => (
-              <div className={"av-ev av-" + x.tipo} key={x.n}>
-                <b className="num">{x.min}'</b>
-                {x.tipo === "marco" ? <span>{x.txt}</span>
-                  : x.tipo === "gol" ? (
-                    <span><strong>GOL do {nomeLado(x.lado)}!</strong> {nomeJog(plano, x.autor)}{x.assist && <span className="mute"> · assistência de {nomeJog(plano, x.assist)}</span>}</span>
-                  ) : x.tipo === "sub" ? (
-                    <span><span className="mute">{nomeLado(x.lado)}:</span> entra {nomeJog(plano, x.entra)}, sai {nomeJog(plano, x.sai)}.</span>
-                  ) : <span><span className="mute">{nomeLado(x.lado)}:</span> {COMO[x.como](nomeJog(plano, x.autor))}</span>}
-              </div>
-            ))}
-          </div>
-        </section>
+      {meu && narr && (
+        <div className="av-corpo">
+          <section className="sec av-lances">
+            <h2><span>Lance a lance</span><span>{stats.final[0] + stats.final[1]} finalizações</span></h2>
+            <div className="card av-feed" id="av-feed">
+              {feed.map((x) => (
+                <div className={"av-ev av-" + x.tipo + (x.lado === ladoMeu ? " av-meu" : "")} key={x.n}>
+                  <b className="num">{x.tipo === "marco" ? (x.marco === "inicio" ? "0'" : x.marco === "intervalo" ? "INT" : "FIM") : minutoDoLance(x)}</b>
+                  <span className="av-ico"><IconeLance x={x} /></span>
+                  {x.tipo === "gol" ? (
+                    <span><strong>GOL do {nomeClube(meu[x.lado])}!</strong> {x.txt}{x.assist && <span className="mute"> · assistência de {nomeJog(plano, x.assist)}</span>}</span>
+                  ) : <span>{x.lado != null && x.tipo !== "marco" && <span className="mute">{nomeClube(meu[x.lado])}: </span>}{x.txt}</span>}
+                </div>
+              ))}
+            </div>
+          </section>
+          <section className="sec av-lado">
+            <h2><span>Estatísticas</span><span>{passo.rot}</span></h2>
+            <EstatisticasDoJogo s={stats} />
+          </section>
+        </div>
       )}
 
       <section className="sec">
@@ -1163,7 +1258,7 @@ function AoVivo({ estado, c = "liga", r, d, plano, k, onSair, onProxima }) {
               <div className="seg av-vel" role="group" aria-label="Velocidade">
                 {Object.keys(VELOCIDADES).map((v) => <button key={v} aria-pressed={vel === v} onClick={() => mudarVel(v)}>{v}</button>)}
               </div>
-              <button className="btn" id="av-pular" onClick={() => setMin(90)}>Pular</button>
+              <button className="btn" id="av-pular" onClick={pular}>Pular para o fim</button>
             </>
           ) : (
             <>

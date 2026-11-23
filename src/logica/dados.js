@@ -16,7 +16,19 @@ import { norm } from "./formato.js";
 //   D.FORMATOS formato de cada liga na temporada simulada (formatos-ligas.json, campo "ligas") ou null
 //   D.COPAS   copas da temporada simulada (copas.json: { copas, por_liga, fora_nesta_versao }) ou null
 export const D = { DATA: null, CLUBS: [], LEAGUES: [], LG: {}, CL: {}, ALL: [], BYID: {}, APELIDOS: {}, EMP: {}, ESTRANGEIROS: null, ACESSO: null, ZONAS: null,
-  ATUAL: null, ATUAL_DATA: "", FORMATOS: null, COPAS: null };
+  ATUAL: null, ATUAL_DATA: "", FORMATOS: null, COPAS: null, NACS: new Map() };
+
+// Dupla nacionalidade (public/nacionalidades.json: { "Nome|AAAA-MM-DD": ["Itália", "Brasil"] }, nome e nascimento iguais
+// aos do data.json). Fica num Map à parte (D.NACS); o data.json não muda. Se falhar ou vier estranho, segue sem ele.
+async function carregarNacionalidades() {
+  try {
+    const n = await fetch("nacionalidades.json").then((r) => r.json());
+    if (!n || typeof n !== "object" || Array.isArray(n) || n.clubs) return new Map();
+    return new Map(Object.entries(n).filter(([, v]) => Array.isArray(v) && v.length));
+  } catch (e) {
+    return new Map();
+  }
+}
 
 // Apelidos (public/apelidos.json: { "apelido": "Nome como está no data.json" }). Se falhar, segue sem eles.
 async function carregarApelidos() {
@@ -177,10 +189,10 @@ function montarEmprestimos(E) {
 }
 
 export async function carregarDados() {
-  const [DATA, APELIDOS, ESTIMADOS, EMPRESTIMOS, OVERALL, AJUSTES, ESTRANGEIROS, ACESSO, ZONAS, ATUAL, FORMATOS, COPAS] = await Promise.all([fetch("data.json").then((r) => r.json()),
+  const [DATA, APELIDOS, ESTIMADOS, EMPRESTIMOS, OVERALL, AJUSTES, ESTRANGEIROS, ACESSO, ZONAS, ATUAL, FORMATOS, COPAS, NACS] = await Promise.all([fetch("data.json").then((r) => r.json()),
     carregarApelidos(), carregarEstimados(), carregarEmprestimos(), carregarOverall(), carregarAjustesOverall(), carregarRegrasEstrangeiros(),
-    carregarAcesso(), carregarZonas(), carregarLigasDe("temporada-atual.json"), carregarLigasDe("formatos-ligas.json"), carregarCopas()]);
-  Object.assign(D, { DATA, APELIDOS, ESTRANGEIROS, ACESSO, ZONAS, LG: {}, CL: {}, ALL: [], BYID: {}, EMP: {} }); // começa do zero
+    carregarAcesso(), carregarZonas(), carregarLigasDe("temporada-atual.json"), carregarLigasDe("formatos-ligas.json"), carregarCopas(), carregarNacionalidades()]);
+  Object.assign(D, { DATA, APELIDOS, ESTRANGEIROS, ACESSO, ZONAS, NACS, LG: {}, CL: {}, ALL: [], BYID: {}, EMP: {} }); // começa do zero
   D.ATUAL = ATUAL?.ligas || null;
   D.ATUAL_DATA = ATUAL?.atualizado || "";
   D.FORMATOS = FORMATOS?.ligas || null;

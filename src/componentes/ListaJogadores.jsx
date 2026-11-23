@@ -7,7 +7,7 @@ import { D } from "../logica/dados.js";
 import { ctrTxt } from "../logica/formato.js";
 import { ORDER, corDoSetor } from "../logica/constantes.js";
 import { POR_PAGINA, ORDENS_LISTA, contarFiltrosLista, filtrarLista } from "../logica/lista.js";
-import { Avatar, Bandeira, MiniStats, Ovr, Pos, Valor } from "./Jogador.jsx";
+import { Avatar, Bandeiras, MiniStats, Ovr, Pos, Valor } from "./Jogador.jsx";
 import { Rolavel } from "./Mercado.jsx";
 
 export default function ListaJogadores({ app }) {
@@ -61,7 +61,7 @@ export default function ListaJogadores({ app }) {
               <button className="row" key={p.id} onClick={() => app.abrirPainel("ficha", { id: p.id })}>
                 <Avatar p={p} z={46} clube={p.club} /><Ovr p={p} />
                 <div className="mid">
-                  <div className="nm">{p.n}<Bandeira nat={p.nat} /></div>
+                  <div className="nm">{p.n}<Bandeiras p={p} /></div>
                   <div className="sub meta"><Pos pos={p.pos} />{p.a} anos<span className="pt"></span>{D.CL[p.club].n}
                     {p.end26 && <><span className="pt"></span><span className="w">contrato até {ctrTxt(p.ctr)}</span></>}
                     {p.emp && <><span className="pt"></span><span className="w">emprestado</span></>}

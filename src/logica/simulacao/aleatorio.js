@@ -36,6 +36,12 @@ export function poisson(rng, lambda) {
   return k - 1;
 }
 
+// Sorteio normal padrão (média 0, desvio 1), pelo método de Box-Muller
+export function normal(rng) {
+  const u = 1 - rng(), v = rng();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+
 // Sorteia um item com chance proporcional ao peso. Devolve o índice (ou -1 se todos os pesos forem 0).
 export function sortearIndice(rng, pesos) {
   let total = 0;

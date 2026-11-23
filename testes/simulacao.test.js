@@ -4,13 +4,17 @@ import { beforeAll, expect, test } from "vitest";
 import { D, carregarDados } from "../src/logica/dados.js";
 import { mulberry32, rngDe } from "../src/logica/simulacao/aleatorio.js";
 import { gerarCalendario } from "../src/logica/simulacao/calendario.js";
-import { calcularForca, jogarPartida, lambdas, sortearPlacar } from "../src/logica/simulacao/motor.js";
+import { calcularForca, comprimir, jogarBlocos, jogarPartida, lambdas, sortearPlacar } from "../src/logica/simulacao/motor.js";
+import { METAS, medirMotor, passou } from "../src/logica/simulacao/calibracao.js";
 import { escalarClube, escalarPlano } from "../src/logica/simulacao/escalar.js";
 import { comporLiga, ligaNaTemporada, projecaoAtual, resolverPendencias, rotuloLiga, zonasDaLiga } from "../src/logica/simulacao/composicao.js";
 import { classificacao, fecharRodada, garantirRodada, montarEsqueleto, titulos } from "../src/logica/simulacao/formatos.js";
-import { campeaoDe, criarEstado, datasDe, esqCopa, jogarProximoJogo, montarTimes, narracao, simularAte, tabelaAtual, totalRodadas } from "../src/logica/simulacao/temporada.js";
+import { campeaoDe, criarEstado, datasDe, esqCopa, jogarProximoJogo, jogoAoVivo, montarTimes, narracao, simularAte, tabelaAtual, totalRodadas } from "../src/logica/simulacao/temporada.js";
+import { FRASES, estatisticasAte } from "../src/logica/simulacao/narracao.js";
 import { finaisPendentes } from "../src/logica/simulacao/copas.js";
-import { novoPlano } from "../src/logica/elenco.js";
+import { elencoAtual, novoPlano } from "../src/logica/elenco.js";
+import { nivel } from "../src/logica/compatibilidade.js";
+import { ehEstrangeiro } from "../src/logica/estrangeiros.js";
 import { escalarSozinho } from "../src/logica/escalacao.js";
 
 beforeAll(async () => {
@@ -271,27 +275,29 @@ test("calendário: cada clube joga 2×(n−1) jogos, metade em casa, sem repetir
   }
 });
 
-test("motor: média de gols entre 2,4 e 2,8 e mandante vence ~45% (Brasileirão simulado 200 vezes)", () => {
-  const clubes = clubesDa("BRA");
-  const F = Object.fromEntries(clubes.map((k) => [k, escalarClube(k, "BRA").forca]));
-  const cal = gerarCalendario(clubes), rng = mulberry32(42);
-  let gols = 0, jogos = 0, casa = 0, empates = 0;
-  for (let s = 0; s < 200; s++)
-    for (const rodada of cal)
-      for (const [c, f] of rodada) {
-        const [a, b] = sortearPlacar(rng, F[c], F[f]);
-        gols += a + b; jogos++;
-        if (a > b) casa++; else if (a === b) empates++;
-      }
-  const media = gols / jogos, pctCasa = casa / jogos;
-  console.log(`média de gols ${media.toFixed(3)} · mandante vence ${(pctCasa * 100).toFixed(1)}% · empates ${((empates / jogos) * 100).toFixed(1)}%`);
-  expect(media).toBeGreaterThanOrEqual(2.4);
-  expect(media).toBeLessThanOrEqual(2.8);
-  expect(pctCasa).toBeGreaterThan(0.43);
-  expect(pctCasa).toBeLessThan(0.47);
+test("motor: metas de calibração com 1.000 Brasileirões (gols, mandante/empate/visitante, goleadas, pontos, zebra)", () => {
+  const r = medirMotor({ lg: "BRA", temporadas: 1000, semente: 2027 });
+  console.log(METAS.map((m) => `${m.id} ${r.valores[m.id].toFixed(2)}`).join(" · "));
+  for (const m of METAS) expect(passou(m, r.valores[m.id]), `${m.nome}: ${r.valores[m.id].toFixed(2)}`).toBe(true);
 });
 
-test("motor: time com força +10 vence bem mais do que perde (em casa e fora)", () => {
+test("motor: diferença comprimida (tanh), λ até 3,2 e o freio de quem abre 3 gols", () => {
+  // 15 pontos de diferença valem pouco mais que 8
+  expect(comprimir(15)).toBeLessThan(7);
+  expect(comprimir(15) - comprimir(8)).toBeLessThan(1.5);
+  // λ entre 0,15 e 3,2, mesmo com forças absurdas
+  for (const [a, b] of [[99, 40], [40, 99], [80, 80]]) for (const l of lambdas(a, b)) { expect(l).toBeLessThanOrEqual(3.2); expect(l).toBeGreaterThanOrEqual(0.15); }
+  // Jogo em blocos: os minutos dos gols batem com o placar e ficam entre 1 e 90
+  const rng = mulberry32(3);
+  for (let i = 0; i < 500; i++) {
+    const j = jogarBlocos(rng, 78, 70, false, true);
+    expect(j.gols.length).toBe(j.gc + j.gf);
+    expect(j.gols.filter((g) => g[1] === 0).length).toBe(j.gc);
+    j.gols.forEach(([m]) => { expect(m).toBeGreaterThanOrEqual(1); expect(m).toBeLessThanOrEqual(90); });
+  }
+});
+
+test("motor: time com força +10 vence bem mais do que perde (em casa e fora), mas ainda perde às vezes", () => {
   const rng = mulberry32(7);
   for (const forteEmCasa of [true, false]) {
     let v = 0, d = 0;
@@ -300,11 +306,11 @@ test("motor: time com força +10 vence bem mais do que perde (em casa e fora)", 
       const [forte, fraco] = forteEmCasa ? [a, b] : [b, a];
       if (forte > fraco) v++; else if (forte < fraco) d++;
     }
-    expect(v).toBeGreaterThan(d * 2.5);
+    // Com a compressão e a forma do dia, o favorito vence ~2× mais do que perde (antes do ajuste de 23/11/2026, ~3×)
+    console.log(forteEmCasa ? "forte em casa" : "forte fora", "vence", v, "perde", d);
+    expect(v).toBeGreaterThan(d * 1.6);
+    expect(d).toBeGreaterThan(4000 * 0.08);
   }
-  // λ fica entre 0,15 e 4,5
-  expect(lambdas(99, 40)[0]).toBe(4.5);
-  expect(lambdas(99, 40)[1]).toBe(0.15);
 });
 
 test("força: penalidade de improviso e o peso do banco", () => {
@@ -337,11 +343,70 @@ test("jogo completo: autores e assistências são de quem jogou, e as notas fica
       gols++;
       if (assist) comAssist++;
     }
-    expect(j.jogadores.filter((x) => x[1] === 0).length).toBeLessThanOrEqual(14); // 11 + 3 substituições
+    expect(j.jogadores.filter((x) => x[1] === 0).length).toBeLessThanOrEqual(16); // 11 + até 5 substituições
     j.jogadores.forEach(([, , , , nota]) => { expect(nota).toBeGreaterThanOrEqual(6); expect(nota).toBeLessThanOrEqual(9.5); });
   }
   expect(comAssist / gols).toBeGreaterThan(0.65);
   expect(comAssist / gols).toBeLessThan(0.85);
+});
+
+test("substituições: quem entra é ideal ou boa na vaga, nunca sai o goleiro, até 5 trocas em até 3 paradas + intervalo", () => {
+  const a = escalarClube(porNome("BRA", "Palmeiras"), "BRA"), b = escalarClube(porNome("BRA", "Remo") || porNome("BRA", "Mirassol"), "BRA");
+  const times = [a, b], P = (id) => D.BYID[id];
+  let total = 0;
+  for (let s = 0; s < 400; s++) {
+    const j = jogarPartida(rngDe(9, s), a, b);
+    for (const lado of [0, 1]) {
+      const ss = j.subs.filter((x) => x[1] === lado), t = times[lado];
+      expect(ss.length).toBeLessThanOrEqual(5);
+      const paradas = [...new Set(ss.map((x) => x[0]))];
+      expect(paradas.filter((m) => m !== 46).length).toBeLessThanOrEqual(3);
+      for (const m of paradas) expect(m === 46 || (m >= 55 && m <= 85)).toBe(true);
+      const semIntervalo = paradas.filter((m) => m !== 46).sort((x, y) => x - y);
+      if (semIntervalo.length) expect(semIntervalo[0]).toBeLessThanOrEqual(65);
+      for (const [, , sai, entra] of ss) {
+        const vaga = t.onze.find((x) => x.p?.id === sai)?.vaga;
+        expect(vaga, "quem sai é titular").toBeTruthy();
+        expect(P(sai).pos).not.toBe("GOL");
+        expect(["ideal", "boa"]).toContain(nivel(vaga, P(entra).pos));
+        expect(t.banco.some((p) => p.id === entra)).toBe(true);
+        total++;
+      }
+    }
+    // Cartões: de quem estava em campo
+    for (const [min, lado, id] of j.cartoes) {
+      expect(min).toBeGreaterThanOrEqual(1);
+      expect(j.jogadores.some((x) => x[0] === id && x[1] === lado)).toBe(true);
+    }
+  }
+  expect(total / 800).toBeGreaterThan(2); // média de trocas por time
+});
+
+test("substituições no seu clube: os reservas escolhidos para a vaga entram primeiro, na ordem", () => {
+  const P = planoDe(porNome("BRA", "Flamengo"));
+  const time0 = escalarPlano(P), fora = new Set(time0.onze.map((x) => x.p?.id));
+  // Para cada vaga de linha, 2 reservas compatíveis (os piores, para não coincidir com a escolha automática)
+  const sobra = elencoAtual(P).filter((p) => !fora.has(p.id)).sort((x, y) => x.ovr - y.ovr);
+  const usados = new Set();
+  P.res = {};
+  time0.onze.forEach((x, i) => {
+    if (x.vaga === "GOL") return;
+    const r = sobra.filter((p) => !usados.has(p.id) && nivel(x.vaga, p.pos) !== "improvisado").slice(0, 2);
+    if (r.length) { P.res[i] = r.map((p) => p.id); r.forEach((p) => usados.add(p.id)); }
+  });
+  const time = escalarPlano(P), adv = escalarClube(porNome("BRA", "Palmeiras"), "BRA");
+  let conferidos = 0;
+  for (let s = 0; s < 200; s++) {
+    const j = jogarPartida(rngDe(4, s), time, adv);
+    const entraram = new Set();
+    for (const [, lado, sai, entra] of j.subs.filter((x) => x[1] === 0)) {
+      const i = time.onze.findIndex((x) => x.p?.id === sai);
+      const escolhidos = (time.reservas[i] || []).filter((id) => !entraram.has(id));
+      if (escolhidos.length) { expect(entra).toBe(escolhidos[0]); conferidos++; }
+      entraram.add(entra);
+    }
+  }
+  expect(conferidos).toBeGreaterThan(50);
 });
 
 test("escalação dos outros clubes: 4-3-3 (ou 4-4-2 sem pontas), 7 no banco e o limite de estrangeiros", () => {
@@ -355,7 +420,7 @@ test("escalação dos outros clubes: 4-3-3 (ou 4-4-2 sem pontas), 7 no banco e o
   // Limite de estrangeiros (Brasileirão: até 9 relacionados) em todos os clubes da Série A
   for (const k of clubesDa("BRA")) {
     const x = escalarClube(k, "BRA");
-    const est = [...x.onze.map((y) => y.p), ...x.banco].filter((p) => p && p.nat && !p.nat.split("/").includes("Brasil")).length;
+    const est = [...x.onze.map((y) => y.p), ...x.banco].filter((p) => p && ehEstrangeiro(p, "BRA")).length;
     expect(est).toBeLessThanOrEqual(9);
   }
 });
@@ -458,14 +523,17 @@ test("semente: mesma semente e mesmo plano → mesma tabela final; rodada a roda
   expect(t.reduce((s, l) => s + l.j, 0)).toBe(380 * 2);
 });
 
-test("jogo ao vivo: narração igual a cada vez, com os gols salvos, 3 substituições e lances de quem está em campo", () => {
+test("jogo ao vivo: narração igual a cada vez, com os gols salvos, as substituições e lances de quem está em campo", () => {
   const P = planoDe(porNome("BRA", "Flamengo"));
   const E = simularAte(criarEstado(P, { semente: 21 }), P, 5);
   for (let r = 0; r < 5; r++) {
     const i = E.resultados[r].findIndex((j) => j[0] === P.club || j[1] === P.club);
     if (i < 0) continue;
     const jogo = E.resultados[r][i];
-    expect(jogo[5].length).toBe(6); // 3 substituições de cada lado, salvas só nos jogos do seu clube
+    // Substituições (até 5 de cada lado) e cartões, salvos só nos jogos do seu clube
+    expect(jogo[5].filter((s) => s[1] === 0).length).toBeLessThanOrEqual(5);
+    expect(jogo[5].filter((s) => s[1] === 1).length).toBeLessThanOrEqual(5);
+    expect(Array.isArray(jogo[6])).toBe(true);
     const n1 = narracao(E, P, r, i), n2 = narracao(E, P, r, i);
     expect(n1).toEqual(n2);
     expect(n1.filter((x) => x.tipo === "gol").length).toBe(jogo[2] + jogo[3]);
@@ -521,4 +589,50 @@ test("previsão: soma das chances de título = 100% e o mais forte é favorito",
   const forte = Object.keys(times).sort((a, b) => times[b].forca - times[a].forca)[0];
   const fraco = Object.keys(times).sort((a, b) => times[a].forca - times[b].forca)[0];
   expect(E.previsao[forte].pos).toBeLessThan(E.previsao[fraco].pos);
+});
+
+test("lance a lance: 8 a 14 lances além dos gols, 6+ frases por tipo, gol pela posição, estatísticas coerentes e sempre igual", () => {
+  for (const [tipo, l] of Object.entries(FRASES)) expect(l.length, tipo).toBeGreaterThanOrEqual(6);
+  const P = planoDe(porNome("BRA", "Flamengo"));
+  const E = simularAte(criarEstado(P, { semente: 33 }), P, 38);
+  const golsPorTipo = {};
+  let jogos = 0;
+  for (let r = 0; r < 38; r++) {
+    const i = E.resultados[r].findIndex((j) => j[0] === P.club || j[1] === P.club);
+    const jogo = E.resultados[r][i], n = jogoAoVivo(E, P, r, i);
+    expect(jogoAoVivo(E, P, r, i)).toEqual(n); // mesma semente = mesmo lance a lance
+    const enchimento = n.lances.filter((x) => ["chance", "escanteio", "falta", "impedimento"].includes(x.tipo));
+    expect(enchimento.length).toBeGreaterThanOrEqual(8);
+    expect(enchimento.length).toBeLessThanOrEqual(14);
+    // Gols, minutos, trocas e cartões são os do motor
+    const gols = n.lances.filter((x) => x.tipo === "gol");
+    expect(gols.map((x) => [x.min, x.lado, x.autor])).toEqual(jogo[4].map((e) => [e[0], e[1], e[2]]));
+    expect(n.lances.filter((x) => x.tipo === "sub").length).toBe(jogo[5].length);
+    expect(n.lances.filter((x) => x.tipo === "cartao").length).toBe(jogo[6].length);
+    expect(n.lances.every((x) => x.txt && !x.txt.includes("{"))).toBe(true);
+    // Acréscimos e ordem
+    expect(n.acrescimos[0]).toBeGreaterThanOrEqual(1); expect(n.acrescimos[0]).toBeLessThanOrEqual(4);
+    expect(n.acrescimos[1]).toBeGreaterThanOrEqual(2); expect(n.acrescimos[1]).toBeLessThanOrEqual(6);
+    expect(n.lances.every((x, k) => k === 0 || n.lances[k - 1].t <= x.t)).toBe(true);
+    // Estatísticas do fim: coerentes com os lances
+    const s = estatisticasAte(n);
+    expect(s.posse[0] + s.posse[1]).toBe(100);
+    for (const l of [0, 1]) {
+      expect(s.alvo[l]).toBeGreaterThanOrEqual(l ? jogo[3] : jogo[2]);
+      expect(s.final[l]).toBeGreaterThanOrEqual(s.alvo[l]);
+      expect(s.cartoes[l]).toBe(jogo[6].filter((c) => c[1] === l).length);
+      expect(s.faltas[l]).toBeGreaterThanOrEqual(s.cartoes[l]);
+    }
+    for (const g of gols) {
+      const pos = D.BYID[g.autor]?.pos;
+      (golsPorTipo[pos] ??= {})[g.golTipo] = (golsPorTipo[pos][g.golTipo] || 0) + 1;
+      if (g.golTipo === "penalti") expect(g.assist).toBe(null);
+    }
+    jogos++;
+  }
+  expect(jogos).toBe(38);
+  // Centroavante marca mais "dentro da área"; zagueiro, de cabeça (quando houver gols de zagueiro)
+  const ca = golsPorTipo.CA || {};
+  expect((ca.area || 0)).toBeGreaterThan((ca.foraArea || 0));
+  if (golsPorTipo.ZAG) expect((golsPorTipo.ZAG.cabeca || 0) + (golsPorTipo.ZAG.penalti || 0)).toBeGreaterThan(0);
 });

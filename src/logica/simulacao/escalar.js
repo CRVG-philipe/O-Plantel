@@ -125,7 +125,9 @@ export function escalarPlano(plano, k = plano.club) {
     if (escolhidos.length >= TAM_BANCO) break;
     escolhidos.push(p);
   }
-  return { k, form: plano.form, onze, banco: escolhidos, forca: calcularForca(onze, escolhidos) };
+  // reservas[i] = os reservas escolhidos para a vaga i na aba Time (as substituições do simulador usam primeiro eles)
+  const reservas = FORMS[plano.form].map((v, i) => reservasDa(plano, i).filter((id) => escolhidos.some((p) => p.id === id)));
+  return { k, form: plano.form, onze, banco: escolhidos, reservas, forca: calcularForca(onze, escolhidos) };
 }
 
 // Ids do elenco planejado: esses jogadores não jogam por mais ninguém na temporada simulada

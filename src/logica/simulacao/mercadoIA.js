@@ -28,6 +28,7 @@ import { ehEstrangeiro, regraDaLiga } from "../estrangeiros.js";
 import { afinidade } from "../afinidade.js";
 import { elencoAtual } from "../elenco.js";
 import { caixaSugerido } from "../times.js";
+import { nacionalidadesDe } from "../nacionalidades.js";
 import { ovrDe } from "./motor.js";
 
 export const MAX_CONTRATACOES = 4;
@@ -267,7 +268,8 @@ export function dadosParaWorker() {
   return {
     LG: D.LG, ESTRANGEIROS: D.ESTRANGEIROS,
     CLUBS: D.CLUBS.map((c) => [c.k, c.lg, c.n]),
-    ALL: D.ALL.map((p) => [p.id, p.club, p.lg, p.pos, p.v, p.ovr ?? null, p.a, p.nat, p.emp ? 1 : 0]),
+    // nat vai com todas as nacionalidades (data.json + nacionalidades.json), para o limite de estrangeiros valer igual no worker
+    ALL: D.ALL.map((p) => [p.id, p.club, p.lg, p.pos, p.v, p.ovr ?? null, p.a, nacionalidadesDe(p).join("/"), p.emp ? 1 : 0]),
   };
 }
 // No worker: monta o D mínimo com esses dados

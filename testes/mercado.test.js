@@ -2,7 +2,7 @@
 import fs from "node:fs";
 import { beforeAll, expect, test } from "vitest";
 import { D, carregarDados } from "../src/logica/dados.js";
-import { MAX_CONTRATACOES, difsDoMercado, elencoDepois, gastosDaJanela, janelaDoResto, listaTransferencias } from "../src/logica/simulacao/mercadoIA.js";
+import { MAX_CONTRATACOES, dadosParaWorker, difsDoMercado, elencoDepois, gastosDaJanela, janelaDoResto, listaTransferencias } from "../src/logica/simulacao/mercadoIA.js";
 import { jogadoresDo } from "../src/logica/simulacao/escalar.js";
 import { criarEstado, juntarResto, montarTimes, pedidoDoResto, rodarMercado } from "../src/logica/simulacao/temporada.js";
 import { escalarClube } from "../src/logica/simulacao/escalar.js";
@@ -125,4 +125,10 @@ test("janela da IA: a janela inteira (fase 1 + resto do mundo) leva menos de 2 s
   const m = rodarMercado(e, plano);
   janelaDoResto(pedidoDoResto({ ...e, mercadoIA: m }, plano));
   expect(performance.now() - t0).toBeLessThan(2000);
+});
+
+test("janela da IA no Web Worker: os dados enviados levam a dupla nacionalidade (Jorginho = Itália/Brasil)", () => {
+  const d = dadosParaWorker();
+  const j = D.ALL.find((p) => p.n === "Jorginho" && D.CL[p.club].n === "Flamengo");
+  expect(d.ALL.find((x) => x[0] === j.id)[7]).toBe("Itália/Brasil");
 });

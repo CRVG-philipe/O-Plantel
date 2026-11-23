@@ -6,7 +6,7 @@ import { SECT, ORDER, corDoSetor } from "../logica/constantes.js";
 import { ctrTxt } from "../logica/formato.js";
 import { dinheiro } from "../logica/dinheiro.js";
 import { elencoOriginal, emprestadosFora, jogador, recebido, situacao, situacaoEmp, voltam } from "../logica/elenco.js";
-import { Avatar, Ovr, Bandeira, Nota, Pos, Valor } from "./Jogador.jsx";
+import { Avatar, Ovr, Bandeiras, Nota, Pos, Valor } from "./Jogador.jsx";
 import { EstrangeirosNoElenco } from "./Estrangeiros.jsx";
 
 export default function Elenco({ app }) {
@@ -70,7 +70,7 @@ function LinhaPropria({ app, p }) {
     <button className={"row" + (saiu ? " gone" : "")} onClick={() => app.abrirJogador(p.id)}>
       <Avatar p={p} z={42} /><Ovr p={p} />
       <div className="mid">
-        <div className="nm">{p.n}<Bandeira nat={p.nat} /></div>
+        <div className="nm">{p.n}<Bandeiras p={p} /></div>
         <div className="sub meta">
           <Pos pos={p.pos} />{p.num ? "#" + p.num + " · " : ""}{p.a} anos
           {p.end26 && !emp && <><span className="pt"></span><span className="w">contrato até {ctrTxt(p.ctr)}</span></>}
@@ -90,7 +90,7 @@ function LinhaChegada({ app, m }) {
     <button className="row" onClick={() => app.abrirJogador(p.id)}>
       <Avatar p={p} z={42} clube={p.club !== "NOVO" ? p.club : null} /><Ovr p={p} />
       <div className="mid">
-        <div className="nm">{p.n}<Bandeira nat={p.nat} /></div>
+        <div className="nm">{p.n}<Bandeiras p={p} /></div>
         <div className="sub meta"><Pos pos={p.pos} />{p.a} anos<span className="pt"></span>{p.club === "NOVO" ? "criado por você" : "veio do " + D.CL[p.club].n}</div>
       </div>
       <Nota st={p.st} className="so-largo" />
@@ -112,7 +112,7 @@ function LinhaEmprestado({ app, item }) {
     <button className={"row" + (x.s === "vender" ? " gone" : "")} onClick={() => app.abrirJogador(p.id)}>
       <Avatar p={p} z={42} clube={!p.avulso && D.CL[p.club] ? p.club : null} /><Ovr p={p} />
       <div className="mid">
-        <div className="nm">{p.n}<Bandeira nat={p.nat} /></div>
+        <div className="nm">{p.n}<Bandeiras p={p} /></div>
         <div className="sub meta"><Pos pos={p.pos} />{p.a ? p.a + " anos" : ""}<span className="pt"></span>{x.s === "voltar" ? "voltou do " : "no "}{para.n || "outro clube"}</div>
         {x.s !== "voltar" && <div className="sub emp-linha">Emprestado até {ctrTxt(ate)}</div>}
       </div>

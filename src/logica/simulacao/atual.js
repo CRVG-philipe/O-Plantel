@@ -3,8 +3,7 @@
 // liga sorteados de forma equilibrada (quem enfrentou menos aquele clube vem primeiro) e com mando alternado.
 // Usado nas projeções de acesso/rebaixamento (pares com "usar_temporada_atual") e na tela "Ver tabela atual".
 import { D } from "../dados.js";
-import { lambdas } from "./motor.js";
-import { poisson } from "./aleatorio.js";
+import { sortearPlacar } from "./motor.js";
 
 export const atualDa = (lg) => D.ATUAL?.[lg] || null;
 export const dataAtual = () => D.ATUAL_DATA || "";
@@ -40,8 +39,7 @@ export function terminarAtual(lg, rng, forca) {
   const por = Object.fromEntries(linhas.map((l) => [l.k, l]));
   const falta = Object.fromEntries(linhas.map((l) => [l.k, Math.max(0, (A.total_jogos || l.j) - l.j)]));
   for (const [c, f] of confrontosRestantes(rng, linhas.map((l) => l.k), falta)) {
-    const [lc, lf] = lambdas(forca(c), forca(f));
-    const a = poisson(rng, lc), b = poisson(rng, lf);
+    const [a, b] = sortearPlacar(rng, forca(c), forca(f));
     const x = por[c], y = por[f];
     x.j++; y.j++; x.gp += a; x.gc += b; y.gp += b; y.gc += a;
     if (a > b) { x.v++; y.d++; x.pts += 3; } else if (b > a) { y.v++; x.d++; y.pts += 3; } else { x.e++; y.e++; x.pts++; y.pts++; }

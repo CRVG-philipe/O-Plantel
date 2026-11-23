@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { FORMS, ORDER, corDoSetor } from "../logica/constantes.js";
 import { compatibilidade, NOME_VAGA, rotuloVaga } from "../logica/compatibilidade.js";
-import { Avatar, Ovr, Bandeira, Nota, Pos, SeloNivel } from "./Jogador.jsx";
+import { Avatar, Ovr, Bandeiras, Nota, Pos, SeloNivel } from "./Jogador.jsx";
 import { short } from "../logica/formato.js";
 import { dinheiro } from "../logica/dinheiro.js";
 import { elencoAtual, jogador } from "../logica/elenco.js";
@@ -156,7 +156,7 @@ export default function Time({ app }) {
                     <button className="row" key={id} style={{ minHeight: 48 }} onClick={() => app.abrirPainel("reserva", { i, id })}>
                       <Avatar p={p} z={34} /><Ovr p={p} />
                       <div className="mid">
-                        <div className="nm">{p.n}<Bandeira nat={p.nat} />{est(p) && <SeloEst />}</div>
+                        <div className="nm">{p.n}<Bandeiras p={p} />{est(p) && <SeloEst />}</div>
                         <div className="sub">{k + 1}º reserva · {p.pos} · <SeloNivel nivel={compatibilidade(r, p.pos).nivel} /></div>
                       </div>
                       <Nota st={p.st} className="so-largo" />
@@ -175,7 +175,7 @@ export default function Time({ app }) {
           {outros.length ? outros.map((p) => (
             <div className="row" key={p.id} style={{ minHeight: 48 }}>
               <Avatar p={p} z={34} /><Ovr p={p} />
-              <div className="mid"><div className="nm">{p.n}<Bandeira nat={p.nat} />{est(p) && <SeloEst />}</div></div>
+              <div className="mid"><div className="nm">{p.n}<Bandeiras p={p} />{est(p) && <SeloEst />}</div></div>
               <Nota st={p.st} className="so-largo" />
               <div className="rt"><Pos pos={p.pos} /></div>
             </div>
