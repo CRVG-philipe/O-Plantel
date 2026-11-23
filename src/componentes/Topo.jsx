@@ -8,7 +8,7 @@ import { Escudo } from "./Imagens.jsx";
 import SeletorMoeda from "./SeletorMoeda.jsx";
 import BotaoTema from "./BotaoTema.jsx";
 
-const ABAS = [["elenco", "Elenco"], ["mercado", "Mercado"], ["time", "Time"], ["resumo", "Resumo"]];
+const ABAS = [["elenco", "Elenco"], ["mercado", "Mercado"], ["time", "Time"], ["resumo", "Resumo"], ["temporada", "Temporada"]];
 
 export default function Topo({ app }) {
   const { plano } = app;

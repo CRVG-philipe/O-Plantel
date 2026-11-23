@@ -1,0 +1,14 @@
+{
+  "_sobre": "Faixas coloridas da tabela da temporada simulada (posição inicial-final). Valores aproximados; editar à vontade. Rebaixamento/acesso vêm de acesso-rebaixamento.json.",
+  "BRA": [{"de":1,"ate":4,"nome":"Libertadores (fase de grupos)","cor":"#1a7f37"},{"de":5,"ate":6,"nome":"Libertadores (pré)","cor":"#4caf50"},{"de":7,"ate":12,"nome":"Sul-Americana","cor":"#2f6fdd"}],
+  "BRB": [{"de":1,"ate":2,"nome":"Acesso direto","cor":"#1a7f37"},{"de":3,"ate":6,"nome":"Playoff de acesso","cor":"#4caf50"}],
+  "BRC": [{"de":1,"ate":8,"nome":"Quadrangulares de acesso","cor":"#4caf50"}],
+  "ARG": [{"de":1,"ate":4,"nome":"Libertadores","cor":"#1a7f37"},{"de":5,"ate":10,"nome":"Sul-Americana","cor":"#2f6fdd"}],
+  "ENG": [{"de":1,"ate":4,"nome":"Champions League","cor":"#1a7f37"},{"de":5,"ate":5,"nome":"Europa League","cor":"#2f6fdd"},{"de":6,"ate":6,"nome":"Conference League","cor":"#7aa7f0"}],
+  "ESP": [{"de":1,"ate":4,"nome":"Champions League","cor":"#1a7f37"},{"de":5,"ate":6,"nome":"Europa League","cor":"#2f6fdd"},{"de":7,"ate":7,"nome":"Conference League","cor":"#7aa7f0"}],
+  "ITA": [{"de":1,"ate":4,"nome":"Champions League","cor":"#1a7f37"},{"de":5,"ate":6,"nome":"Europa League","cor":"#2f6fdd"},{"de":7,"ate":7,"nome":"Conference League","cor":"#7aa7f0"}],
+  "GER": [{"de":1,"ate":4,"nome":"Champions League","cor":"#1a7f37"},{"de":5,"ate":6,"nome":"Europa League","cor":"#2f6fdd"},{"de":7,"ate":7,"nome":"Conference League","cor":"#7aa7f0"}],
+  "FRA": [{"de":1,"ate":3,"nome":"Champions League","cor":"#1a7f37"},{"de":4,"ate":4,"nome":"Champions (pré)","cor":"#4caf50"},{"de":5,"ate":5,"nome":"Europa League","cor":"#2f6fdd"},{"de":6,"ate":6,"nome":"Conference League","cor":"#7aa7f0"}],
+  "POR": [{"de":1,"ate":2,"nome":"Champions League","cor":"#1a7f37"},{"de":3,"ate":3,"nome":"Europa League","cor":"#2f6fdd"}],
+  "_padrao": [{"de":1,"ate":1,"nome":"Campeão","cor":"#1a7f37"}]
+}

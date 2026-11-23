@@ -115,6 +115,7 @@ Foi inspirado no reconstruindo.thefenomeno.com, mas **não deve copiá-lo**. O f
   - `testes/time.test.js`: compatibilidade de posição, reservas e escalar pelo valor ou pelo overall.
   - `testes/estrangeiros.test.js`: limite de estrangeiros (Brasileirão, Argentina, LaLiga e o filtro do Mercado).
   - `testes/overall.test.js`: overall (Mbappé = 91), ajustes manuais (Fábio = 78, Thiago Mendes = 79), força do time, ordem Overall e o overall na recomendação.
+  - `testes/simulacao.test.js`: simulador da temporada (calendário, calibração do motor, composição, semente, faixas, previsão e desempenho).
 - Com as ~30 mil fotos, o `npm run dev` às vezes demora para servir as imagens. Para conferir fotos, use `npm run build` e `npm run preview`.
 - `npm run build`: gera a versão final em `dist/` (não vai para o git). `npm run preview` serve o `dist/` para conferir.
 
@@ -126,7 +127,7 @@ React 19 + Vite 6, em JavaScript (sem TypeScript).
 - `src/Plantel.jsx`: estado e ações do app (plano aberto, aba, filtros, painel, aviso). Monta um objeto `app` com dados e ações e passa para todos os componentes.
   - Mudanças no plano sempre passam por `app.mudar(fn)`: ele copia o plano, aplica `fn`, chama `completarTime` e salva.
   - Painéis abrem com `app.abrirPainel(tipo, args)`. Os tipos estão em `PAINEIS`.
-- `src/componentes/`: `EscolhaClube`, `Topo` (botão Menu, resumo e abas), `Elenco`, `Mercado` (exporta `Rolavel`), `Time`, `Resumo`, `ListaJogadores`, `Estrangeiros`, `Painel` (o painel que sobe de baixo), `Imagens` (`Foto`, `Escudo`, `EscudoCriado` e `LogoLiga`), `SeletorMoeda` e `Rodape`.
+- `src/componentes/`: `EscolhaClube`, `Topo` (botão Menu, resumo e abas), `Elenco`, `Mercado` (exporta `Rolavel`), `Time`, `Resumo`, `Temporada` (simulador), `ListaJogadores`, `Estrangeiros`, `Painel` (o painel que sobe de baixo), `Imagens` (`Foto`, `Escudo`, `EscudoCriado` e `LogoLiga`), `SeletorMoeda` e `Rodape`.
   - Painéis novos: `PainelTime` (criar/editar time e `PainelExcluirTime`) e `PainelLista` (`PainelFiltrosLista` e `PainelFicha`). `comum.jsx` tem também a `Faixa` (faixa com duas alças, usada nos filtros do Mercado e da Lista).
   - `paineis/`: o conteúdo de cada painel (`PainelJogador`, `PainelCompra`, `PainelFiltros`, `PainelCriar`, `PainelClube`, `PainelOrcamento`, `PainelPosicao`) e `comum.jsx`.
   - `Congelado` (em `Painel.jsx`) congela o conteúdo enquanto o painel fecha, para ele sumir sem piscar.
@@ -146,6 +147,7 @@ React 19 + Vite 6, em JavaScript (sem TypeScript).
   - `times.js`: times criados do zero (`registrarTimes`, `sugerirSigla`, `caixaSugerido`, cores e modelos de escudo).
   - `lista.js`: Lista de jogadores (filtros, ordens, páginas e a URL).
   - `estrangeiros.js`: limite de estrangeiros.
+  - `simulacao/`: o simulador da temporada (ver "Simulador da temporada", abaixo).
 - `public/apelidos.json`: `{ "apelido": "Nome exato como está no data.json" }`, usado na busca do Mercado. Um teste confere que todo nome existe.
 - `public/data.json`: `{leagues, clubs, updated}`. **É gerado pelo `build_final.py`: não editar à mão.**
   - Cada liga: `{k, n, pais, nat, season, div}`. `nat` = nacionalidade como aparece nos jogadores (para contar estrangeiros). `season` "2026" = ano fechado (planeja "2027"); "26/27" = planeja "27/28".
@@ -207,7 +209,7 @@ React 19 + Vite 6, em JavaScript (sem TypeScript).
 
 ## Decisões de design
 - Uma coluna centralizada (máx. 720px).
-- Topo fixo com caixa, nº de jogadores e chegam/saem, mais as abas Elenco · Mercado · Time · Resumo.
+- Topo fixo com caixa, nº de jogadores e chegam/saem, mais as abas Elenco · Mercado · Time · Resumo · Temporada.
 - Nenhum botão dentro das linhas da lista: tudo acontece num painel que sobe de baixo ao tocar.
 - Cores neutras, com a cor do clube como único acento. Fonte Inter. Tema claro e escuro.
 - Tema: segue o sistema até a pessoa tocar no botão sol/lua (`BotaoTema`, no topo do plano). A escolha fica em `plantel:tema` (`src/logica/tema.js`), que marca `<html data-theme>`. O `main.jsx` aplica o tema antes de desenhar, para não piscar. As telas antes do plano têm cores próprias e não mudam com o tema.
@@ -275,7 +277,7 @@ React 19 + Vite 6, em JavaScript (sem TypeScript).
   - Cotação da API Frankfurter (`https://api.frankfurter.dev/v1/...`; o endereço `.app` redireciona sem CORS e falha no navegador), salva em `plantel:cotacao`. Se a busca falhar, usa a salva; sem nada salvo, usa `COTACAO_RESERVA`.
   - O rodapé mostra a cotação usada e a data.
 - Temporada planejada: "2027" nas ligas de calendário anual (BRA, BRB, ARG, USA) e "27/28" nas demais.
-- Outras chaves do localStorage: `plantel:times` (times criados do zero; ver acima), `plantel:caixa`, `plantel:escalar`, `plantel:moeda`, `plantel:cotacao` e `plantel:tema`.
+- Outras chaves do localStorage: `plantel:times` (times criados do zero; ver acima), `plantel:sim` (simulador da temporada; ver abaixo), `plantel:caixa`, `plantel:escalar`, `plantel:moeda`, `plantel:cotacao` e `plantel:tema`.
 - Os planos ficam salvos no localStorage (chave `plantel:v2`, formato `{plans:{<clube>: plano}, last}`). Plano de time criado: mesma coisa, com a chave "U...". **Não mudar os nomes dos campos do plano** (`club, budget, st, ins, form, xi, custom`), senão quem já tem planos salvos os perde.
   - Campo novo opcional: `res` (reservas), `{ "<índice da vaga>": [id 1º reserva, id 2º reserva] }`. Planos antigos não têm, e o código trata a falta como "sem reservas". Ele só é criado quando alguém vai para o banco.
   - Campo novo opcional: `emp` (escolhas sobre empréstimos). Planos antigos não têm, e todo o código trata a falta como `{}`. O `novoPlano` não cria esse campo; ele só aparece quando a pessoa mexe num empréstimo.
@@ -360,6 +362,53 @@ React 19 + Vite 6, em JavaScript (sem TypeScript).
     - Mercado: os emprestados do próprio clube não aparecem; os de outros clubes mostram o selo "Emprestado · dono: <clube>" (`.selo-emp`).
     - Resumo: chegam, saem (com os emprestados vendidos), voltam de empréstimo, devolvidos e comprados (`#voltam`, `#devolvidos`, `#comprados`).
   - **Testes:** `testes/emprestimos.test.js` (regras) e o teste "empréstimos no Botafogo" em `app.test.jsx` (tela).
+- Simulador da temporada (versão 1, 22/11/2026; aba "Temporada", `componentes/Temporada.jsx`; lógica em `src/logica/simulacao/`):
+  - **O que simula:** a PRÓXIMA temporada da liga do clube aberto. Só a liga, sem copas, lesões ou suspensões; os outros clubes não contratam.
+    - Rótulo: liga de ano fechado (`season` "2026") simula "2027"; liga "26/27" simula "2027/28" (`rotuloLiga`: "Brasileirão Série A 2027").
+    - Todas as ligas são em pontos corridos, turno e returno. **Para depois:** Liga MX, MLS, Argentina, Escócia e Bélgica têm formatos especiais (fases, playoffs, divisão da tabela) que esta versão ignora.
+  - **Arquivos de dados** (carregados em `D.ACESSO` e `D.ZONAS`; se falharem, todas as ligas mantêm a composição e a tabela só pinta o campeão):
+    - `public/acesso-rebaixamento.json`: lista `pares` `{de, para, tipo, n, confirmados, pendentes, modo, regra, playoff, aproximado, fonte}`.
+      - `tipo`: "rebaixamento", "acesso" ou "sai" (`para: null`: o clube deixa o site, ex.: Série C → Série D).
+      - `confirmados`: aplicados direto. `pendentes`: `{vagas, candidatos}` (rebaixamento em aberto) ou `{vagas, playoffs: [[melhor, pior]]}`. `modo: "projecao"`: a temporada atual ainda não acabou.
+      - `regra` ("1º e 2º sobem; 3º–6º playoff") e `playoff` ("16º da 1ª x 3º da 2ª") são lidos pelas faixas "Xº–Yº" e "Nº da 1ª" do texto.
+      - **Atualizar este arquivo quando as vagas reais forem definidas** (passar o clube de `pendentes` para `confirmados`, ou tirar o `modo: "projecao"` e pôr os `confirmados`). Não precisa rodar nada.
+      - Liga sem par (ex.: POR, NED, MLS, SAU) mantém a composição.
+    - `public/zonas-ligas.json`: faixas coloridas da tabela por liga (`[{de, ate, nome, cor}]`) e `_padrao` (só o campeão). Editar à vontade.
+      - `zonasDaLiga` junta: faixas do arquivo primeiro; depois acesso, playoff e rebaixamento tirados dos pares (no que o arquivo não cobre); `_padrao` só se a liga não tem nenhuma das duas.
+  - **Composição** (`composicao.js`): os clubes da liga = os atuais − quem sai pelos pares + quem chega.
+    - Pendências e projeções são resolvidas **uma vez por simulação**, com a semente, e guardadas em `pendenciasResolvidas`. Cada uma tem "Simular" (padrão) ou "Escolher" (o usuário marca; o que faltar marcar vem da simulação e aparece na nota).
+      - Rebaixamento em aberto: sorteio entre os candidatos; peso = (ordem de risco) × e^(0,15 × (força média − força)).
+      - Playoffs: ida e volta; o melhor colocado (o primeiro do par) decide em casa; empate no agregado = passa o melhor.
+      - Projeção: simula a temporada ATUAL inteira da liga de origem só com placares e os elencos de hoje, e aplica `n`, a `regra` (playoff interno: os piores jogam antes um jogo único até sobrar potência de 2; depois ida e volta; final única em campo neutro) e o `playoff` entre ligas (só quando os dois pares estão em "Simular"). Selo "projeção".
+    - Só são resolvidos os pares que mexem na liga do clube (e na liga nova, se ele subir ou cair).
+    - Se o clube sobe ou cai pela composição, ele joga a liga nova, com aviso. Se ele "sai" do site, joga a liga atual mesmo assim (aviso).
+    - Time criado do zero (`U...`): entra no lugar de um clube da liga escolhido em "Seu time entra no lugar de" (`substitui`; padrão: o de menor força).
+  - **Escalação** (`escalar.js`):
+    - Seu clube (`escalarPlano`): elenco do plano (`elencoAtual`) e a escalação da aba Time; vaga vazia é completada sozinha. Banco: os reservas da aba Time e, até chegar a 7, os melhores que sobraram.
+    - Outros clubes (`escalarClube`): elenco do data.json **sem quem o seu plano contratou** (ou trouxe de volta); 4-3-3 (4-4-2 se tiver menos de 2 pontas PE/PD); melhores overalls por vaga com a tabela de compatibilidade (`passada`), respeitando `campo`/`relacionados` da regra de estrangeiros; 7 no banco.
+    - Overall = `p.ovr` (overall.json + overall-ajustes.json). Sem overall (jogador criado) = 60.
+  - **Motor** (`motor.js`):
+    - Força = média ponderada do overall dos 11 pelo setor da vaga (GOL 1,0; defesa 1,0; meio 1,05; ataque 1,1), com penalidade no overall de quem está fora da posição (ideal 0, boa −2, improvisado −6) + 0,1 × (média dos 7 melhores reservas − média dos titulares). Vaga vazia = 40; banco que falta para 7 = 45.
+    - Placar por Poisson: λ_casa = 1,35 × e^(0,075 × (F_casa − F_fora) + 0,07); λ_fora = 1,15 × e^(0,075 × (F_fora − F_casa) − 0,02); λ entre 0,15 e 4,5. Campo neutro: 1,29 × e^(0,075 × diferença).
+      - **Calibração:** o pedido era +0,12/−0,04, que deu 47% de vitórias do mandante. Com +0,07/−0,02 (`CASA` e `FORA`): ~45% e ~2,7 gols por jogo (Brasileirão, Premier League e Série B simulados 200 vezes; o teste confere 2,4–2,8 gols e 43–47% do mandante).
+      - Observação (22/11/2026): com 0,075, a tabela sai mais espalhada que a real (Brasileirão: campeão ~80 pontos e último ~15). Para aproximar, baixar o 0,075.
+    - Gols: autor sorteado entre quem jogou (titulares e 3 substituições sorteadas entre os 7 do banco, entre 55' e 85'), com peso CA 5, SA 4, PE/PD 3,5, MEI 3, ME/MD 2,5, MC 1,5, VOL 1, LE/LD 0,8, ZAG 0,6, GOL 0, × (1 + gols/jogo da temporada atual) × (overall/75)² × tempo em campo. Assistência em 75% dos gols, entre os outros em campo: MEI 4, PE/PD 3,5, ME/MD 3, SA 3, MC 2,5, LE/LD 2, CA 2, VOL 1,2, ZAG 0,5, GOL 0,1.
+    - Nota (6,0–9,5): 6,6 + vitória 0,3 / derrota −0,3 + 0,8 por gol + 0,5 por assistência + 0,4 para goleiro e defensor sem sofrer gol + ruído de até ±0,3.
+    - Semente (`aleatorio.js`, mulberry32): cada jogo usa `semente + rodada + jogo`, então rodada a rodada ou tudo de uma vez dá o mesmo resultado. Mesma semente + mesmo plano = mesma temporada. "Re-simular" e "Simular de novo" trocam a semente.
+    - Calendário (`calendario.js`): método do círculo, mando alternado, returno espelhado; a ordem dos clubes é sorteada pela semente. Número ímpar de clubes: cada rodada tem uma folga.
+    - Desempate (`tabela.js`): pontos, vitórias, saldo, gols pró, confronto direto (mini-tabela entre os empatados) e sorteio fixo da temporada.
+  - **Previsão:** 300 temporadas rápidas (só placares): posição média, chance de título, risco de queda e chance de acesso (pelas faixas). Fica no estado salvo e é refeita se o plano mudar antes da 1ª rodada.
+  - **Telas** (chips `#sv-geral`, `#sv-tabela`, `#sv-rodadas`, `#sv-estat`):
+    - Antes da temporada: previsão do seu clube (`#sim-prev-meu`), composição (`#sim-composicao`, selos confirmado/simulado/projeção/escolhido), vagas em aberto (`#pend-BRA-BRB` etc.) e a previsão de todos.
+    - Botões: "Simular próxima rodada" (`#sim-prox`), "Simular até o fim" (`#sim-fim`), "Simular até a rodada X" (`#sim-ate-n` + `#sim-ate`) e "Re-simular".
+    - Durante: posição, últimos 5, próximo jogo e a tabela curta. Tabela completa com faixas e legenda; Rodadas com o seu jogo em destaque (gols e assistências); Estatísticas com artilharia, assistências, melhores notas (mínimo de 30% das rodadas jogadas) e o seu clube.
+    - Fim: campeão, previsão × resultado, clubes de cada faixa (classificados e rebaixados/promovidos), seleção da temporada (4-3-3 com as melhores notas; cada vaga só aceita quem é ideal nela) e "Simular de novo".
+    - Se o plano mudar depois da 1ª rodada: "Seu elenco mudou — reiniciar a temporada?" (`#sim-mudou`), com "Reiniciar" (mesma semente, do zero) ou "Continuar assim" (as próximas rodadas usam o elenco novo).
+  - **Salvar:** `plantel:sim` = `{ "<clube>": { v, semente, rodadaAtual, liga, composicao, pendenciasResolvidas, escolhas, substitui, avisos, resultados, estatisticas, previsao, assinatura } }`. Nada vai para o `plantel:v2`.
+    - `resultados`: por rodada, `[casa, fora, gols casa, gols fora, [[minuto, lado, autor, assistência]]]`. `estatisticas`: `{id: [jogos, gols, assistências, soma das notas × 10, clube]}`. `assinatura`: impressão digital do elenco, titulares, reservas e formação.
+    - Estado com `v` diferente de 1, liga inexistente ou clube que sumiu é refeito.
+  - **Desempenho** (22/11/2026): temporada de 20 clubes em ~30 ms; preparar + previsão em ~80 ms (sem Web Worker).
+  - **Testes:** `testes/simulacao.test.js` e o teste "aba Temporada" em `app.test.jsx`.
 
 ## Pendências (em ordem sugerida)
 1. Completar as estatísticas e fotos que faltam.
@@ -367,11 +416,13 @@ React 19 + Vite 6, em JavaScript (sem TypeScript).
    - Fotos HD (coletadas em 21/11/2026): faltam 1.124 jogadores, 325 deles da Série C. Quando chegarem mais, rodar `python dados-brutos/marcar_fotos_hd.py`.
    - Os sprites `p_*.webp` ficam como reserva por enquanto: 11 jogadores sem foto HD ainda usam o sprite. Quando não houver mais nenhum, apagar os sprites e o código de sprite em `Foto` (`src/componentes/Imagens.jsx`).
 2. Script de atualização periódica dos dados (Transfermarkt e Sofascore).
-3. Simulação da temporada, link compartilhável do plano e modo "desafio diário" (para depois).
+3. Simulador, versão 2: copas, lesões e suspensões, contratações dos outros clubes e os formatos especiais (Liga MX, MLS, Argentina, Escócia e Bélgica).
+4. Link compartilhável do plano e modo "desafio diário" (para depois).
 
 ## Feito
 - 20/11/2026: migração para React + Vite (a versão antiga sem framework está na tag git `antes-do-react`), publicada na Vercel. Escudos em alta resolução.
 - 21/11/2026: fotos HD dos jogadores (95%, em WebP 150×150, qualidade 82) e estatísticas das 36 ligas novas. Overall e atributos (`overall.json`), com balanceamento por liga.
+- 22/11/2026: menu com "Criar time do zero" e "Lista de jogadores"; fotos da rodada 3 (partes 2 a 4); simulador da temporada (versão 1, aba Temporada).
 
 ## Cuidados
 - Fotos novas em `public/img/players/`: rodar `python dados-brutos/converter_fotos_webp.py` antes do commit.

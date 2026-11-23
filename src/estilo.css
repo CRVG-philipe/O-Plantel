@@ -52,11 +52,11 @@ button{cursor:pointer;-webkit-tap-highlight-color:transparent}
 .barra{display:block;height:4px;border-radius:4px;background:var(--line);margin-top:10px;overflow:hidden}
 .barra span{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,var(--mei),#9be15d)}
 .stat.neg .barra span{background:var(--neg)}
-/* abas: indicador que desliza até a aba escolhida (--i = 0 a 3), com risco na cor do clube */
-.tabs{position:relative;display:grid;grid-template-columns:repeat(4,1fr);background:var(--sf2);border-radius:12px;padding:4px;margin-bottom:12px}
+/* abas: indicador que desliza até a aba escolhida (--i = 0 a 4), com risco na cor do clube */
+.tabs{position:relative;display:grid;grid-template-columns:repeat(5,1fr);background:var(--sf2);border-radius:12px;padding:4px;margin-bottom:12px}
 .tabs button{position:relative;z-index:1;border:0;background:none;border-radius:9px;min-height:36px;font-size:14px;font-weight:600;color:var(--mute);transition:color .2s}
 .tabs button[aria-selected=true]{color:var(--ink)}
-.tabs .ind{position:absolute;top:4px;bottom:4px;left:calc(4px + (100% - 8px) / 4 * var(--i,0));width:calc((100% - 8px) / 4);background:var(--sf);border-radius:9px;
+.tabs .ind{position:absolute;top:4px;bottom:4px;left:calc(4px + (100% - 8px) / 5 * var(--i,0));width:calc((100% - 8px) / 5);background:var(--sf);border-radius:9px;
   box-shadow:0 1px 3px rgba(0,0,0,.12);transition:left .25s cubic-bezier(.3,.7,.2,1)}
 .tabs .ind::after{content:"";position:absolute;left:30%;right:30%;bottom:-1px;height:2px;border-radius:2px;background:var(--clubVis)}
 main.col{padding:18px 16px 80px}
@@ -504,3 +504,108 @@ textarea.copy{width:100%;min-height:180px;border:0;border-radius:12px;background
 @media (min-width:700px){.ov{align-items:center}.sheet{border-radius:20px;padding-bottom:20px}.grab{display:none}}
 @media (max-width:420px){.facts{grid-template-columns:repeat(2,minmax(0,1fr))}.vaga{width:76px;transform:translate(-50%,-18px)}.mini{max-width:76px}.slot .dot{width:36px;height:36px;font-size:12px}.slot .dot .face{width:36px!important;height:36px!important}.slot .lb{font-size:10.5px;max-width:76px}.tabs button{font-size:13px}}
 @media (prefers-reduced-motion:reduce){.ov,.sheet,.toast,.tabs .ind,.tabs button,.add,.row,.inp{transition:none}.row:hover .add{transform:none}}
+
+/* ---------- Simulador da temporada (aba Temporada) ---------- */
+@media (max-width:480px){.tabs button{font-size:12.5px;letter-spacing:-.01em}} /* 5 abas no celular */
+@media (max-width:360px){.tabs button{font-size:11.5px}}
+#p-temporada .sobe{color:var(--pos)}#p-temporada .desce{color:var(--neg)}
+.sim-cab{display:flex;align-items:center;gap:12px;padding:12px 14px;margin-bottom:12px}
+.sim-cab .logo-liga{box-shadow:0 0 0 1px var(--line)}
+.sim-cab-txt{display:flex;flex-direction:column;min-width:0}
+.sim-cab-txt b{font-size:17px;letter-spacing:-.01em}
+.sim-cab-txt span{font-size:13px;color:var(--mute)}
+.sim-aviso{margin:0 0 12px;padding:10px 14px;border-radius:12px;font-size:13.5px;background:color-mix(in srgb,var(--warn) 12%,var(--sf));box-shadow:0 0 0 1px color-mix(in srgb,var(--warn) 30%,transparent)}
+.sim-mudou{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px}
+.sim-mudou-bts{display:flex;gap:8px}
+.sim-mudou .btn{min-height:38px;font-size:14px}
+.sim-ctrls{margin-bottom:12px}
+.sim-ctrl{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.sim-ate{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:14px;color:var(--mute)}
+.sim-ate input{width:72px;min-height:40px;border:0;border-radius:10px;background:var(--sf2);padding:0 10px;font-size:16px;font-weight:600;color:var(--ink)}
+.sim-ate .btn{min-height:40px;font-size:14px}
+.sim-ate .sim-resim{margin-left:auto;background:none;box-shadow:0 0 0 1px var(--line)}
+.sim-vistas{margin-top:4px}
+.sim-destaque{display:flex;align-items:center;gap:10px;margin:0 0 14px;padding:12px 14px;border-radius:14px;font-size:14px;line-height:1.4;
+  background:color-mix(in srgb,var(--clubVis) 10%,var(--sf));box-shadow:0 0 0 1px color-mix(in srgb,var(--clubVis) 35%,transparent)}
+.sim-nome{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kv .kv-nome .crest,.kv .kv-nome .face.ini{margin-right:8px;flex:none}
+.sim-n{display:inline-block;min-width:24px;margin-right:6px;font-size:12.5px;font-weight:700;color:var(--mute);text-align:center;font-variant-numeric:tabular-nums;
+  border-left:3px solid var(--z,transparent);padding-left:2px}
+.kv.meu{background:color-mix(in srgb,var(--clubVis) 9%,transparent);font-weight:600}
+.sim-comp{justify-content:flex-start;align-items:center;gap:10px}
+.sim-comp-txt{display:flex;flex-direction:column;min-width:0}
+.sim-comp-txt b{font-size:14.5px}
+.sim-mov{font-size:12.5px;color:var(--mute)}
+.sim-mov .sim-selo{margin-left:6px}
+.sim-selo{display:inline-block;font-size:10.5px;font-weight:700;padding:1px 7px;border-radius:99px;background:var(--sf2);color:var(--mute);vertical-align:1px;margin-left:4px}
+.sim-selo.proj{background:#e9defc;color:#5b2ea6}
+.sim-selo.ok{background:#d9f2e3;color:#14663b}
+.sim-selo.esc{background:#dceafe;color:#1d4f99}
+.sim-pend{padding:12px 14px;margin-bottom:10px;overflow:visible}
+.sim-pend-cab{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;margin-bottom:10px}
+.sim-pend-cab b{font-size:14.5px}
+.sim-pend-cab .sim-selo{margin-left:0}
+.sim-pend-cab small{flex-basis:100%;font-size:12.5px;color:var(--mute)}
+.seg{display:inline-grid;grid-auto-flow:column;gap:2px;background:var(--sf2);border-radius:10px;padding:3px;margin-bottom:10px}
+.seg button{border:0;background:none;border-radius:8px;min-height:32px;padding:0 14px;font-size:13.5px;font-weight:600;color:var(--mute)}
+.seg button[aria-pressed=true]{background:var(--sf);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.sim-det{margin:0;padding:0 0 0 18px;font-size:13px;color:var(--mute);line-height:1.45}
+.sim-det li+li{margin-top:4px}
+.sim-opcoes{display:flex;flex-wrap:wrap;gap:6px}
+.sim-duelos{display:flex;flex-direction:column;gap:8px}
+.sim-duelo{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.sim-op{display:inline-flex;align-items:center;gap:6px;border:0;background:var(--sf);box-shadow:0 0 0 1px var(--line);border-radius:999px;min-height:34px;padding:0 12px 0 6px;font-size:13px;font-weight:600;max-width:100%}
+.sim-op span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sim-op[aria-pressed=true]{box-shadow:0 0 0 2px var(--ac);background:color-mix(in srgb,var(--ac) 8%,var(--sf))}
+.sim-conta{margin:8px 0 0}
+.sim-prev-n{display:flex;gap:10px;flex:none;font-size:13.5px}
+.sim-prev-n span{min-width:38px;text-align:right}
+.sim-leg{margin-top:8px}
+.sim-meu{display:flex;align-items:center;gap:14px;padding:14px;margin-bottom:10px}
+.sim-meu-pos{display:flex;flex-direction:column;align-items:center;min-width:56px}
+.sim-meu-pos b{font-size:30px;line-height:1;letter-spacing:-.03em;color:var(--clubVis)}
+.sim-meu-pos span{font-size:12px;color:var(--mute)}
+.sim-meu-txt{display:flex;flex-direction:column;gap:3px;font-size:13.5px;min-width:0}
+.sim-meu-txt b{font-size:15px}
+.sim-prox-jogo{margin:0 0 12px;font-size:14px;color:var(--mute)}
+.sim-prox-jogo b{color:var(--ink)}
+.sim-ult{display:inline-flex;gap:3px}
+.sim-ult i{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:5px;font-size:10px;font-weight:800;font-style:normal;color:#fff}
+.sim-ult .r-V{background:var(--pos)}.sim-ult .r-E{background:#8a8d94}.sim-ult .r-D{background:var(--neg)}
+.sim-linha.sim-salto{border-top:1px dashed var(--line)}
+.sim-campeao{display:flex;align-items:center;gap:14px;padding:16px;margin-bottom:22px;background:linear-gradient(135deg,color-mix(in srgb,#f2b544 22%,var(--sf)),var(--sf))}
+.sim-campeao div{display:flex;flex-direction:column}
+.sim-campeao small{font-size:12px;color:var(--mute)}
+.sim-campeao b{font-size:20px;letter-spacing:-.02em}
+.sim-campeao span{font-size:13px;color:var(--mute)}
+.sim-tab-wrap{overflow-x:auto}
+.sim-tabela{width:100%;border-collapse:collapse;font-size:13.5px;font-variant-numeric:tabular-nums}
+.sim-tabela th{font-size:11.5px;font-weight:600;color:var(--mute);text-align:center;padding:8px 4px;border-bottom:1px solid var(--line)}
+.sim-tabela td{text-align:center;padding:7px 4px;border-bottom:1px solid var(--line);white-space:nowrap}
+.sim-tabela tr:last-child td{border-bottom:0}
+.sim-tabela .cl{text-align:left;max-width:180px}
+.sim-tabela td.cl>span{display:flex;align-items:center;gap:7px;min-width:0}
+.sim-tabela .zp{width:30px;font-weight:700;color:var(--mute);box-shadow:inset 3px 0 0 var(--z,transparent)}
+.sim-tabela tr.meu td{background:color-mix(in srgb,var(--clubVis) 9%,transparent);font-weight:600}
+@media (max-width:480px){.sim-tabela .ult{display:none}.sim-tabela{font-size:12.5px}.sim-tabela .cl{max-width:130px}}
+.sim-legenda{display:flex;flex-wrap:wrap;gap:6px 14px;margin:10px 4px 0;font-size:12px;color:var(--mute)}
+.sim-legenda i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.sim-nav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.sim-nav .btn{min-height:40px;width:48px;padding:0;font-size:20px}
+.sim-nav b{font-size:15px}
+.sim-jogo{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;padding:9px 12px;font-size:13.5px}
+.sim-jogo+.sim-jogo{border-top:1px solid var(--line)}
+.sim-jogo .c,.sim-jogo .f{display:flex;align-items:center;gap:7px;min-width:0}
+.sim-jogo .c{justify-content:flex-end;text-align:right}
+.sim-jogo b{min-width:52px;text-align:center}
+.sim-jogo-meu{padding:14px;margin-bottom:12px;box-shadow:0 0 0 2px color-mix(in srgb,var(--clubVis) 45%,transparent)}
+.sim-placar{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px}
+.sim-placar .c,.sim-placar .f{display:flex;flex-direction:column;align-items:center;gap:6px;font-weight:600;font-size:14px;text-align:center;min-width:0}
+.sim-placar .sim-nome{max-width:100%}
+.sim-placar b{font-size:28px;letter-spacing:-.02em}
+.sim-gols{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
+.sim-gols ul{list-style:none;margin:0;padding:0;font-size:12.5px;line-height:1.5}
+.sim-gols ul+ul{text-align:right}
+.sim-st{display:flex;gap:4px;flex:none}
+.sim-st span,.sim-st b{min-width:28px;text-align:right}
+.sim-st b{min-width:40px}

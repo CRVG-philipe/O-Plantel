@@ -18,6 +18,7 @@ import Elenco from "./componentes/Elenco.jsx";
 import Mercado from "./componentes/Mercado.jsx";
 import Time from "./componentes/Time.jsx";
 import Resumo from "./componentes/Resumo.jsx";
+import Temporada from "./componentes/Temporada.jsx";
 import Painel, { Congelado } from "./componentes/Painel.jsx";
 import Rodape from "./componentes/Rodape.jsx";
 import PainelJogador from "./componentes/paineis/PainelJogador.jsx";
@@ -32,7 +33,7 @@ import PainelEmprestado from "./componentes/paineis/PainelEmprestado.jsx";
 import PainelTime, { PainelExcluirTime } from "./componentes/paineis/PainelTime.jsx";
 import { PainelFicha, PainelFiltrosLista } from "./componentes/paineis/PainelLista.jsx";
 
-const ABAS = { elenco: Elenco, mercado: Mercado, time: Time, resumo: Resumo };
+const ABAS = { elenco: Elenco, mercado: Mercado, time: Time, resumo: Resumo, temporada: Temporada };
 const PAINEIS = { jogador: PainelJogador, compra: PainelCompra, filtros: PainelFiltros, criar: PainelCriar, clube: PainelClube, orcamento: PainelOrcamento, posicao: PainelPosicao, excluirPlano: PainelExcluirPlano, emprestado: PainelEmprestado, reserva: PainelReserva,
   time: PainelTime, excluirTime: PainelExcluirTime, filtrosLista: PainelFiltrosLista, ficha: PainelFicha };
 

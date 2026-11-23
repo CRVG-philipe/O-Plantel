@@ -18,6 +18,8 @@ const ESTIMADOS = JSON.parse(fs.readFileSync("public/valores-estimados.json", "u
 const EMPRESTIMOS = JSON.parse(fs.readFileSync("public/emprestimos.json", "utf8"));
 const OVERALL = JSON.parse(fs.readFileSync("public/overall.json", "utf8"));
 const AJUSTES = JSON.parse(fs.readFileSync("public/overall-ajustes.json", "utf8")); // ajustes manuais do overall
+const ACESSO = JSON.parse(fs.readFileSync("public/acesso-rebaixamento.json", "utf8")); // simulador: acesso e rebaixamento
+const ZONAS = JSON.parse(fs.readFileSync("public/zonas-ligas.json", "utf8"));         // simulador: faixas da tabela
 let semEstimados = false; // true = simula o valores-estimados.json fora do ar
 const CHAVE = "plantel:v2";
 // Cotação que a "API de mentira" devolve nos testes
@@ -40,6 +42,8 @@ beforeEach(() => {
     if (String(url).includes("emprestimos")) return { ok: true, json: async () => structuredClone(EMPRESTIMOS) };
     if (String(url).includes("regras-estrangeiros")) return { ok: true, json: async () => structuredClone(REGRAS_EST) };
     if (String(url).includes("overall-ajustes")) return { ok: true, json: async () => structuredClone(AJUSTES) };
+    if (String(url).includes("acesso-rebaixamento")) return { ok: true, json: async () => structuredClone(ACESSO) };
+    if (String(url).includes("zonas-ligas")) return { ok: true, json: async () => structuredClone(ZONAS) };
     if (String(url).includes("overall")) return { ok: true, json: async () => structuredClone(OVERALL) };
     if (String(url).includes("valores-estimados")) {
       if (semEstimados) throw new Error("fora do ar");
@@ -1226,3 +1230,75 @@ test("aba Time: tocar em um jogador e depois em outro troca os dois de posição
   clique(screen.getByRole("button", { name: `1º reserva de Centroavante: ${ca}` }));
   expect(noPainel().getByRole("button", { name: "Promover a titular" })).toBeTruthy();
 });
+test("aba Temporada: composição, previsão, simular rodada, elenco mudou, fim da temporada e 'Simular de novo'", async () => {
+  localStorage.setItem(CHAVE, JSON.stringify({ plans: { T5981: { club: "T5981", budget: 50, st: {}, ins: [], form: "4-3-3", xi: {}, custom: [] } }, last: "T5981" }));
+  render(<App />);
+  clique(await screen.findByRole("button", { name: /Flamengo 2027/ }));
+  const antes = JSON.stringify(salvo());
+  clique(screen.getByRole("tab", { name: "Temporada" }));
+  const BRA = DATA.leagues.find((l) => l.k === "BRA").n;
+  expect(document.querySelector("#sim-liga").textContent).toBe(BRA + " 2027");
+  expect(document.querySelector("#sim-status").textContent).toBe("Antes da temporada · 38 rodadas");
+  // Composição: Novorizontino sobe (confirmado) e a Chapecoense cai; vagas em aberto com "Simular" e "Escolher"
+  const comp = document.querySelector("#sim-composicao").textContent;
+  expect(comp).toContain("Grêmio Novorizontino");
+  expect(comp).toContain("Chapecoense");
+  expect(document.querySelector("#pend-BRA-BRB")).toBeTruthy();
+  expect(within(document.querySelector("#pend-BRA-BRB")).getByRole("button", { name: "Simular" }).getAttribute("aria-pressed")).toBe("true");
+  // Previsão do seu clube
+  expect(document.querySelector("#sim-prev-meu").textContent).toMatch(/previsão: \d+º; chance de título \d+%; risco de queda/);
+  expect(document.querySelectorAll("#sim-previsao .kv").length).toBe(20);
+  // "Escolher" no rebaixamento: marca 3 clubes e eles caem
+  const pend = () => document.querySelector("#pend-BRA-BRB");
+  clique(within(pend()).getByRole("button", { name: "Escolher" }));
+  const marcados = () => [...pend().querySelectorAll(".sim-op[aria-pressed=true]")].map((b) => b.textContent);
+  expect(marcados().length).toBe(3); // começa com o resultado da simulação
+  marcados().forEach((n) => clique([...pend().querySelectorAll(".sim-op")].find((b) => b.textContent === n)));
+  ["Corinthians", "Grêmio", "Internacional"].forEach((n) => clique([...pend().querySelectorAll(".sim-op")].find((b) => b.textContent === n)));
+  expect(marcados().sort()).toEqual(["Corinthians", "Grêmio", "Internacional"]);
+  const sim = () => JSON.parse(localStorage.getItem("plantel:sim")).T5981;
+  expect(sim().escolhas["BRA>BRB"].modo).toBe("escolher");
+  expect(document.querySelector("#sim-composicao").textContent).toContain("Corinthians");
+  // Simular a próxima rodada: o placar do seu jogo aparece em Rodadas; nada muda no plano (plantel:v2)
+  clique(document.querySelector("#sim-prox"));
+  expect(document.querySelector("#sim-status").textContent).toMatch(/^Rodada 1 de 38 · Flamengo em \d+º$/);
+  expect(sim().rodadaAtual).toBe(1);
+  expect(sim().resultados[0].length).toBe(10);
+  expect(JSON.stringify(salvo())).toBe(antes);
+  clique(document.querySelector("#sv-rodadas"));
+  expect(document.querySelector("#sim-jogo-meu .sim-placar b").textContent).toMatch(/^\d+ × \d+$/);
+  expect(document.querySelectorAll("#sim-rodadas .sim-jogo").length).toBe(9);
+  clique(document.querySelector("#sv-tabela"));
+  expect(document.querySelectorAll("#sim-tabela tbody tr").length).toBe(20);
+  expect(document.querySelector("#sim-tabela tr.meu").textContent).toContain("Flamengo");
+  expect(document.querySelector("#sim-legenda").textContent).toContain("Rebaixamento");
+  // O elenco mudou (contratação no Mercado): aviso para reiniciar; "Continuar assim" mantém a rodada
+  clique(screen.getByRole("tab", { name: "Mercado" }));
+  clique(document.querySelector("#mList .row"));
+  clique(noPainel().getByRole("button", { name: /^Contratar/ }));
+  clique(screen.getByRole("tab", { name: "Temporada" }));
+  expect(document.querySelector("#sim-mudou").textContent).toContain("Seu elenco mudou — reiniciar a temporada?");
+  clique(document.querySelector("#sim-continuar"));
+  expect(document.querySelector("#sim-mudou")).toBeNull();
+  expect(sim().rodadaAtual).toBe(1);
+  // Até a rodada 10, depois até o fim
+  fireEvent.change(document.querySelector("#sim-ate-n"), { target: { value: "10" } });
+  clique(document.querySelector("#sim-ate"));
+  expect(sim().rodadaAtual).toBe(10);
+  clique(document.querySelector("#sim-fim"));
+  expect(sim().rodadaAtual).toBe(38);
+  clique(document.querySelector("#sv-geral"));
+  expect(document.querySelector("#sim-campeao").textContent).toContain("Campeão da " + BRA + " 2027");
+  expect(document.querySelectorAll("#sim-selecao .kv").length).toBe(11);
+  expect(document.querySelector("#sim-prev-res").textContent).toMatch(/Resultado\d+º/);
+  clique(document.querySelector("#sv-estat"));
+  expect(document.querySelectorAll("#sim-artilharia .kv").length).toBe(10);
+  expect(document.querySelectorAll("#sim-meu-clube .kv").length).toBeGreaterThan(11);
+  // "Simular de novo": semente nova e volta para antes da temporada (a escolha do rebaixamento continua)
+  const semente = sim().semente;
+  clique(document.querySelector("#sim-de-novo"));
+  expect(sim().rodadaAtual).toBe(0);
+  expect(sim().semente).not.toBe(semente);
+  expect(sim().escolhas["BRA>BRB"].sel.sort()).toEqual(["T1957", "T1966", "T5926"]);
+  expect(document.querySelector("#sim-status").textContent).toBe("Antes da temporada · 38 rodadas");
+}, 60000);
