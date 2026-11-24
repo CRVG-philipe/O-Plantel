@@ -24,7 +24,9 @@
   "Jair|1994-08-26": 74,
   "Alan Lescano|2001-11-11": 79,
   "Johan Rojas|2002-09-20": 74,
-  "Cauan Barros|2004-05-06": 75
+  "Cauan Barros|2004-05-06": 75,
+  "Andrés Gómez|2002-09-12": 78,
+  "Santiago Sosa|1999-05-03": 78
  },
  "T1981": {
   "Rafael|1989-06-23": 74,
@@ -41,7 +43,8 @@
   "Xavi Simons|2003-04-21": 83
  },
  "T2693": {
-  "Dodô|1998-11-17": 80
+  "Dodô|1998-11-17": 80,
+  "David de Gea|1990-11-07": 78
  },
  "T1966": {
   "Gabriel Mercado|1987-03-18": 75
@@ -57,7 +60,15 @@
   "Bernardo Silva|1994-08-10": 84
  },
  "T3052": {
-  "Ederson|1993-08-17": 81
+  "Ederson|1993-08-17": 81,
+  "Marco Asensio|1996-01-21": 81,
+  "Milan Škriniar|1995-02-11": 80,
+  "Nathan Aké|1995-02-18": 79,
+  "N'Golo Kanté|1991-03-29": 79,
+  "Romelu Lukaku|1993-05-13": 78,
+  "Mattéo Guendouzi|1999-04-14": 81,
+  "Kerem Aktürkoğlu|1998-10-21": 79,
+  "Vedat Muriqi|1994-04-24": 77
  },
  "T3371": {
   "Cryzan|1996-07-07": 75
@@ -69,7 +80,9 @@
   "Jules Koundé|1998-11-12": 85
  },
  "T34469": {
-  "Galeno|1997-10-22": 79
+  "Galeno|1997-10-22": 79,
+  "Merih Demiral|1998-03-05": 78,
+  "Edouard Mendy|1992-03-01": 79
  },
  "T1958": {
   "Gabriel Batista|1998-06-03": 75
@@ -84,19 +97,27 @@
   "Joelinton|1996-08-14": 79
  },
  "T2952": {
-  "Mauro Júnior|1999-05-06": 81
+  "Mauro Júnior|1999-05-06": 81,
+  "Ivan Perisic|1989-02-02": 76
  },
  "T2704": {
   "Yan Couto|2002-06-03": 79
  },
  "T2819": {
-  "Luiz Júnior|2001-01-14": 78
+  "Luiz Júnior|2001-01-14": 78,
+  "Nicolas Pépé|1995-05-29": 78,
+  "Gerard Moreno|1992-04-07": 77,
+  "Ayoze Pérez|1993-07-29": 77
  },
  "T40660": {
-  "Róger Guedes|1996-10-02": 78
+  "Róger Guedes|1996-10-02": 78,
+  "Gregore|1994-03-02": 77,
+  "Aleksandar Mitrović|1994-09-16": 80,
+  "Otávio|1995-02-09": 78
  },
  "T1931": {
-  "Helinho|2000-04-25": 78
+  "Helinho|2000-04-25": 78,
+  "Paulinho|1992-11-09": 79
  },
  "T43": {
   "Rodrigo Muniz|2001-05-04": 78
@@ -108,29 +129,41 @@
   "Lucas Perri|1997-12-10": 78
  },
  "T44441": {
-  "Tuta|1999-07-04": 77
+  "Tuta|1999-07-04": 77,
+  "Marco Verratti|1992-11-05": 80
  },
  "T1940": {
-  "Joaquim|1998-12-28": 77
+  "Joaquim|1998-12-28": 77,
+  "Fernando Gorriarán|1994-11-27": 75
  },
  "T1939": {
-  "Raphael Veiga|1995-06-19": 76
+  "Raphael Veiga|1995-06-19": 76,
+  "Álex Zendejas|1998-02-07": 79,
+  "Henry Martin|1992-11-18": 75
  },
  "T2690": {
   "Diego Carlos|1993-03-15": 77
  },
  "T39733": {
-  "Roberto Firmino|1991-10-02": 77
+  "Roberto Firmino|1991-10-02": 77,
+  "Marcelo Brozovic|1992-11-16": 80,
+  "Alessio Romagnoli|1995-01-12": 78
  },
  "T1649": {
-  "Abner|2000-05-27": 76
+  "Abner|2000-05-27": 76,
+  "Nicolás Tagliafico|1992-08-31": 76
  },
  "T23400": {
-  "Bento|1999-06-10": 77
+  "Bento|1999-06-10": 77,
+  "Cristiano Ronaldo|1985-02-05": 83,
+  "Kingsley Coman|1996-06-13": 82,
+  "Sadio Mané|1992-04-10": 81,
+  "Iñigo Martínez|1991-05-17": 78
  },
  "T3051": {
   "Fabinho|1993-10-23": 78,
-  "André Onana|1996-04-02": 79
+  "André Onana|1996-04-02": 79,
+  "Ruslan Malinovskyi|1993-05-04": 75
  },
  "T2524": {
   "Vini Souza|1999-06-17": 76
@@ -138,7 +171,11 @@
  "T2953": {
   "Marcos Leonardo|2003-05-02": 77,
   "Caio Henrique|1997-07-31": 76,
-  "Marc-André ter Stegen|1992-04-30": 79
+  "Marc-André ter Stegen|1992-04-30": 79,
+  "Julian Brandt|1996-05-02": 80,
+  "Sofyan Amrabat|1996-08-21": 77,
+  "Yves Bissouma|1996-08-30": 76,
+  "Viktor Tsygankov|1997-11-15": 78
  },
  "T37": {
   "Morato|2001-06-30": 76
@@ -181,10 +218,14 @@
   "Emiliano Martínez|1992-09-02": 84
  },
  "T3002": {
-  "Diogo Costa|1999-09-19": 85
+  "Diogo Costa|1999-09-19": 85,
+  "Pepê|1997-02-24": 79,
+  "Seko Fofana|1995-05-07": 76
  },
  "T2825": {
-  "Unai Simón|1997-06-11": 83
+  "Unai Simón|1997-06-11": 83,
+  "Aymeric Laporte|1994-05-27": 80,
+  "Iñaki Williams|1994-06-15": 78
  },
  "T2687": {
   "Guglielmo Vicario|1996-10-07": 82,
@@ -195,7 +236,9 @@
   "Jordan Pickford|1994-03-07": 83
  },
  "T3006": {
-  "Anatoliy Trubin|2001-08-01": 82
+  "Anatoliy Trubin|2001-08-01": 82,
+  "João Palhinha|1995-07-09": 81,
+  "Rafa Silva|1993-05-17": 76
  },
  "T2672": {
   "Manuel Neuer|1986-03-27": 80,
@@ -210,7 +253,8 @@
   "Nicolò Barella|1997-02-07": 86,
   "Federico Dimarco|1997-11-10": 85,
   "Hakan Çalhanoğlu|1994-02-08": 85,
-  "Manuel Akanji|1995-07-19": 83
+  "Manuel Akanji|1995-07-19": 83,
+  "Pio Esposito|2005-06-28": 82
  },
  "T2714": {
   "Scott McTominay|1996-12-08": 86,
@@ -230,5 +274,139 @@
  },
  "T35": {
   "Marcus Rashford|1997-10-31": 83
+ },
+ "T2323": {
+  "Pablo Solari|2001-03-22": 77
+ },
+ "T56027": {
+  "Julián Quiñones|1997-03-24": 83,
+  "Mateo Retegui|1999-04-29": 82,
+  "Nahitan Nández|1995-12-28": 75
+ },
+ "T3061": {
+  "Davinson Sánchez|1996-06-12": 80,
+  "Lucas Torreira|1996-02-11": 79,
+  "Mario Lemina|1993-09-01": 77,
+  "İlkay Gündoğan|1990-10-24": 76,
+  "Barış Alper Yılmaz|2000-05-23": 82,
+  "Yunus Akgün|2000-07-07": 82,
+  "Leroy Sané|1996-01-11": 81,
+  "Uğurcan Çakır|1996-04-05": 80,
+  "Roland Sallai|1997-05-22": 77
+ },
+ "T2816": {
+  "Nelson Deossa|2000-02-06": 78,
+  "Isco|1992-04-21": 79,
+  "Giovani Lo Celso|1996-04-09": 78,
+  "Pablo Fornals|1996-02-22": 78,
+  "Dani Ceballos|1996-08-07": 77
+ },
+ "T1932": {
+  "Lucas Ocampos|1994-07-11": 77,
+  "Óliver Torres|1994-11-10": 76
+ },
+ "T3245": {
+  "Leon Bailey|1997-08-09": 77,
+  "Ayoub El Kaabi|1993-06-25": 77,
+  "Konstantinos Fortounis|1992-10-16": 75
+ },
+ "T3050": {
+  "Leandro Trossard|1994-12-04": 82,
+  "Dušan Vlahović|2000-01-28": 82,
+  "Wilfred Ndidi|1996-12-16": 76
+ },
+ "T3248": {
+  "Stefan de Vrij|1992-02-05": 78,
+  "Davide Calabria|1996-12-06": 76
+ },
+ "T3250": {
+  "Luka Jović|1997-12-23": 76
+ },
+ "T2824": {
+  "Mikel Oyarzabal|1997-04-21": 82,
+  "Takefusa Kubo|2001-06-04": 80
+ },
+ "T2821": {
+  "Iago Aspas|1987-08-01": 77
+ },
+ "T2828": {
+  "José Gayà|1995-05-25": 75
+ },
+ "T2699": {
+  "Mattia Zaccagni|1995-06-16": 79
+ },
+ "T2685": {
+  "Riccardo Orsolini|1997-01-24": 79,
+  "Artem Dovbyk|1997-06-21": 77
+ },
+ "T2674": {
+  "Mario Götze|1992-06-03": 76
+ },
+ "T1641": {
+  "Pierre-Emile Højbjerg|1995-08-05": 81
+ },
+ "T1653": {
+  "Aleksandr Golovin|1996-05-30": 81,
+  "Denis Zakaria|1996-11-20": 81,
+  "Takumi Minamino|1995-01-16": 78,
+  "Lukas Hradecky|1989-11-24": 76
+ },
+ "T1643": {
+  "Olivier Giroud|1986-09-30": 72
+ },
+ "T1661": {
+  "Jonathan Clauss|1992-09-25": 77
+ },
+ "T21895": {
+  "Theo Hernández|1997-10-06": 84,
+  "Sergej Milinković-Savić|1995-02-27": 83,
+  "Kalidou Koulibaly|1991-06-20": 80,
+  "Yassine Bounou|1991-04-05": 80,
+  "Salem Al-Dawsari|1991-08-19": 76
+ },
+ "T34315": {
+  "Youssef En-Nesyri|1997-06-01": 79,
+  "Steven Bergwijn|1997-10-08": 77,
+  "Houssem Aouar|1998-06-30": 76,
+  "Georginio Wijnaldum|1990-11-11": 75
+ },
+ "T34313": {
+  "Yannick Carrasco|1993-09-04": 79,
+  "Thomas Partey|1993-06-13": 76
+ },
+ "T170366": {
+  "Riyad Mahrez|1991-02-21": 78
+ },
+ "T337602": {
+  "Casemiro|1992-02-23": 82,
+  "Luis Suárez|1987-01-24": 78
+ },
+ "T2505": {
+  "Robert Lewandowski|1988-08-21": 81
+ },
+ "T22010": {
+  "Thomas Müller|1989-09-13": 79
+ },
+ "T2513": {
+  "Marco Reus|1989-05-31": 76,
+  "Hirving Lozano|1995-07-30": 76
+ },
+ "T274650": {
+  "Denis Bouanga|1994-11-11": 81,
+  "Hugo Lloris|1986-12-26": 75
+ },
+ "T3211": {
+  "Nicolás Otamendi|1988-02-12": 77,
+  "Gonzalo Montiel|1997-01-01": 77
+ },
+ "T3217": {
+  "Ángel Di María|1988-02-14": 79
+ },
+ "T5149": {
+  "Marko Arnautovic|1989-04-19": 76
+ },
+ "T2352": {
+  "Callum McGregor|1993-06-14": 73,
+  "Kieran Tierney|1997-06-05": 75
  }
 }
