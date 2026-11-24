@@ -960,7 +960,8 @@ test("overall e atributos: selo nas listas, ficha com e sem atributos, força do
   render(<App />);
   clique(await screen.findByRole("button", { name: /Arsenal 27\/28/ }));
   const arsenal = DATA.clubs.find((c) => c.k === "T42");
-  const ovrDe = (p) => OVERALL.T42[p[1] + "|" + p[3]][0];
+  // overall como o site mostra: o ajuste manual (overall-ajustes.json), se houver; senão o do overall.json
+  const ovrDe = (p) => AJUSTES.T42?.[p[1] + "|" + p[3]] ?? OVERALL.T42[p[1] + "|" + p[3]][0];
   const linhaDe = (nome) => [...document.querySelectorAll("#p-elenco .row")].find((l) => l.querySelector(".nm").textContent === nome);
   // Elenco: selo do overall ao lado da foto, com a cor da faixa
   const comAtr = arsenal.p.find((p) => OVERALL.T42[p[1] + "|" + p[3]][2]?.tipo === "L" && arsenal.p.filter((x) => x[1] === p[1]).length === 1);

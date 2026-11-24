@@ -87,6 +87,10 @@ Foi inspirado no reconstruindo.thefenomeno.com, mas **não deve copiá-lo**. O f
     - Os parâmetros encontrados ficam em `dados-brutos/overall/balanceamento-parametros.json` (só para consulta).
     - **Para mudar o nível de uma liga:** edite os alvos no `ALVO`, no topo do `balancear.py`, e rode de novo (só o passo 2).
   - **Ajustes manuais:** `public/overall-ajustes.json` guarda os ajustes feitos à mão, no formato `{clube: {"nome|nascimento": overall}}`. Em 21/11/2026 tinha 21 ajustes: 20 de jogadores do Brasileirão (ex.: Fábio, do Fluminense, 78; Thiago Mendes, do Vasco, 79) e o Richarlison (Tottenham, `T33`), 80.
+    - Em 24/11/2026 passou a ter 114 ajustes (93 novos e o Luciano, do São Paulo, de 75 para 76):
+      - 38 brasileiros pedidos pelo Philipe (ex.: Éder Militão 78→86, Jair Cunha 75→81, Mauro Júnior 76→81, Gabriel Mercado 64→75; alguns descem: Cryzan 78→75, João Pedro Tchoca 77→73, Cauan Barros 77→75, Gabriel Batista 77→75);
+      - 18 dos principais goleiros do mundo, +1 a +4 (Courtois 87, Alisson 86, Donnarumma 86, Raya 87, Kobel 86, Oblak 84, Maignan 84, Emiliano Martínez 84, Diogo Costa 85, Neuer 80, ter Stegen 79...);
+      - 38 destaques dos grandes da Europa que o valor de mercado deixava baixos, quase sempre veteranos (Gyökeres 85, Guirassy 84, Lookman 84, Giuliano Simeone 83, Van Dijk 86, McTominay 86, Frenkie de Jong 85, Musiala 88, De Bruyne 84, Bernardo Silva 84, Modrić 80...).
     - **Editar à mão.** Quando um jogador tem ajuste, o número substitui o do `overall.json`; os atributos continuam os mesmos.
     - O ajuste vale em tudo: selo, ficha, força do time, ordem "Overall", "Escalar por overall" e recomendação (todos leem `p.ovr`).
     - Vale por cima do balanceamento. Nenhum script mexe nesse arquivo: ele **não é apagado** quando o `balancear.py` (ou o `overall.py`) roda. Para corrigir alguém, acrescente a linha nele: não precisa rodar nada.
