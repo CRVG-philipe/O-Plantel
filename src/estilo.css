@@ -452,7 +452,8 @@ details.bench[open] summary::after{content:"Ocultar"}
 .esc-escudo{width:clamp(132px,40vw,156px);aspect-ratio:1;border-radius:50%;background:#fff;background-clip:padding-box;border:6px solid rgba(255,255,255,.35);display:grid;place-items:center}
 .esc-nome{font-size:clamp(26px,7vw,32px);font-weight:700;text-align:center}
 .esc-sub{text-align:center;font-size:13.5px;color:rgba(255,255,255,.75);margin:4px 0 0}
-.esc-cartoes{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding-top:18px}
+.esc-cartoes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding-top:18px}
+.esc-cartao small{display:block;font-size:11px;color:rgba(255,255,255,.6);margin-top:1px}
 .esc-cartao{background:rgba(255,255,255,.14);border-radius:12px;padding:10px 12px}
 .esc-cartao b{display:block;font-size:17px;font-weight:600}
 .esc-cartao span{font-size:12px;color:rgba(255,255,255,.75)}
@@ -781,7 +782,7 @@ button.sim-jogo-linha:not(:disabled):hover{background:var(--sf2)}
 .sim-atual .sobe{color:var(--pos)}.sim-atual .desce{color:var(--neg)}
 @media (max-width:640px){.sim-atual{grid-template-columns:1fr}}
 .sim-fases{display:flex;max-width:100%;overflow-x:auto;margin-bottom:14px;scrollbar-width:none}
-.sim-fases button{white-space:nowrap}
+.sim-fases button{white-space:nowrap;flex:none}
 .sim-bloco h2{margin-top:2px}
 .sim-chave{display:flex;gap:10px;overflow-x:auto;padding-bottom:6px;scrollbar-width:thin}
 /* colunas encolhem até 160 px para o chaveamento inteiro (até 4 fases) caber na coluna de 720 px; abaixo disso, rola para o lado */
@@ -808,7 +809,8 @@ button.sim-jogo-linha:not(:disabled):hover{background:var(--sf2)}
 
 /* ---------- Simulador v2: copas ---------- */
 .sim-comps{display:flex;max-width:100%;overflow-x:auto;margin-bottom:10px;scrollbar-width:none}
-.sim-comps button{white-space:nowrap}
+.sim-comps button{white-space:nowrap;flex:none}
+.sim-comps::-webkit-scrollbar,.sim-fases::-webkit-scrollbar{display:none}
 .sim-copas-lista{display:flex;flex-direction:column;gap:8px}
 .sim-copa>summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;cursor:pointer}
 .sim-copa>summary::-webkit-details-marker{display:none}

@@ -12,6 +12,7 @@ import { corDeFundo, norm } from "../logica/formato.js";
 import { dinheiro, calcularDinheiro } from "../logica/dinheiro.js";
 import { elencoAtual, saidas } from "../logica/elenco.js";
 import { nomeDoPlano, numeroDoId, planosDoClube } from "../logica/planos.js";
+import { forcaRapida } from "../logica/simulacao/escalar.js";
 import { Escudo, LogoLiga } from "./Imagens.jsx";
 import SeletorMoeda from "./SeletorMoeda.jsx";
 import Rodape from "./Rodape.jsx";
@@ -275,6 +276,7 @@ function EtapaClube({ app, cor }) {
   const c = clubes[indice], anterior = clubes[(indice - 1 + n) % n], proximo = clubes[(indice + 1) % n];
   const L = D.LG[c.lg];
   const valorTotal = D.ALL.reduce((s, p) => s + (p.club === c.k ? p.v : 0), 0); // com os valores estimados
+  const forca = forcaRapida(c.k), posForca = 1 + clubes.filter((x) => forcaRapida(x.k) > forca).length;
   const nPlanos = planosDoClube(db, c.k).length; // quantos planos deste clube já existem
   const deslizar = useDeslizar(app.passo);
   // Animação da troca: lembra o clube anterior e para que lado foi (1 = próximo, -1 = anterior, 0 = acabou de abrir).
@@ -303,6 +305,10 @@ function EtapaClube({ app, cor }) {
         <div className="esc-cartoes">
           <div className="esc-cartao"><b>{dinheiro(valorTotal)}</b><span>valor do elenco</span></div>
           <div className="esc-cartao"><b>{c.p.length}</b><span>jogadores</span></div>
+          {/* Força média: a média dos 11 maiores overalls do elenco (a mesma "força rápida" do simulador) e a posição na liga */}
+          <div className="esc-cartao" id="esc-forca" title="Média dos 11 maiores overalls do elenco">
+            <b>{forca.toFixed(1).replace(".", ",")}</b><span>força média</span><small title={`${posForca}º de ${clubes.length} na liga`}>{posForca}º na liga</small>
+          </div>
         </div>
       </div>
       <div className="esc-acao esc-acoes">

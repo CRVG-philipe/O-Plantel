@@ -1541,3 +1541,15 @@ test("vários planos do mesmo clube: novo do zero, duplicar, renomear, trocar, c
   clique(document.querySelector("#plano-" + k + "\\~3"));
   expect(salvo().last).toBe(k + "~3");
 });
+test("escolha do clube: cartão da força média do elenco (média dos 11 maiores overalls) e a posição na liga", async () => {
+  render(<App />);
+  clique(await screen.findByText("Escolher clube"));
+  clique(screen.getByText("Inglaterra"));
+  clique(document.querySelector(".esc-divisao, .esc-card") && screen.getAllByRole("button").find((b) => b.textContent.includes("Premier League")));
+  const card = document.querySelector("#esc-forca");
+  expect(card).toBeTruthy();
+  expect(card.textContent).toMatch(/^\d{2},\dforça média\d+º na liga$/);
+  const nome = document.querySelector(".esc-nome").textContent, c = DATA.clubs.find((x) => x.n === nome && x.lg === "ENG");
+  const top = c.p.map((r) => AJUSTES[c.k]?.[`${r[1]}|${r[3]}`] ?? OVERALL[c.k]?.[`${r[1]}|${r[3]}`]?.[0] ?? 60).sort((a, b) => b - a).slice(0, 11);
+  expect(card.querySelector("b").textContent).toBe((top.reduce((s, x) => s + x, 0) / 11).toFixed(1).replace(".", ","));
+});

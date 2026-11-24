@@ -66,7 +66,8 @@ function carregar(plano, chave) {
 
 const ABAS = [["resumo", "Resumo"], ["tabela", "Tabela"], ["jogos", "Jogos"], ["estat", "Estatísticas"]];
 // Nome curto de uma copa para botões: sem o ano ("Copa Libertadores 2027" → "Libertadores")
-export const copaCurta = (id) => nomeCopa(id).replace(/\s+\d{4}(\/\d{2})?$/, "").replace(/^Copa (?!do |del |de )/, "");
+// ("Champions League 2027/28" → "Champions", para os botões caberem no celular)
+export const copaCurta = (id) => nomeCopa(id).replace(/\s+\d{4}(\/\d{2})?$/, "").replace(/^Copa (?!do |del |de )/, "").replace(/ League$/, "");
 // Texto do botão de jogar: "Jogar rodada 15", "Jogar Libertadores"
 function rotuloProximo(estado, k) {
   const px = proximoJogo(estado, k);

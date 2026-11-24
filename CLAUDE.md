@@ -269,7 +269,7 @@ React 19 + Vite 6, em JavaScript (sem TypeScript).
   - **URL:** os filtros ficam no endereço (`?liga=BRA&pos=CA&ordem=g&p=2`; sem filtros, `?jogadores`). Abrir um link assim cai direto na Lista. Fora da Lista, a URL fica limpa.
   - `pais`: grade de cartões (2 colunas; 3 a partir de 600px), fundo `#1f2a24`, agrupada por continente (`CONTINENTES` e o campo `continente` de `PAISES`), com busca por país ou liga no topo. Tocar avança.
   - `divisao`: só aparece se o país tiver mais de uma liga (Brasil com 3; Inglaterra, Espanha, Itália, Alemanha e França com 2). Fundo = cor do país (`PAISES` em `constantes.js`).
-  - `clube`: escudo num círculo branco, vizinhos, valor e jogadores. Setas, teclado e deslizar o dedo trocam de clube. Fundo = `corDeFundo` (`c`, senão `c2`, senão cinza `#222428`, sempre com brilho ≤ 0,6 para o texto branco ser legível).
+  - `clube`: escudo num círculo branco, vizinhos e três cartões: valor do elenco, jogadores e força média (`#esc-forca`: média dos 11 maiores overalls, a `forcaRapida` do simulador, com a posição na liga). Setas, teclado e deslizar o dedo trocam de clube. Fundo = `corDeFundo` (`c`, senão `c2`, senão cinza `#222428`, sempre com brilho ≤ 0,6 para o texto branco ser legível).
   - "Voltar" vai para a tela anterior real (pula a divisão se não houve). Transições de 300ms, desligadas com `prefers-reduced-motion`.
   - Troca de clube animada: o escudo novo entra pelo lado da troca, girando de leve, e o antigo sai pelo outro, dentro do círculo branco.
     - Os vizinhos, o nome, o técnico e os cartões vêm logo depois, um após o outro, e o fundo muda de cor em 0,55s.
@@ -533,6 +533,7 @@ React 19 + Vite 6, em JavaScript (sem TypeScript).
 - 23/11/2026: simulador v2: formatos das ligas e temporada atual real (etapa 1), copas (etapa 2) e janela da IA (etapa 3; no mesmo dia, o mercado completo foi trocado pela versão simples, só com contratações).
 - 23/11/2026 (tarde): motor de placar v2 (menos goleadas, calibrado; página /debug-motor), substituições coerentes, lance a lance com estatísticas e animação de gol, dupla nacionalidade (public/nacionalidades.json).
 - 23/11/2026 (noite): times superiores mais regulares (motor recalibrado), disputa por pênaltis, transferências entre rivais raríssimas (public/rivais.json) e vários planos do mesmo clube.
+- 24/11/2026: ajustes manuais de overall (114), força média na escolha do clube, seletor de competições do simulador sem textos encavalados no celular (botões não encolhem; nomes curtos: Champions, Europa, Conference).
 
 ## Cuidados
 - Fotos novas em `public/img/players/`: rodar `python dados-brutos/converter_fotos_webp.py` antes do commit.
